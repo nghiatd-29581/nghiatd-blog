@@ -1,19 +1,301 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; color: #333; background-color: #fff; padding: 20px; }
-    h1 { color: #dc3545; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ddd; padding: 8px; }
-  </style>
-</head>
-<body>
-  <h1>Bài 1: Kỹ Thuật Nâng Cao</h1>
-  <p>Nội dung nâng cao với bảng dữ liệu.</p>
-  <table>
-    <tr><th>Tiêu đề 1</th><th>Tiêu đề 2</th></tr>
-    <tr><td>Dữ liệu 1</td><td>Dữ liệu 2</td></tr>
-  </table>
-</body>
-</html>
+<div class="lesson2-rust">
+
+<style scoped>
+/* ==================== TOÀN BỘ CSS CHỈ ÁP DỤNG TRONG .lesson2-rust ==================== */
+.lesson2-rust {
+    --bg: #ffffff;
+    --text: #2d2d2d;
+    --heading: #1a1a1a;
+    --code-bg: #f6f8fa;
+    --border: #e1e4e8;
+    --primary: #1976d2;
+    --green: #2e7d32;
+    --red: #c62828;
+    --purple-start: #7e57c2;
+    --purple-end: #9575cd;
+
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.75;
+    color: var(--text);
+    background: var(--bg);
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem;
+    box-sizing: border-box;
+}
+
+.lesson2-rust h1, .lesson2-rust h2, .lesson2-rust h3 {
+    color: var(--heading);
+    font-weight: 600;
+    margin-top: 3rem;
+    margin-bottom: 1rem;
+}
+
+.lesson2-rust h1 {
+    font-size: 2.3rem;
+    text-align: center;
+    color: #1565c0;
+    margin: 2rem 0 3rem;
+}
+
+.lesson2-rust h1 small {
+    display: block;
+    font-size: 0.55em;
+    color: #555;
+    margin-top: 0.8rem;
+}
+
+.lesson2-rust h2 {
+    font-size: 1.9rem;
+    border-bottom: 4px solid var(--primary);
+    padding-bottom: 0.6rem;
+}
+
+.lesson2-rust h3 {
+    font-size: 1.55rem;
+    color: var(--primary);
+}
+
+.lesson2-rust p { margin-bottom: 1.3rem; }
+
+.lesson2-rust ul, .lesson2-rust ol {
+    margin: 1.4rem 0;
+    padding-left: 2.4rem;
+}
+
+.lesson2-rust li { margin-bottom: 0.7rem; }
+
+.lesson2-rust strong { color: #000; }
+
+.lesson2-rust code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    background: var(--code-bg);
+    padding: 0.2em 0.45em;
+    border-radius: 5px;
+    font-size: 92%;
+}
+
+.lesson2-rust pre {
+    background: #282c34;
+    color: #abb2bf;
+    padding: 1.4rem;
+    border-radius: 10px;
+    overflow-x: auto;
+    margin: 1.8rem 0;
+    border: 1px solid #444;
+    font-size: 0.96rem;
+    line-height: 1.5;
+}
+
+.lesson2-rust pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+}
+
+.lesson2-rust table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2.2rem 0;
+    background: #fafafa;
+    border: 1px solid var(--border);
+}
+
+.lesson2-rust th, .lesson2-rust td {
+    border: 1px solid var(--border);
+    padding: 1rem 1.2rem;
+    text-align: left;
+}
+
+.lesson2-rust th {
+    background: var(--primary);
+    color: white;
+    font-weight: 600;
+}
+
+.lesson2-rust tr:nth-child(even) { background: #f5f8ff; }
+
+.lesson2-rust .tip {
+    background: #e8f5e9;
+    border-left: 6px solid var(--green);
+    padding: 1.2rem 1.4rem;
+    margin: 2rem 0;
+    border-radius: 0 6px 6px 0;
+}
+
+.lesson2-rust .warning {
+    background: #fff3e0;
+    border-left: 6px solid #ff9800;
+    padding: 1.2rem 1.4rem;
+    margin: 2rem 0;
+    border-radius: 0 6px 6px 0;
+}
+
+.lesson2-rust .section-title {
+    font-size: 2.1rem;
+    color: #d32f2f;
+    text-align: center;
+    margin: 4rem 0 2.5rem;
+    font-weight: bold;
+}
+
+.lesson2-rust .summary {
+    background: linear-gradient(135deg, var(--purple-start), var(--purple-end));
+    color: white;
+    padding: 2.5rem;
+    border-radius: 14px;
+    margin: 4rem 0;
+    text-align: center;
+}
+
+.lesson2-rust .summary h3 { color: white; margin-top: 0; font-size: 1.8rem; }
+
+@media (max-width: 768px) {
+    .lesson2-rust { padding: 1.8rem 1rem; }
+    .lesson2-rust h1 { font-size: 2rem; }
+    .lesson2-rust pre, .lesson2-rust table { font-size: 0.9rem; }
+}
+</style>
+
+<!-- ====================== NỘI DUNG BÀI 2 ====================== -->
+
+<h1>Chương 1 - Bài 2<br>
+    <small>Từ C# sang RUST: Chinh phục Blockchain & Systems Programming</small>
+</h1>
+
+<p style="text-align:center; font-size:1.25rem; max-width:840px; margin:2.5rem auto; color:#333;">
+    Chào bạn, nếu Bài 1 là màn khởi động nhẹ nhàng về công cụ,<br>
+    thì <strong>Bài 2 này sẽ là “gáo nước lạnh” đầu tiên</strong> mà Rust tạt vào tư duy lập trình C# lâu năm của bạn.
+</p>
+
+<div class="section-title">PHẦN 1: TƯ DUY CỐT LÕI & "CAI NGHIỆN" GC</div>
+
+<h2>CHƯƠNG 1: HELLO RUST & TOOLING</h2>
+
+<h2>BÀI 2: VARIABLES & MUTABILITY (SỰ KHÁC BIỆT ĐẦU TIÊN)</h2>
+
+<p>Trong C#, biến (variable) sinh ra là để... <strong>biến đổi</strong>.</p>
+
+<pre><code>// C# Code
+int balance = 100;
+balance = 200; // Chuyện bình thường ở huyện</code></pre>
+
+<p>Trong Rust, biến sinh ra là để <strong>bất biến</strong>. Nếu bạn viết như trên, trình biên dịch sẽ <strong>hét vào mặt bạn ngay</strong>.</p>
+
+<div class="warning">
+    <p><strong>Tư duy Blockchain:</strong> Hãy tưởng tượng một cuốn sổ cái (Ledger) ngân hàng. Bạn có được phép lấy tẩy xóa số dư cũ và viết đè số mới lên không? <strong>Không.</strong> Một giao dịch đã ghi là bất biến. Sự an toàn của Rust cũng đến từ triết lý tương tự.</p>
+</div>
+
+<h3>1. Immutability by Default (Bất biến mặc định)</h3>
+
+<p>Hãy mở VS Code và thử đoạn code này:</p>
+
+<pre><code>fn main() {
+    let x = 5;
+    println!("Giá trị của x là: {}", x);
+    
+    x = 6; // LỖI SẼ XUẤT HIỆN TẠI ĐÂY
+    println!("Giá trị của x là: {}", x);
+}</code></pre>
+
+<p>Rust sẽ báo lỗi:</p>
+<p style="background:#ffebee;padding:1rem;border-left:5px solid #f44336;border-radius:4px;">
+    <code>cannot assign twice to immutable variable <strong>x</strong></code>
+</p>
+
+<h3>2. Từ khóa <code>mut</code>: Sự thỏa hiệp có kiểm soát</h3>
+
+<pre><code>fn main() {
+    let mut x = 5; // Chú ý từ khóa 'mut'
+    println!("Giá trị của x là: {}", x);
+    
+    x = 6; // Bây giờ thì hợp lệ
+    println!("Giá trị của x là: {}", x);
+}</code></pre>
+
+<table>
+    <tr><th>Đặc điểm</th><th>C#</th><th>Rust</th></tr>
+    <tr><td>Mặc định</td><td>Có thể thay đổi (Mutable)</td><td>Bất biến (Immutable)</td></tr>
+    <tr><td>Muốn bất biến</td><td>Dùng <code>readonly</code> hoặc <code>const</code></td><td>Không làm gì cả (Mặc định)</td></tr>
+    <tr><td>Muốn thay đổi</td><td>Không làm gì cả (Mặc định)</td><td>Dùng <code>mut</code></td></tr>
+</table>
+
+<h3>3. Shadowing (Cái bóng): Siêu năng lực mà C# không có</h3>
+
+<p>Trong C#, bạn <strong>không thể</strong> khai báo 2 biến cùng tên trong cùng scope:</p>
+
+<pre><code>// C# - Lỗi ngay lập tức
+string data = "123";
+int data = int.Parse(data); // Lỗi: 'data' is already defined</code></pre>
+
+<p>Trong Rust, bạn được phép. Đây là kỹ thuật cực kỳ phổ biến để chuyển đổi kiểu dữ liệu.</p>
+
+<pre><code>fn main() {
+    let spaces = "   ";              // String
+    
+    let spaces = spaces.len();       // usize - biến cũ bị "che khuất"
+    
+    println!("Số lượng dấu cách: {}", spaces);
+}</code></pre>
+
+<div class="tip">
+    <strong>Phân tích:</strong><br>
+    • <code>mut</code> = thay đổi giá trị của cùng một biến (cùng kiểu)<br>
+    • <code>let</code> lại = tạo biến mới, có thể khác kiểu → biến cũ "chết"
+</div>
+
+<h3>4. Hằng số (<code>const</code>): Sự nghiêm khắc tuyệt đối</h3>
+
+<pre><code>// Đúng chuẩn Rust
+const MAX_POINTS: u32 = 100_000; // Phải khai báo kiểu!</code></pre>
+
+<h3>5. Bài tập thực hành: Mô phỏng ví tiền (Crypto Wallet)</h3>
+
+<pre><code>fn main() {
+    // 1. Số dư khởi tạo (Immutable - an toàn)
+    let start_balance = 1000;
+    
+    // 2. Tạo ví có thể thay đổi
+    let mut wallet = start_balance;
+    println!("Số dư ban đầu: {}", wallet);
+    
+    // 3. Nhận Airdrop
+    let airdrop = 500;
+    wallet += airdrop;
+    println!("Sau khi nhận Airdrop: {}", wallet);
+    
+    // 4. Shadowing: Chuyển sang dạng hiển thị
+    let wallet = format!("{} USD", wallet);
+    
+    println!("Số dư hiển thị: {}", wallet);
+    
+    // wallet += 10; // LỖI! Giờ wallet là String
+}</code></pre>
+
+<div class="summary">
+    <h3>TỔNG KẾT BÀI 2</h3>
+    <p>Một C# Developer giỏi khi chuyển sang Rust cần nhớ <strong>"Thần chú"</strong> sau:</p>
+    <ol style="text-align:left;display:inline-block;margin:1.5rem 0;">
+        <li>Mặc định là khóa (<strong>Immutable</strong>): Đừng mở khóa (<strong>mut</strong>) trừ khi thực sự cần.</li>
+        <li><strong>Shadowing</strong> là bạn: Dùng nó để chuyển đổi kiểu dữ liệu, code sạch như mơ.</li>
+        <li>Trình biên dịch là <strong>cảnh sát</strong>: Nó báo lỗi = đang bảo vệ bạn khỏi bug tương lai.</li>
+    </ol>
+</div>
+
+<p style="text-align:center; font-size:1.3rem; margin:4rem 0;">
+    <strong>Bài tập về nhà:</strong><br>
+    Viết chương trình tính lãi suất kép:<br>
+    • <code>const LAI_SUAT: f64 = 0.05;</code><br>
+    • Dùng <code>let mut nam = 1;</code><br>
+    • Tăng năm lên, tính lãi kép<br>
+    • Cuối cùng dùng <strong>Shadowing</strong> để chuyển kết quả thành chuỗi đẹp.
+</p>
+
+<p style="text-align:center; font-size:1.45rem; color:#d32f2f; margin:5rem 0 2rem; font-weight:bold;">
+    Hẹn gặp lại ở Bài 3:<br>
+    Primitive Types – Tại sao Rust có tới 6 loại số nguyên<br>
+    và tại sao C# Dev hay… chọn sai loại?
+</p>
+
+</div> <!-- END .lesson2-rust -->
