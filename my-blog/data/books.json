@@ -6,61 +6,150 @@
       "chapters": [
         {
           "id": "chapter1",
-          "title": "Chương 1: Giới Thiệu",
+          "title": "Chương 1: Hello Rust & Tooling",
           "lessons": [
             {
               "id": "lesson1",
-              "title": "Bài 1: Khái Niệm Cơ Bản",
+              "title": "Bài 1: Hệ sinh thái Cargo vs. Nuget/Solution.",
               "htmlPath": "/content/books/book1/chapter1/lesson1.html"
             },
             {
               "id": "lesson2",
-              "title": "Bài 2: Ứng Dụng Đầu Tiên",
+              "title": "Bài 2: Variables & Mutability (Sự khác biệt đầu tiên).",
+              "htmlPath": "/content/books/book1/chapter1/lesson2.html"
+            },
+            {
+              "id": "lesson3",
+              "title": "Bài 3: Primitive Types & Control Flow.",
               "htmlPath": "/content/books/book1/chapter1/lesson2.html"
             }
           ]
         },
         {
           "id": "chapter2",
-          "title": "Chương 2: Nâng Cao",
+          "title": "Chương 2: Ownership & Borrowing - Linh hồn của Rust",
           "lessons": [
             {
-              "id": "lesson1",
-              "title": "Bài 1: Kỹ Thuật Nâng Cao",
-              "htmlPath": "/content/books/book1/chapter2/lesson1.html"
-            }
-          ]
-        }
-      ]
-    },
-	    {
-      "id": "book2",
-      "title": "Từ C# tôi bay sang Python",
-      "chapters": [
-        {
-          "id": "chapter1",
-          "title": "Chương 1: Giới Thiệu",
-          "lessons": [
-            {
-              "id": "lesson1",
-              "title": "Bài 1: Khái Niệm Cơ Bản",
-              "htmlPath": "/content/books/book1/chapter1/lesson1.html"
+              "id": "lesson4",
+              "title": "Bài 4: Ownership (Quyền sở hữu).",
+              "htmlPath": "/content/books/book1/chapter2/lesson4.html"
             },
             {
-              "id": "lesson2",
-              "title": "Bài 2: Ứng Dụng Đầu Tiên",
-              "htmlPath": "/content/books/book1/chapter1/lesson2.html"
+              "id": "lesson5",
+              "title": "Bài 5: Borrowing & References (Vay mượn).",
+              "htmlPath": "/content/books/book1/chapter2/lesson5.html"
+            },
+            {
+              "id": "lesson6",
+              "title": "Bài 6: Slices & Strings.",
+              "htmlPath": "/content/books/book1/chapter2/lesson6.html"
             }
           ]
         },
         {
-          "id": "chapter2",
-          "title": "Chương 2: Nâng Cao",
+          "id": "chapter3",
+          "title": "Chương 3: Cấu trúc dữ liệu & Pattern Matching",
           "lessons": [
             {
-              "id": "lesson1",
-              "title": "Bài 1: Kỹ Thuật Nâng Cao",
-              "htmlPath": "/content/books/book1/chapter2/lesson1.html"
+              "id": "lesson7",
+              "title": "Bài 7: Structs vs. Classes.",
+              "htmlPath": "/content/books/book1/chapter3/lesson2.html"
+            },
+            {
+              "id": "lesson8",
+              "title": "Bài 8: Enums & Pattern Matching (Vũ khí bí mật).",
+              "htmlPath": "/content/books/book1/chapter3/lesson8.html"
+            }
+          ]
+        },
+        {
+          "id": "chapter4",
+          "title": "Chương 4: Traits & Generics - Sự thay thế cho Interface",
+          "lessons": [
+            {
+              "id": "lesson9",
+              "title": "Bài 9: Traits (Giống Interface C#).",
+              "htmlPath": "/content/books/book1/chapter4/lesson9.html"
+            },
+            {
+              "id": "lesson10",
+              "title": "Bài 10: Generics.",
+              "htmlPath": "/content/books/book1/chapter4/lesson10.html"
+            }
+          ]
+        },
+        {
+          "id": "chapter5",
+          "title": "Chương 5: Error Handling - Không còn NullReferenceException",
+          "lessons": [
+            {
+              "id": "lesson11",
+              "title": "Bài 11: Option Enum (Thay thế Null).",
+              "htmlPath": "/content/books/book1/chapter5/lesson11.html"
+            },
+            {
+              "id": "lesson12",
+              "title": "Bài 12: Result Enum (Thay thế Try-Catch).",
+              "htmlPath": "/content/books/book1/chapter5/lesson12.html"
+            }
+          ]
+        },
+        {
+          "id": "chapter6",
+          "title": "Chương 6: Collections & Iterators",
+          "lessons": [
+            {
+              "id": "lesson13",
+              "title": "Bài 13: Vectors & HashMaps.",
+              "htmlPath": "/content/books/book1/chapter6/lesson13.html"
+            },
+            {
+              "id": "lesson14",
+              "title": "Bài 14: Iterators & Closures (LINQ phiên bản Rust).",
+              "htmlPath": "/content/books/book1/chapter6/lesson14.html"
+            }
+          ]
+        },
+        {
+          "id": "chapter7",
+          "title": "Chương 1: Hello Rust & Tooling",
+          "lessons": [
+            {
+              "id": "lesson15",
+              "title": "Bài 15: Threads & Message Passing.",
+              "htmlPath": "/content/books/book1/chapter7/lesson15.html"
+            },
+            {
+              "id": "lesson16",
+              "title": "Bài 16: Shared State (Mutex & Arc).",
+              "htmlPath": "/content/books/book1/chapter7/lesson16.html"
+            }
+          ]
+        },
+        {
+          "id": "chapter8",
+          "title": "Chương 8: Async/Await & Smart Contracts",
+          "lessons": [
+            {
+              "id": "lesson17",
+              "title": "Bài 17: Async Rust (Tokio Runtime).",
+              "htmlPath": "/content/books/book1/chapter8/lesson17.html"
+            },
+            {
+              "id": "lesson18",
+              "title": "Bài 18: Smart Contract Intro (Solana/Polkadot).",
+              "htmlPath": "/content/books/book1/chapter8/lesson18.html"
+            }
+          ]
+        },
+        {
+          "id": "chapter9",
+          "title": "Ví Crypto Mini",
+          "lessons": [
+            {
+              "id": "lesson19",
+              "title": "Bài 19: Nghiên cứu tạo Ví Crypto Mini",
+              "htmlPath": "/content/books/book1/chapter9/lesson18.html"
             }
           ]
         }
