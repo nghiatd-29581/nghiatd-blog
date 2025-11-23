@@ -79,7 +79,7 @@ export default function Header() {
 }
 
 // Helper Component để DRY (Don't Repeat Yourself) cho Nav Links
-const NavLink = ({ href, children }) => (
+const NavLink = ({ href, children }: NavLinkProps) => (
     <Link 
         href={href} 
         className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors duration-200"
