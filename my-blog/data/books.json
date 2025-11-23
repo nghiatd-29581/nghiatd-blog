@@ -1,0 +1,37 @@
+{
+  "books": [
+    {
+      "id": "book1",
+      "title": "Sách Kỹ Thuật Cơ Bản",
+      "chapters": [
+        {
+          "id": "chapter1",
+          "title": "Chương 1: Giới Thiệu",
+          "lessons": [
+            {
+              "id": "lesson1",
+              "title": "Bài 1: Khái Niệm Cơ Bản",
+              "htmlPath": "/content/books/book1/chapter1/lesson1.html"
+            },
+            {
+              "id": "lesson2",
+              "title": "Bài 2: Ứng Dụng Đầu Tiên",
+              "htmlPath": "/content/books/book1/chapter1/lesson2.html"
+            }
+          ]
+        },
+        {
+          "id": "chapter2",
+          "title": "Chương 2: Nâng Cao",
+          "lessons": [
+            {
+              "id": "lesson1",
+              "title": "Bài 1: Kỹ Thuật Nâng Cao",
+              "htmlPath": "/content/books/book1/chapter2/lesson1.html"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
