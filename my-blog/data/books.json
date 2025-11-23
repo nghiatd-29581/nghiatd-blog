@@ -112,7 +112,7 @@
         },
         {
           "id": "chapter7",
-          "title": "Chương 1: Hello Rust & Tooling",
+          "title": "Chương 7: Fearless Concurrency",
           "lessons": [
             {
               "id": "lesson15",
@@ -144,7 +144,7 @@
         },
         {
           "id": "chapter9",
-          "title": "Ví Crypto Mini",
+          "title": "Chương 9: Ví Crypto Mini",
           "lessons": [
             {
               "id": "lesson19",
@@ -157,3 +157,4 @@
     }
   ]
 }
+
