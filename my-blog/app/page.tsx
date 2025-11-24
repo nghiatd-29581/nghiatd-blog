@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 export default function Home() {
   const { books } = booksData;
   const [typedText, setTypedText] = useState("");
-  const fullText = "Chào mừng đến với thế giới Rust của Nghĩa Trần Đắc";
+  const fullText = "Chào mừng đến với thế giới Blog của mình";
 
   useEffect(() => {
     let i = 0;
@@ -74,7 +74,7 @@ export default function Home() {
                 <span className="text-green-400">$</span> whoami
               </div>
               <div className="text-pink-400 text-2xl mb-8 font-bold">
-                Nghĩa Trần Đắc — Rust Evangelist từ C#
+                Nghĩa Trần Đắc — Học không bao giờ là trễ
               </div>
 
               <div className="text-cyan-300 mb-8">
