@@ -12,6 +12,9 @@ module.exports = {
         foreground: "var(--foreground)",
         sidebar: "var(--sidebar)",
       },
+      boxShadow: {
+        'glow': '0 0 20px rgba(34, 211, 238, 0.5)',
+      },
     },
   },
   plugins: [],
