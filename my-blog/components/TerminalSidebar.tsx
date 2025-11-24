@@ -31,29 +31,26 @@ export function TerminalSidebar({
         </div>
 
         <ul className="space-y-2 mt-6">
-          {book.chapters.map((chap: any, i: number) => {
-            const isActive = currentChapterId === chap.id;
-            return (
-              <li key={chap.id} className={isActive ? "text-cyan-100 font-bold" : ""}>
-                <Link
-                  href={`/${currentBookId}/${chap.id}`}
-                  className="block hover:text-cyan-100 transition-all"
-                >
-                  {isActive ? "▶" : "│"} {String(i + 1).padStart(2, "0")}. {chap.title}
-                </Link>
+			{book.chapters.map((chap: any, i: number) => {
+			  const isChapterActive = currentChapterId === chap.id;
+			  return (
+				<li key={chap.id} className={isChapterActive ? "text-cyan-100 font-bold" : ""}>
+				  <Link href={`/${currentBookId}/${chap.id}`} className="block hover:text-cyan-100">
+					{isChapterActive ? "▶" : "│"} {String(i + 1).padStart(2, "0")}. {chap.title}
+				  </Link>
 
-                {/* Hiển thị lessons khi đang active (tùy chọn) */}
-                {isActive && chap.lessons?.length > 0 && (
-                  <ul className="ml-6 mt-2 text-cyan-500 text-xs">
-                    {chap.lessons.slice(0, 5).map((les: any) => (
-                      <li key={les.id}>├─ {les.title}</li>
-                    ))}
-                    {chap.lessons.length > 5 && <li>└─ ...và {chap.lessons.length - 5} lessons nữa</li>}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
+				  {isChapterActive && chap.lessons?.length > 0 && (
+					<ul className="ml-8 mt-2 text-cyan-400 text-xs space-y-1">
+					  {chap.lessons.map((les: any) => (
+						<li key={les.id} className={les.id === currentLessonId ? "text-cyan-100 font-bold" : ""}>
+						  {les.id === currentLessonId ? "→" : "├"} {les.title}
+						</li>
+					  ))}
+					</ul>
+				  )}
+				</li>
+			  );
+			})}
         </ul>
 
         <div className="mt-8 text-gray-600">
