@@ -1,21 +1,26 @@
-
+// components/TerminalSidebar.tsx
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-// components/TerminalSidebar.tsx (chỉ sửa phần này thôi)
+
+interface TerminalSidebarProps {
+  book: any;                    // giữ any cho nhanh, hoặc định nghĩa type đầy đủ nếu thích
+  currentBookId: string;
+  currentChapterId?: string;    // optional
+  currentLessonId?: string;     // ← THÊM DÒNG NÀY
+}
+
 export function TerminalSidebar({ 
   book, 
-  currentBookId,
-  currentChapterId // ← thêm cái này
-}: { 
-  book: any; 
-  currentBookId: string;
-  currentChapterId?: string; // optional nếu ở trang book list
-}) {
+  currentBookId, 
+  currentChapterId,
+  currentLessonId     // ← thêm vào đây
+}: TerminalSidebarProps) {
   const pathname = usePathname();
 
   return (
     <aside className="hidden md:block w-80 bg-black/90 backdrop-blur border-r border-cyan-900/50">
+      {/* Header terminal */}
       <div className="p-4 border-b border-cyan-900/50 flex items-center gap-3">
         <div className="flex gap-2">
           <div className="w-3 h-3 rounded-full bg-red-500" />
@@ -31,26 +36,36 @@ export function TerminalSidebar({
         </div>
 
         <ul className="space-y-2 mt-6">
-			{book.chapters.map((chap: any, i: number) => {
-			  const isChapterActive = currentChapterId === chap.id;
-			  return (
-				<li key={chap.id} className={isChapterActive ? "text-cyan-100 font-bold" : ""}>
-				  <Link href={`/${currentBookId}/${chap.id}`} className="block hover:text-cyan-100">
-					{isChapterActive ? "▶" : "│"} {String(i + 1).padStart(2, "0")}. {chap.title}
-				  </Link>
+          {book.chapters.map((chap: any, i: number) => {
+            const isChapterActive = currentChapterId === chap.id;
+            return (
+              <li key={chap.id} className={isChapterActive ? "text-cyan-100 font-bold" : ""}>
+                <Link 
+                  href={`/${currentBookId}/${chap.id}`} 
+                  className="block hover:text-cyan-100 transition-all"
+                >
+                  {isChapterActive ? "▶" : "│"} {String(i + 1).padStart(2, "0")}. {chap.title}
+                </Link>
 
-				  {isChapterActive && chap.lessons?.length > 0 && (
-					<ul className="ml-8 mt-2 text-cyan-400 text-xs space-y-1">
-					  {chap.lessons.map((les: any) => (
-						<li key={les.id} className={les.id === currentLessonId ? "text-cyan-100 font-bold" : ""}>
-						  {les.id === currentLessonId ? "→" : "├"} {les.title}
-						</li>
-					  ))}
-					</ul>
-				  )}
-				</li>
-			  );
-			})}
+                {/* Hiển thị danh sách lesson khi chapter đang active */}
+                {isChapterActive && chap.lessons?.length > 0 && (
+                  <ul className="ml-8 mt-2 text-cyan-400 text-xs space-y-1">
+                    {chap.lessons.map((les: any) => {
+                      const isLessonActive = currentLessonId === les.id;
+                      return (
+                        <li 
+                          key={les.id} 
+                          className={isLessonActive ? "text-cyan-100 font-bold" : ""}
+                        >
+                          {isLessonActive ? "→" : "├"} {les.title}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
         </ul>
 
         <div className="mt-8 text-gray-600">
