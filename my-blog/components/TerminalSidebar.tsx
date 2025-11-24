@@ -1,9 +1,13 @@
-// components/TerminalSidebar.tsx
-"use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-export function TerminalSidebar({ book, currentBookId }: any) {
+// components/TerminalSidebar.tsx (chỉ sửa phần này thôi)
+export function TerminalSidebar({ 
+  book, 
+  currentBookId,
+  currentChapterId // ← thêm cái này
+}: { 
+  book: any; 
+  currentBookId: string;
+  currentChapterId?: string; // optional nếu ở trang book list
+}) {
   const pathname = usePathname();
 
   return (
@@ -19,7 +23,7 @@ export function TerminalSidebar({ book, currentBookId }: any) {
 
       <div className="p-4 text-cyan-300 font-mono text-sm">
         <div className="mb-4">
-          <span className="text-green-400">$</span> cat {book.title}.rs
+          <span className="text-green-400">$</span> tree {book.title}/
         </div>
 
         <ul className="space-y-2 mt-6">
