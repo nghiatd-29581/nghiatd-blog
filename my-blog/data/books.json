@@ -21,7 +21,7 @@
             {
               "id": "lesson3",
               "title": "Bài 3: Primitive Types & Control Flow.",
-              "htmlPath": "/content/books/book1/chapter1/lesson2.html"
+              "htmlPath": "/content/books/book1/chapter1/lesson3.html"
             }
           ]
         },
@@ -53,7 +53,7 @@
             {
               "id": "lesson7",
               "title": "Bài 7: Structs vs. Classes.",
-              "htmlPath": "/content/books/book1/chapter3/lesson2.html"
+              "htmlPath": "/content/books/book1/chapter3/lesson7.html"
             },
             {
               "id": "lesson8",
@@ -157,4 +157,5 @@
     }
   ]
 }
+
 
