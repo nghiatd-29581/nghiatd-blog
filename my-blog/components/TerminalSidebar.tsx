@@ -24,17 +24,25 @@ export function TerminalSidebar({ book, currentBookId }: any) {
 
         <ul className="space-y-2 mt-6">
           {book.chapters.map((chap: any, i: number) => {
-            const isActive = pathname === `/${currentBookId}/${chap.id}`;
+            const isActive = currentChapterId === chap.id;
             return (
-              <li key={chap.id}>
+              <li key={chap.id} className={isActive ? "text-cyan-100 font-bold" : ""}>
                 <Link
                   href={`/${currentBookId}/${chap.id}`}
-                  className={`block hover:text-cyan-100 transition-all ${
-                    isActive ? "text-cyan-100 font-bold" : "text-cyan-500"
-                  }`}
+                  className="block hover:text-cyan-100 transition-all"
                 >
-                  {isActive && "▶ "} {String(i + 1).padStart(2, "0")}. {chap.title}
+                  {isActive ? "▶" : "│"} {String(i + 1).padStart(2, "0")}. {chap.title}
                 </Link>
+
+                {/* Hiển thị lessons khi đang active (tùy chọn) */}
+                {isActive && chap.lessons?.length > 0 && (
+                  <ul className="ml-6 mt-2 text-cyan-500 text-xs">
+                    {chap.lessons.slice(0, 5).map((les: any) => (
+                      <li key={les.id}>├─ {les.title}</li>
+                    ))}
+                    {chap.lessons.length > 5 && <li>└─ ...và {chap.lessons.length - 5} lessons nữa</li>}
+                  </ul>
+                )}
               </li>
             );
           })}
