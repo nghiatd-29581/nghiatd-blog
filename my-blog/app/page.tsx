@@ -74,7 +74,7 @@ export default function Home() {
                 <span className="text-green-400">$</span> whoami
               </div>
               <div className="text-pink-400 text-2xl mb-8 font-bold">
-                Nghĩa Trần Đắc — Học không bao giờ là trễ
+                Nghĩa, Trần Đắc — Học không bao giờ là trễ
               </div>
 
               <div className="text-cyan-300 mb-8">
