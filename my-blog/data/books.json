@@ -1,6 +1,7 @@
 {
   "books": [
     {
+      "lang":"Rust",
       "id": "book1",
       "title": "Từ C# tôi bay sang Rust",
       "chapters": [

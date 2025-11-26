@@ -1,18 +1,18 @@
-<div class="lesstion-6-container">
-  <p class="lesstion-6-intro">Chào mừng bạn đến với <strong>Bài 6</strong>. Đây là bài học giải quyết sự khó chịu lớn nhất của lập trình viên C# khi mới học Rust:<br>
+<div class="lesson-container">
+  <p class="lesson-intro">Chào mừng bạn đến với <strong>Bài 6</strong>. Đây là bài học giải quyết sự khó chịu lớn nhất của lập trình viên C# khi mới học Rust:<br>
   <strong>Tại sao Rust lại có tới 2 kiểu chuỗi (String và &str)?</strong><br><br>
   Trong C#, bạn chỉ có một kiểu <code>string</code> (hoặc <code>StringBuilder</code> khi cần tối ưu).<br>
   Trong Rust, sự phân biệt này chính là <strong>chìa khóa của hiệu năng Zero-Cost Abstraction</strong> – trừu tượng hóa không tốn phí.</p>
 
-  <h1 class="lesstion-6-part">PHẦN 1: TƯ DUY CỐT LÕI & "CAI NGHIỆN" GC</h1>
-  <h2 class="lesstion-6-chapter">CHƯƠNG 2: OWNERSHIP & BORROWING - "LINH HỒN" CỦA RUST</h2>
-  <h3 class="lesstion-6-title">BÀI 6: SLICES & STRINGS <span class="lesstion-6-subtitle">(LÁT CẮT & CHUỖI)</span></h3>
+  <h1 class="lesson-part">PHẦN 1: TƯ DUY CỐT LÕI & "CAI NGHIỆN" GC</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 2: OWNERSHIP & BORROWING - "LINH HỒN" CỦA RUST</h2>
+  <h3 class="lesson-title">BÀI 6: SLICES & STRINGS <span class="lesson-subtitle">(LÁT CẮT & CHUỖI)</span></h3>
 
-  <p class="lesstion-6-note">Nếu bạn đã từng nghe đến <code>Span&lt;T&gt;</code> hay <code>ReadOnlySpan&lt;T&gt;</code> trong .NET Core để tối ưu bộ nhớ, thì xin chúc mừng:<br>
+  <p class="lesson-note">Nếu bạn đã từng nghe đến <code>Span&lt;T&gt;</code> hay <code>ReadOnlySpan&lt;T&gt;</code> trong .NET Core để tối ưu bộ nhớ, thì xin chúc mừng:<br>
   <strong>Slice trong Rust chính là concept đó — nhưng được tích hợp sâu vào cốt lõi ngôn ngữ từ ngày đầu tiên.</strong></p>
 
-  <h4 class="lesstion-6-section">1. Phân biệt String và &str</h4>
-  <table class="lesstion-6-table">
+  <h4 class="lesson-section">1. Phân biệt String và &str</h4>
+  <table class="lesson-table">
     <thead>
       <tr>
         <th>Đặc điểm</th>
@@ -29,7 +29,7 @@
     </tbody>
   </table>
 
-  <div class="lesstion-6-analogy">
+  <div class="lesson-analogy">
     <p><strong>Ẩn dụ đẹp nhất:</strong></p>
     <ul>
       <li><strong>String</strong>: Quyển sách bạn <strong>mua về</strong> → bạn có thể viết thêm, xé trang, đốt luôn.</li>
@@ -37,8 +37,8 @@
     </ul>
   </div>
 
-  <h4 class="lesstion-6-section">2. Slices: Cắt bánh mà không cần copy</h4>
-  <pre class="lesstion-6-code"><code class="lesstion-6-code-rust">fn main() {
+  <h4 class="lesson-section">2. Slices: Cắt bánh mà không cần copy</h4>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn main() {
     let s = String::from("Hello World");
 
     let hello = &s[0..5];   // "Hello"
@@ -52,19 +52,19 @@
     println!("Original vẫn sống: {}", s);
     println!("Slice: {}", world);
 }</code></pre>
-  <p class="lesstion-6-highlight">Không có byte nào được copy! Chỉ tạo 2 số nhỏ trên Stack: <strong>Pointer + Length</strong>.</p>
+  <p class="lesson-highlight">Không có byte nào được copy! Chỉ tạo 2 số nhỏ trên Stack: <strong>Pointer + Length</strong>.</p>
 
-  <h4 class="lesstion-6-section">3. String Literals LÀ Slices</h4>
-  <pre class="lesstion-6-code"><code class="lesstion-6-code-rust">let s = "Hello"; // Kiểu của s là &str (không phải String!)</code></pre>
-  <p class="lesstion-6-text">Chuỗi này được nhúng cứng vào binary → bất biến vĩnh viễn.</p>
+  <h4 class="lesson-section">3. String Literals LÀ Slices</h4>
+  <pre class="lesson-code"><code class="lesson-code-rust">let s = "Hello"; // Kiểu của s là &str (không phải String!)</code></pre>
+  <p class="lesson-text">Chuỗi này được nhúng cứng vào binary → bất biến vĩnh viễn.</p>
 
-  <h4 class="lesstion-6-section">4. Array Slices (Không chỉ dành cho chuỗi)</h4>
-  <pre class="lesstion-6-code"><code class="lesstion-6-code-rust">let a = [1, 2, 3, 4, 5];
+  <h4 class="lesson-section">4. Array Slices (Không chỉ dành cho chuỗi)</h4>
+  <pre class="lesson-code"><code class="lesson-code-rust">let a = [1, 2, 3, 4, 5];
 let slice = &a[1..3];   // &[i32] = [2, 3]
 assert_eq!(slice, &[2, 3]);</code></pre>
 
-  <h4 class="lesstion-6-section">5. Cạm bẫy: UTF-8 và rủi ro Panic</h4>
-  <div class="lesstion-6-warning">
+  <h4 class="lesson-section">5. Cạm bẫy: UTF-8 và rủi ro Panic</h4>
+  <div class="lesson-warning">
     <p>Rust dùng UTF-8 → ký tự không cố định số byte:</p>
     <ul>
       <li>A → 1 byte</li>
@@ -73,10 +73,10 @@ assert_eq!(slice, &[2, 3]);</code></pre>
     </ul>
     <p><strong>Cắt sai index → chương trình PANIC ngay lập tức!</strong></p>
   </div>
-  <p class="lesstion-6-tip"><strong>Lời khuyên vàng:</strong> Với tiếng Việt/emoji → <strong>không bao giờ dùng index thủ công</strong>. Dùng <code>.chars()</code> hoặc <code>.char_indices()</code>.</p>
+  <p class="lesson-tip"><strong>Lời khuyên vàng:</strong> Với tiếng Việt/emoji → <strong>không bao giờ dùng index thủ công</strong>. Dùng <code>.chars()</code> hoặc <code>.char_indices()</code>.</p>
 
-  <h4 class="lesstion-6-section">6. Best Practice: Tham số hàm → Luôn dùng &str</h4>
-  <pre class="lesstion-6-code"><code class="lesstion-6-code-rust">// TỐT NHẤT
+  <h4 class="lesson-section">6. Best Practice: Tham số hàm → Luôn dùng &str</h4>
+  <pre class="lesson-code"><code class="lesson-code-rust">// TỐT NHẤT
 fn print_message(msg: &str) { ... }
 
 // CHẤP NHẬN ĐƯỢC:
@@ -87,8 +87,8 @@ fn print_message(msg: &str) { ... }
 // Không tốt
 fn print_owned(msg: String) { ... } // Chỉ nhận String, không nhận literal</code></pre>
 
-  <h4 class="lesstion-6-section">7. Bài tập thực hành: First Word Extraction</h4>
-  <pre class="lesstion-6-code"><code class="lesstion-6-code-rust">fn first_word(s: &str) -> &str {
+  <h4 class="lesson-section">7. Bài tập thực hành: First Word Extraction</h4>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn first_word(s: &str) -> &str {
     let bytes = s.as_bytes();
 
     for (i, &item) in bytes.iter().enumerate() {
@@ -106,11 +106,11 @@ fn main() {
     // s.clear(); // Nếu bỏ comment → LỖI! Vì word đang mượn s
     println!("First word: {}", word);
 }</code></pre>
-  <p class="lesstion-6-highlight">Rust cứu bạn khỏi dangling pointer mà không cần GC!</p>
+  <p class="lesson-highlight">Rust cứu bạn khỏi dangling pointer mà không cần GC!</p>
 
-  <h3 class="lesstion-6-summary">TỔNG KẾT BÀI 6</h3>
-  <div class="lesstion-6-summary-box">
-    <ol class="lesstion-6-summary-list">
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 6</h3>
+  <div class="lesson-summary-box">
+    <ol class="lesson-summary-list">
       <li><strong>String</strong>: Chủ sở hữu, Heap, mutable, nặng.</li>
       <li><strong>&str</strong>: Slice, chỉ mượn, siêu nhẹ, immutable.</li>
       <li><strong>Slicing</strong>: <code>&s[start..end]</code> → không copy dữ liệu.</li>
@@ -118,97 +118,16 @@ fn main() {
     </ol>
   </div>
 
-  <div class="lesstion-6-homework">
+  <div class="lesson-homework">
     <p><strong>Bài tập về nhà:</strong><br>
     Viết lại hàm <code>first_word</code> nhưng lần này trả về <strong>Second Word</strong>.<br>
     Gợi ý: Cần 2 biến index (bắt đầu và kết thúc từ thứ 2).</p>
   </div>
 
-  <p class="lesstion-6-ending">
+  <p class="lesson-ending">
     (Chúc mừng bạn đã <strong>hoàn thành Chương 2</strong> – chương khó nhất về tư duy!<br>
     Hẹn gặp lại ở <strong>Chương 3: Cấu trúc dữ liệu</strong>.<br>
     Chúng ta sẽ học cách tạo ra các “Class”... à nhầm, các <strong>Structs</strong> trong Rust,<br>
     và xem tại sao Rust lại dũng cảm nói <strong>“Không” với Kế thừa (Inheritance)</strong>!)
   </p>
 </div>
-
-<style>
-  .lesstion-6-container {
-    --bg: #ffffff;
-    --text: #2d2d2d;
-    --heading: #1a1a1a;
-    --code-bg: #f6f8fa;
-    --border: #e1e4e8;
-    --primary: #0366d6;
-    --green: #28a745;
-    --red: #d73a49;
-    --purple-gradient-start: #667eea;
-    --purple-gradient-end: #764ba2;
-    
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    line-height: 1.7;
-    color: var(--text);
-    background: var(--bg);
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem;
-    box-sizing: border-box;
-  }
-  .lesstion-6-intro {
-    font-size: 1.22em;
-    text-align: center;
-    background: linear-gradient(135deg, #fffbe6 0%, #fff1eb 100%);
-    padding: 28px;
-    border-radius: 14px;
-    border: 4px solid #fa8c16;
-    margin-bottom: 40px;
-  }
-  .lesstion-6-part { font-size: 1.6em; text-align: center; color: #c41f3e; margin: 40px 0 10px; }
-  .lesstion-6-chapter { font-size: 2.1em; text-align: center; color: #722ed1; margin-bottom: 10px; }
-  .lesstion-6-title { font-size: 1.95em; text-align: center; margin: 30px 0 15px; }
-  .lesstion-6-subtitle { font-size: 0.9em; color: #9254de; font-style: italic; }
-  .lesstion-6-note { background: #f6ffed; border-left: 6px solid #52c41a; padding: 20px; font-size: 1.1em; margin: 25px 0; border-radius: 8px; }
-  .lesstion-6-table {
-    width: 100%; border-collapse: collapse; margin: 30px 0; background: #fafafa; font-size: 1.05em;
-  }
-  .lesstion-6-table th, .lesstion-6-table td {
-    border: 1px solid #ddd; padding: 14px; text-align: left;
-  }
-  .lesstion-6-table th { background: #f5f5f5; font-weight: bold; }
-  .lesstion-6-analogy {
-    background: #fff7e6; padding: 22px; border-radius: 12px; border: 3px dashed #ffb302; margin: 30px 0; font-size: 1.1em;
-  }
-  .lesstion-6-highlight {
-    background: #e6f7ff; padding: 16px; border-radius: 10px; border-left: 6px solid #1890ff; font-weight: bold; margin: 20px 0;
-  }
-  .lesstion-6-warning {
-    background: #fff2e8; padding: 18px; border-left: 6px solid #fa541c; border-radius: 10px; margin: 25px 0;
-  }
-  .lesstion-6-tip {
-    background: #f6ffed; padding: 16px; border-left: 6px solid #52c41a; border-radius: 10px; margin: 20px 0; font-weight: bold;
-  }
-  .lesstion-6-code {
-    background: #1e1e1e; color: #dcdcdc; padding: 20px; border-radius: 12px; overflow-x: auto;
-    margin: 25px 0; font-family: 'Consolas', monospace; position: relative;
-  }
-  .lesstion-6-code-rust::before {
-    content: "Rust"; position: absolute; top: 10px; right: 14px;
-    background: #e34c26; color: white; padding: 6px 14px; border-radius: 8px; font-weight: bold; font-size: 0.85em;
-  }
-  .lesstion-6-summary { font-size: 1.7em; text-align: center; color: #089e7f; margin: 60px 0 20px; }
-  .lesstion-6-summary-box {
-    background: linear-gradient(135deg, #f6ffed 0%, #e6f7ff 100%);
-    padding: 30px; border-radius: 14px; border: 4px solid #36cfc9; font-size: 1.15em;
-  }
-  .lesstion-6-summary-list { padding-left: 25px; }
-  .lesstion-6-summary-list li { margin: 18px 0; }
-  .lesstion-6-homework {
-    background: #fff0f5; padding: 25px; border-radius: 14px; border: 4px solid #eb2f96;
-    text-align: center; font-size: 1.2em; margin: 40px 0;
-  }
-  .lesstion-6-ending {
-    font-size: 1.25em; text-align: center; margin-top: 60px; padding: 30px;
-    background: linear-gradient(120deg, #fff1eb 0%, #ffe7ba 100%);
-    border-radius: 14px; border: 3px solid #ff7a45; font-style: italic; color: #595959;
-  }
-</style>

@@ -1,20 +1,20 @@
-<div class="lesstion-5-container">
-  <p class="lesstion-5-intro">Chào mừng bạn trở lại. Ở Bài 4, chúng ta đã học về <strong>Ownership</strong> với quy tắc nghiệt ngã: <em>“Đã cho đi là mất luôn”</em> (Move semantics).<br><br>
+<div class="lesson-container">
+  <p class="lesson-intro">Chào mừng bạn trở lại. Ở Bài 4, chúng ta đã học về <strong>Ownership</strong> với quy tắc nghiệt ngã: <em>“Đã cho đi là mất luôn”</em> (Move semantics).<br><br>
   Nhưng trong thực tế, chẳng lẽ mỗi lần muốn đếm xem trong ví có bao nhiêu tiền (gọi hàm count_money), ta lại phải đưa luôn cái ví cho người đếm và mất quyền sở hữu nó? Điều đó thật vô lý.<br><br>
   <strong>C#</strong> giải quyết bằng cách cho phép nhiều biến cùng trỏ vào một Object (với sự bảo trợ của GC).<br>
   <strong>Rust</strong> giải quyết bằng cơ chế <strong>Borrowing (Vay mượn)</strong> – thông minh hơn, an toàn hơn, và không cần GC.</p>
 
-  <h1 class="lesstion-5-part">PHẦN 1: TƯ DUY CỐT LÕI & "CAI NGHIỆN" GC</h1>
-  <h2 class="lesstion-5-chapter">CHƯƠNG 2: OWNERSHIP & BORROWING - "LINH HỒN" CỦA RUST</h2>
-  <h3 class="lesstion-5-title">BÀI 5: BORROWING & REFERENCES <span class="lesstion-5-subtitle">(VAY MƯỢN & THAM CHIẾU)</span></h3>
+  <h1 class="lesson-part">PHẦN 1: TƯ DUY CỐT LÕI & "CAI NGHIỆN" GC</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 2: OWNERSHIP & BORROWING - "LINH HỒN" CỦA RUST</h2>
+  <h3 class="lesson-title">BÀI 5: BORROWING & REFERENCES <span class="lesson-subtitle">(VAY MƯỢN & THAM CHIẾU)</span></h3>
 
-  <p class="lesstion-5-core">Nguyên tắc cốt lõi:<br>
+  <p class="lesson-core">Nguyên tắc cốt lõi:<br>
   Nếu bạn muốn dùng dữ liệu mà <strong>không muốn nhận quyền sở hữu</strong>, bạn hãy <strong>mượn nó</strong> thông qua <strong>Tham chiếu (Reference)</strong>.<br>
   Tham chiếu giống như một con trỏ, nhưng <strong>luôn được đảm bảo trỏ đến dữ liệu hợp lệ</strong> (không bao giờ null).<br>
   Ký hiệu: <code>&</code> và <code>&mut</code></p>
 
-  <h4 class="lesstion-5-section">1. Immutable References (Mượn để xem)</h4>
-  <pre class="lesstion-5-code"><code class="lesstion-5-code-rust">fn main() {
+  <h4 class="lesson-section">1. Immutable References (Mượn để xem)</h4>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn main() {
     let s1 = String::from("hello");
 
     let len = calculate_length(&s1); // Truyền tham chiếu, không move
@@ -25,13 +25,13 @@
 fn calculate_length(s: &String) -> usize { 
     s.len()
 } // Không có ownership → dữ liệu gốc KHÔNG bị drop</code></pre>
-  <p class="lesstion-5-highlight">So sánh:<br>
+  <p class="lesson-highlight">So sánh:<br>
   • C#: Mọi biến class đều là tham chiếu → nhưng không biết hàm có sửa dữ liệu không.<br>
   • Rust: <code>&T</code> = <strong>Read-Only</strong>. Compiler chặn ngay nếu cố sửa.</p>
-  <p class="lesstion-5-rule">Quy tắc vàng: Có thể tạo <strong>vô số &T</strong> cùng lúc (như Google Docs ở chế độ View Only).</p>
+  <p class="lesson-rule">Quy tắc vàng: Có thể tạo <strong>vô số &T</strong> cùng lúc (như Google Docs ở chế độ View Only).</p>
 
-  <h4 class="lesstion-5-section">2. Mutable References (Mượn để sửa)</h4>
-  <pre class="lesstion-5-code"><code class="lesstion-5-code-rust">fn main() {
+  <h4 class="lesson-section">2. Mutable References (Mượn để sửa)</h4>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn main() {
     let mut s = String::from("hello");
 
     change(&mut s); // Truyền tham chiếu mutable
@@ -43,40 +43,40 @@ fn change(some_string: &mut String) {
     some_string.push_str(", world");
 }</code></pre>
 
-  <h4 class="lesstion-5-section">3. "Luật Rừng" của Borrow Checker (QUAN TRỌNG NHẤT)</h4>
-  <div class="lesstion-5-borrow-rules">
-    <p class="lesstion-5-rule-title">Tại một thời điểm, bạn chỉ được phép có:</p>
-    <div class="lesstion-5-rule-item active">HOẶC: Vô số tham chiếu đọc (<code>&T</code>)</div>
-    <div class="lesstion-5-rule-item active">HOẶC: DUY NHẤT một tham chiếu ghi (<code>&mut T</code>)</div>
-    <div class="lesstion-5-rule-item forbidden">KHÔNG ĐƯỢC tồn tại cả hai cùng lúc!</div>
+  <h4 class="lesson-section">3. "Luật Rừng" của Borrow Checker (QUAN TRỌNG NHẤT)</h4>
+  <div class="lesson-borrow-rules">
+    <p class="lesson-rule-title">Tại một thời điểm, bạn chỉ được phép có:</p>
+    <div class="lesson-rule-item active">HOẶC: Vô số tham chiếu đọc (<code>&T</code>)</div>
+    <div class="lesson-rule-item active">HOẶC: DUY NHẤT một tham chiếu ghi (<code>&mut T</code>)</div>
+    <div class="lesson-rule-item forbidden">KHÔNG ĐƯỢC tồn tại cả hai cùng lúc!</div>
   </div>
 
-  <p class="lesstion-5-warning">Ví dụ lỗi 1: Hai người cùng sửa</p>
-  <pre class="lesstion-5-code"><code class="lesstion-5-code-rust">let mut s = String::from("hello");
+  <p class="lesson-warning">Ví dụ lỗi 1: Hai người cùng sửa</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">let mut s = String::from("hello");
 let r1 = &mut s;
 let r2 = &mut s; // LỖI BIÊN DỊCH</code></pre>
 
-  <p class="lesstion-5-warning">Ví dụ lỗi 2: Đang đọc thì bị sửa</p>
-  <pre class="lesstion-5-code"><code class="lesstion-5-code-rust">let mut s = String::from("hello");
+  <p class="lesson-warning">Ví dụ lỗi 2: Đang đọc thì bị sửa</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">let mut s = String::from("hello");
 let r1 = &s;
 let r2 = &s;
 let r3 = &mut s; // LỖI: cannot borrow as mutable because it is also borrowed as immutable</code></pre>
 
-  <p class="lesstion-5-analogy">Ẩn dụ hay nhất:<br>
+  <p class="lesson-analogy">Ẩn dụ hay nhất:<br>
   Dữ liệu là một <strong>Bảng Ghi Chú</strong>:<br>
   • <code>&T</code>: Mọi người được nhìn bảng → không ai được cầm bút.<br>
   • <code>&mut T</code>: Chỉ <strong>một người duy nhất</strong> được cầm bút viết → tất cả phải quay mặt đi.</p>
 
-  <h4 class="lesstion-5-section">4. Dangling References (Tham chiếu treo) – Rust nói KHÔNG</h4>
-  <pre class="lesstion-5-code"><code class="lesstion-5-code-rust">fn dangle() -> &String {
+  <h4 class="lesson-section">4. Dangling References (Tham chiếu treo) – Rust nói KHÔNG</h4>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn dangle() -> &String {
     let s = String::from("hello");
     &s // Trả về tham chiếu tới s
 } // s bị drop → tham chiếu trỏ vào hư không → LỖI BIÊN DỊCH!</code></pre>
-  <p class="lesstion-5-success">Rust sẽ mắng bạn ngay:<br>
+  <p class="lesson-success">Rust sẽ mắng bạn ngay:<br>
   <em>“this function's return type contains a borrowed value, but the borrowed value has been dropped”</em></p>
 
-  <h4 class="lesstion-5-section">5. Bài tập thực hành: Hệ thống Account (C# vs Rust)</h4>
-  <pre class="lesstion-5-code"><code class="lesstion-5-code-rust">struct Account {
+  <h4 class="lesson-section">5. Bài tập thực hành: Hệ thống Account (C# vs Rust)</h4>
+  <pre class="lesson-code"><code class="lesson-code-rust">struct Account {
     owner: String,
     balance: u64,
 }
@@ -105,9 +105,9 @@ fn deposit(acc: &mut Account, amount: u64) {
     println!("Deposited ${}. New balance: ${}", amount, acc.balance);
 }</code></pre>
 
-  <h3 class="lesstion-5-summary">TỔNG KẾT BÀI 5</h3>
-  <div class="lesstion-5-summary-box">
-    <ol class="lesstion-5-summary-list">
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 5</h3>
+  <div class="lesson-summary-box">
+    <ol class="lesson-summary-list">
       <li><strong>Reference (&)</strong>: Dùng dữ liệu mà không lấy ownership.</li>
       <li><strong>&T</strong>: Nhiều người cùng đọc → không ai được sửa.</li>
       <li><strong>&mut T</strong>: Một người độc quyền sửa → không ai được đọc.</li>
@@ -115,98 +115,24 @@ fn deposit(acc: &mut Account, amount: u64) {
     </ol>
   </div>
 
-  <div class="lesstion-5-advice">
+  <div class="lesson-advice">
     <p><strong>Lời khuyên vàng cho C# Dev khi viết hàm trong Rust:</strong></p>
-    <ol class="lesstion-5-advice-list">
+    <ol class="lesson-advice-list">
       <li>Có cần sửa dữ liệu không? → <strong>Không</strong> → Dùng <code>&T</code></li>
       <li>Có cần sửa dữ liệu không? → <strong>Có</strong> → Dùng <code>&mut T</code></li>
       <li>Có cần dữ liệu sống lâu hơn scope hiện tại? → <strong>Có</strong> → Dùng <code>T</code> (Move)</li>
     </ol>
   </div>
 
-  <div class="lesstion-5-homework">
+  <div class="lesson-homework">
     <p><strong>Bài tập về nhà:</strong><br>
     Viết 2 hàm:<br>
     • <code>calculate_interest(balance: &u64) -> u64</code> (tính lãi 10%)<br>
     • <code>add_interest(balance: &mut u64)</code> (gọi hàm trên rồi cộng vào số dư)</p>
   </div>
 
-  <p class="lesstion-5-ending">
+  <p class="lesson-ending">
     (Hẹn gặp lại ở <strong>Bài 6: The Slice Type</strong>.<br>
     Chúng ta sẽ học cách tham chiếu đến <em>“một phần”</em> của chuỗi hoặc mảng mà <strong>không cần copy dữ liệu</strong> – bí quyết tối ưu bộ nhớ đỉnh cao của Rust.)
   </p>
 </div>
-
-<style>
-  .lesstion-5-container {
-    --bg: #ffffff;
-    --text: #2d2d2d;
-    --heading: #1a1a1a;
-    --code-bg: #f6f8fa;
-    --border: #e1e4e8;
-    --primary: #0366d6;
-    --green: #28a745;
-    --red: #d73a49;
-    --purple-gradient-start: #667eea;
-    --purple-gradient-end: #764ba2;
-    
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    line-height: 1.7;
-    color: var(--text);
-    background: var(--bg);
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem;
-    box-sizing: border-box;
-  }
-  .lesstion-5-intro {
-    font-size: 1.2em;
-    text-align: center;
-    background: linear-gradient(120deg, #fdf2e8, #fff0f5);
-    padding: 25px;
-    border-radius: 12px;
-    border: 3px solid #ff85c0;
-    margin-bottom: 40px;
-  }
-  .lesstion-5-part { font-size: 1.6em; text-align: center; color: #c41f3e; margin: 40px 0 10px; }
-  .lesstion-5-chapter { font-size: 2.1em; text-align: center; color: #722ed1; margin-bottom: 10px; }
-  .lesstion-5-title { font-size: 1.95em; text-align: center; margin: 30px 0 15px; }
-  .lesstion-5-subtitle { font-size: 0.9em; color: #9254de; font-style: italic; }
-  .lesstion-5-core { background: #f6ffed; border-left: 6px solid #52c41a; padding: 18px; font-size: 1.1em; margin: 25px 0; }
-  .lesstion-5-section { font-size: 1.4em; color: #d4380d; margin: 40px 0 15px; font-weight: bold; }
-  .lesstion-5-highlight { background: #e6f7ff; padding: 16px; border-radius: 8px; border-left: 5px solid #1890ff; margin: 20px 0; }
-  .lesstion-5-rule { background: #fffbe6; padding: 14px; border-radius: 8px; border: 2px solid #fa8c16; text-align: center; font-weight: bold; margin: 20px 0; }
-  .lesstion-5-borrow-rules {
-    background: #f9f0ff; padding: 20px; border-radius: 12px; border: 3px solid #b37feb; margin: 30px 0;
-  }
-  .lesstion-5-rule-title { font-size: 1.3em; text-align: center; color: #722ed1; margin-bottom: 15px; }
-  .lesstion-5-rule-item { padding: 12px; margin: 12px 0; border-radius: 8px; font-weight: bold; }
-  .lesstion-5-rule-item.active { background: #d9f7be; border: 2px solid #52c41a; }
-  .lesstion-5-rule-item.forbidden { background: #ffccc7; border: 2px solid #f5222d; text-decoration: line-through; }
-  .lesstion-5-warning { background: #fff2e8; padding: 14px; border-left: 6px solid #fa541c; margin: 20px 0; }
-  .lesstion-5-success { background: #f6ffed; padding: 14px; border-left: 6px solid #52c41a; margin: 20px 0; font-style: italic; }
-  .lesstion-5-analogy { font-size: 1.1em; background: #fffbe6; padding: 18px; border-radius: 10px; border: 2px dashed #fa8c16; margin: 25px 0; }
-  .lesstion-5-code {
-    background: #1e1e1e; color: #dcdcdc; padding: 18px; border-radius: 10px; overflow-x: auto;
-    margin: 22px 0; font-family: 'Consolas', monospace; position: relative;
-  }
-  .lesstion-5-code-rust::before {
-    content: "Rust"; position: absolute; top: 8px; right: 12px;
-    background: #e34c26; color: white; padding: 4px 12px; border-radius: 6px; font-size: 0.8em; font-weight: bold;
-  }
-  .lesstion-5-summary { font-size: 1.6em; text-align: center; color: #089e7f; margin: 50px 0 20px; }
-  .lesstion-5-summary-box { background: #f0fff4; padding: 25px; border-radius: 12px; border: 3px solid #36cfc9; }
-  .lesstion-5-summary-list { font-size: 1.15em; padding-left: 20px; }
-  .lesstion-5-summary-list li { margin: 15px 0; }
-  .lesstion-5-advice { background: #fff7e6; padding: 25px; border-radius: 12px; border: 3px solid #ffb302; margin: 35px 0; }
-  .lesstion-5-advice-list { font-size: 1.1em; font-weight: bold; }
-  .lesstion-5-homework {
-    background: #e6f7ff; padding: 20px; border-radius: 12px; border: 3px solid #1890ff;
-    font-size: 1.15em; text-align: center; margin: 40px 0;
-  }
-  .lesstion-5-ending {
-    font-size: 1.2em; text-align: center; margin-top: 50px; padding: 20px;
-    background: linear-gradient(135deg, #fff1eb, #ffe7ba); border-radius: 12px;
-    font-style: italic; color: #595959;
-  }
-</style>
