@@ -57,7 +57,13 @@ export function TerminalSidebar({
                           key={les.id} 
                           className={isLessonActive ? "text-cyan-100 font-bold" : ""}
                         >
-                          {isLessonActive ? "→" : "├"} {les.title}
+                          {/* THÊM DÒNG NÀY: bọc toàn bộ vào Link */}
+                          <Link 
+                            href={`/${currentBookId}/${chap.id}/${les.id}`}
+                            className="block hover:text-cyan-300 transition-all"
+                          >
+                            {isLessonActive ? "→" : "├"} {les.title}
+                          </Link>
                         </li>
                       );
                     })}
