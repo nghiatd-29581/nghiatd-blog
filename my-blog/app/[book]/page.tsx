@@ -58,7 +58,7 @@ export default function BookPage({ params }: { params: { book: string } }) {
 
             {/* Footer nhỏ xinh */}
             <div className="mt-20 text-center text-gray-600 text-sm">
-              <span className="text-cyan-500">~</span> built with next.js 14 • tailwind • rust love{" "}
+              <span className="text-cyan-500">~</span> built with next.js 14 • tailwind • <span className="text-orange-500">{book.lang}</span> love{" "}
               <span className="text-cyan-500">~</span>
             </div>
           </div>
