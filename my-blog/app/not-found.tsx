@@ -2,10 +2,14 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";  // ← THÊM DÒNG NÀY
 import { useEffect, useState } from "react";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
 
 export default function NotFound() {
+  const pathname = usePathname(); // ← LẤY URL HIỆN TẠI
+  // Tách path để hiển thị đẹp hơn (bỏ / đầu, giữ nguyên phần còn lại)
+  const cleanPath = pathname.startsWith("/") ? pathname.slice(1) : pathname;
   const [glitch, setGlitch] = useState(false);
 
   // Glitch nhẹ mỗi 3 giây cho vui
@@ -38,9 +42,9 @@ export default function NotFound() {
             </div>
 
             <div className="p-12 text-left space-y-6">
-              {/* Dòng lệnh lỗi */}
-              <div className="text-red-400 text-2xl">
-                <span className="text-green-400">$</span> cat /book1/chapter9/lesson19
+              {/* DÒNG LỆNH ĐÃ ĐƯỢC TỰ ĐỘNG HOÁ – SIÊU ĐỈNH! */}
+              <div className="text-red-400 text-2xl font-mono">
+                <span className="text-green-400">$</span> cat /{cleanPath || "unknown/lesson"}
               </div>
 
               <div className="text-6xl font-bold text-red-500" data-text="404">
@@ -57,7 +61,7 @@ export default function NotFound() {
                 <p className="mb-4">Cảnh báo từ compiler:</p>
                 <p className="text-lg">
                   "Nghĩa đang gõ phím điên cuồng đây... bài này sắp ra lò rồi mà! 
-                  bà con chờ chút nha <span className="text-pink-400">♥</span>"
+                  bà con chút nha <span className="text-pink-400">♥</span>"
                 </p>
               </div>
 
@@ -76,7 +80,7 @@ export default function NotFound() {
                 <span className="text-green-400">$</span> rustc --explain E0000
                 <br />
                 <span className="text-yellow-400">
-                  help: bài này sẽ có trong vòng 24h tới... hoặc đến khi viết xong
+                  help: bài này sẽ có trong vòng 24h tới... hoặc khi anh hết cà phê
                 </span>
               </div>
             </div>
