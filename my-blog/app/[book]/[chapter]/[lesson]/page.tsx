@@ -139,7 +139,7 @@ export default async function LessonPage({
             {/* Footer yêu thương */}
             <div className="mt-24 text-center text-gray-600 text-sm border-t border-cyan-900/30 pt-8">
               <span className="text-cyan-500">~</span> Made with <span className="text-red-500">♥</span> &amp;{" "}
-              <span className="text-orange-500">Rust</span> by Nghĩa Trần Đắc{" "}
+              <span className="text-orange-500">{book.lang}</span> by Nghĩa Trần Đắc{" "}
               <span className="text-cyan-500">~</span>
             </div>
           </div>

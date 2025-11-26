@@ -77,7 +77,7 @@ export default function ChapterPage({
 
             {/* Footer nhỏ xinh */}
             <div className="mt-16 text-center text-gray-600 text-sm">
-              <span className="text-cyan-500">~</span> Từ C# tới bay sang Rust • by Nghĩa Trần Đắc{" "}
+              <span className="text-orange-500">~</span>Từ C# tới bay sang <span className="text-orange-500">{book.lang}</span> • by Nghĩa Trần Đắc{" "}
               <span className="text-red-500">♥</span>
             </div>
           </div>
