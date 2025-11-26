@@ -35,3 +35,103 @@ body {
 @media (max-width: 768px) {
   /* Sidebar collapse or hamburger menu - Có thể thêm JS cho toggle */
 }
+/* globals.css – thêm dòng này */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+  .lesson-container {
+    --bg: #ffffff;
+    --text: #2d2d2d;
+    --heading: #1a1a1a;
+    --code-bg: #f6f8fa;
+    --border: #e1e4e8;
+    --primary: #0366d6;
+    --green: #28a745;
+    --red: #d73a49;
+    --purple-gradient-start: #667eea;
+    --purple-gradient-end: #764ba2;
+    
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.7;
+    color: var(--text);
+    background: var(--bg);
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    box-sizing: border-box;
+  }
+  .lesson-intro {
+    font-size: 1.22em;
+    text-align: center;
+    background: linear-gradient(135deg, #fffbe6 0%, #fff1eb 100%);
+    padding: 28px;
+    border-radius: 14px;
+    border: 4px solid #fa8c16;
+    margin-bottom: 40px;
+  }
+  .lesson-text { margin: 16px 0; }
+  .lesson-section { font-size: 1.35em; margin: 35px 0 12px; color: #d4380d; font-weight: bold; }
+  .lesson-part { font-size: 1.6em; text-align: center; color: #c41f3e; margin: 40px 0 10px; }
+  .lesson-chapter { font-size: 2.1em; text-align: center; color: #722ed1; margin-bottom: 10px; }
+  .lesson-title { font-size: 1.95em; text-align: center; margin: 30px 0 15px; }
+  .lesson-subtitle { font-size: 0.9em; color: #9254de; font-style: italic; }
+  .lesson-note { background: #f6ffed; border-left: 6px solid #52c41a; padding: 20px; font-size: 1.1em; margin: 25px 0; border-radius: 8px; }
+  .lesson-table {
+    width: 100%; border-collapse: collapse; margin: 30px 0; background: #fafafa; font-size: 1.05em;
+  }
+  .lesson-table th, .lesson-table td {
+    border: 1px solid #ddd; padding: 14px; text-align: left;
+  }
+  .lesson-table th { background: #f5f5f5; font-weight: bold; }
+  .lesson-analogy {
+    background: #fff7e6; padding: 22px; border-radius: 12px; border: 3px dashed #ffb302; margin: 30px 0; font-size: 1.1em;
+  }
+  .lesson-highlight {
+    background: #e6f7ff; padding: 16px; border-radius: 10px; border-left: 6px solid #1890ff; font-weight: bold; margin: 20px 0;
+  }
+  .lesson-warning {
+    background: #fff2e8; padding: 18px; border-left: 6px solid #fa541c; border-radius: 10px; margin: 25px 0;
+  }
+  .lesson-tip {
+    background: #f6ffed; padding: 16px; border-left: 6px solid #52c41a; border-radius: 10px; margin: 20px 0; font-weight: bold;
+  }
+  .lesson-code {
+    background: #1e1e1e; color: #dcdcdc; padding: 20px; border-radius: 12px; overflow-x: auto;
+    margin: 25px 0; font-family: 'Consolas', monospace; position: relative;
+  }
+  .lesson-code-rust::before {
+    content: "Rust"; position: absolute; top: 10px; right: 14px;
+    background: #e34c26; color: white; padding: 6px 14px; border-radius: 8px; font-weight: bold; font-size: 0.85em;
+  }
+  .lesson-summary { font-size: 1.7em; text-align: center; color: #089e7f; margin: 60px 0 20px; }
+  .lesson-summary-box {
+    background: linear-gradient(135deg, #f6ffed 0%, #e6f7ff 100%);
+    padding: 30px; border-radius: 14px; border: 4px solid #36cfc9; font-size: 1.15em;
+  }
+  .lesson-summary-list { padding-left: 25px; }
+  .lesson-summary-list li { margin: 18px 0; }
+  .lesson-homework {
+    background: #fff0f5; padding: 25px; border-radius: 14px; border: 4px solid #eb2f96;
+    text-align: center; font-size: 1.2em; margin: 40px 0;
+  }
+  .lesson-ending {
+    font-size: 1.25em; text-align: center; margin-top: 60px; padding: 30px;
+    background: linear-gradient(120deg, #fff1eb 0%, #ffe7ba 100%);
+    border-radius: 14px; border: 3px solid #ff7a45; font-style: italic; color: #595959;
+  }
+  .lesson-loop > p { font-weight: bold; margin-top: 20px; }
+  .lesson-summary-list code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; }
+  .lesson-tip {
+      background: #e8f5e8;
+      border-left: 5px solid #4caf50;
+      padding: 1rem 1.2rem;
+      margin: 1.5rem 0;
+      border-radius: 0 4px 4px 0;
+  }
+  .lesson-advice { background: #fff7e6; padding: 25px; border-radius: 12px; border: 3px solid #ffb302; margin: 35px 0; }
+  .lesson-advice-list { font-size: 1.1em; font-weight: bold; }

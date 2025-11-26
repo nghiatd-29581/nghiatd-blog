@@ -1,62 +1,62 @@
-<div class="lesson-4-container">
-  <p class="lesson-4-intro">Chào mừng bạn đến với <strong>Chương 2</strong>. Nếu các bài trước là "khởi động" thì đây là <strong>"vượt chướng ngại vật"</strong>.<br>
+<div class="lesson-container">
+  <p class="lesson-intro">Chào mừng bạn đến với <strong>Chương 2</strong>. Nếu các bài trước là "khởi động" thì đây là <strong>"vượt chướng ngại vật"</strong>.<br>
   Trong C#, bạn có một "người giúp việc" cần mẫn tên là <strong>Garbage Collector (GC)</strong>. Bạn cứ việc <code>new Object()</code>, dùng xong thì vứt đó, GC sẽ đi sau dọn dẹp. Cuộc sống thật dễ dàng, nhưng nó phải trả giá bằng hiệu năng (GC pause) và khó kiểm soát thời điểm giải phóng bộ nhớ.<br><br>
   <strong>Rust sa thải "người giúp việc" này.</strong> Rust trao quyền (và trách nhiệm) quản lý bộ nhớ lại cho bạn, nhưng thông qua một bộ luật nghiêm ngặt gọi là <strong>Ownership</strong>.</p>
 
-  <h1 class="lesson-4-part">PHẦN 1: TƯ DUY CỐT LÕI & "CAI NGHIỆN" GC</h1>
-  <h2 class="lesson-4-chapter">CHƯƠNG 2: OWNERSHIP & BORROWING - "LINH HỒN" CỦA RUST</h2>
-  <h3 class="lesson-4-title">BÀI 4: OWNERSHIP <span class="lesson-4-subtitle">(QUYỀN SỞ HỮU)</span></h3>
+  <h1 class="lesson-part">PHẦN 1: TƯ DUY CỐT LÕI & "CAI NGHIỆN" GC</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 2: OWNERSHIP & BORROWING - "LINH HỒN" CỦA RUST</h2>
+  <h3 class="lesson-title">BÀI 4: OWNERSHIP <span class="lesson-subtitle">(QUYỀN SỞ HỮU)</span></h3>
 
-  <p class="lesson-4-text">Trong bài này, chúng ta sẽ trả lời câu hỏi: <strong>Làm thế nào Rust đảm bảo an toàn bộ nhớ mà không cần GC?</strong></p>
+  <p class="lesson-text">Trong bài này, chúng ta sẽ trả lời câu hỏi: <strong>Làm thế nào Rust đảm bảo an toàn bộ nhớ mà không cần GC?</strong></p>
 
-  <h4 class="lesson-4-section">1. Stack và Heap: Ôn lại một chút</h4>
-  <ul class="lesson-4-list">
+  <h4 class="lesson-section">1. Stack và Heap: Ôn lại một chút</h4>
+  <ul class="lesson-list">
     <li><strong>Stack (Ngăn xếp):</strong> Nhanh, kích thước cố định, LIFO. Chứa các kiểu dữ liệu đơn giản (int, bool, char).</li>
     <li><strong>Heap (Vùng nhớ đống):</strong> Chậm hơn, kích thước linh động. Chứa dữ liệu phức tạp (String, Vector, Object). Cần một "con trỏ" từ Stack trỏ sang Heap.</li>
   </ul>
-  <p class="lesson-4-text">Trong C#: <code>int x = 10;</code> → Stack<br>
+  <p class="lesson-text">Trong C#: <code>int x = 10;</code> → Stack<br>
   <code>var user = new User();</code> → tham chiếu trên Stack, dữ liệu thật trên Heap.</p>
-  <p class="lesson-4-highlight">Trong Rust cũng vậy, nhưng <strong>cách quản lý vòng đời của dữ liệu trên Heap thì hoàn toàn khác</strong>.</p>
+  <p class="lesson-highlight">Trong Rust cũng vậy, nhưng <strong>cách quản lý vòng đời của dữ liệu trên Heap thì hoàn toàn khác</strong>.</p>
 
-  <h4 class="lesson-4-section">2. Ba Nguyên Tắc Vàng của Ownership</h4>
-  <div class="lesson-4-rules">
-    <div class="lesson-4-rule">1. Mỗi giá trị trong Rust đều có một biến gọi là <strong>Owner</strong> (Chủ sở hữu).</div>
-    <div class="lesson-4-rule">2. Tại một thời điểm, <strong>chỉ có duy nhất một Owner</strong>.</div>
-    <div class="lesson-4-rule">3. Khi Owner đi ra khỏi phạm vi (out of scope), giá trị sẽ bị <strong>hủy (dropped) ngay lập tức</strong>.</div>
+  <h4 class="lesson-section">2. Ba Nguyên Tắc Vàng của Ownership</h4>
+  <div class="lesson-rules">
+    <div class="lesson-rule">1. Mỗi giá trị trong Rust đều có một biến gọi là <strong>Owner</strong> (Chủ sở hữu).</div>
+    <div class="lesson-rule">2. Tại một thời điểm, <strong>chỉ có duy nhất một Owner</strong>.</div>
+    <div class="lesson-rule">3. Khi Owner đi ra khỏi phạm vi (out of scope), giá trị sẽ bị <strong>hủy (dropped) ngay lập tức</strong>.</div>
   </div>
-  <p class="lesson-4-note">Compiler của Rust hoạt động hoàn toàn dựa trên 3 nguyên tắc này.</p>
+  <p class="lesson-note">Compiler của Rust hoạt động hoàn toàn dựa trên 3 nguyên tắc này.</p>
 
-  <h4 class="lesson-4-section">3. Phạm vi (Scope) & Drop</h4>
-  <pre class="lesson-4-code"><code class="lesson-4-code-rust">{                      // Bắt đầu scope
+  <h4 class="lesson-section">3. Phạm vi (Scope) & Drop</h4>
+  <pre class="lesson-code"><code class="lesson-code-rust">{                      // Bắt đầu scope
     let s = "hello";   // s có giá trị từ đây
     // làm gì đó với s
 }                      // Kết thúc scope → s bị HỦY ngay lập tức</code></pre>
-  <p class="lesson-4-text">Trong C#: biến tham chiếu mất, object vẫn còn chờ GC.<br>
+  <p class="lesson-text">Trong C#: biến tham chiếu mất, object vẫn còn chờ GC.<br>
   <strong>Trong Rust:</strong> tự động gọi <code>drop()</code> → giải phóng bộ nhớ Heap <strong>ngay lập tức</strong>. Không rác thừa, không chờ đợi.</p>
 
-  <h4 class="lesson-4-section">4. Move Semantics: Cú sốc đầu tiên (Quan trọng nhất)</h4>
-  <p class="lesson-4-text"><strong>Trường hợp 1: Dữ liệu trên Stack (Primitive Types)</strong></p>
-  <pre class="lesson-4-code"><code class="lesson-4-code-rust">let x = 5;
+  <h4 class="lesson-section">4. Move Semantics: Cú sốc đầu tiên (Quan trọng nhất)</h4>
+  <p class="lesson-text"><strong>Trường hợp 1: Dữ liệu trên Stack (Primitive Types)</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">let x = 5;
 let y = x; 
 // Cả x và y đều = 5 → Rust COPY giá trị (giống C#)</code></pre>
 
-  <p class="lesson-4-text"><strong>Trường hợp 2: Dữ liệu trên Heap (String)</strong></p>
-  <pre class="lesson-4-code"><code class="lesson-4-code-rust">let s1 = String::from("hello");
+  <p class="lesson-text"><strong>Trường hợp 2: Dữ liệu trên Heap (String)</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">let s1 = String::from("hello");
 let s2 = s1; 
 
 println!("{}, world!", s1); // LỖI: value borrowed here after move</code></pre>
-  <p class="lesson-4-warning">Tại sao lỗi?<br>
+  <p class="lesson-warning">Tại sao lỗi?<br>
   → Khi gán <code>s2 = s1</code>, Rust <strong>chuyển quyền sở hữu (MOVE)</strong> từ s1 sang s2.<br>
   → <code>s1</code> bị vô hiệu hóa (invalid) → tránh lỗi <strong>Double Free</strong>.</p>
 
-  <p class="lesson-4-text"><strong>Giải pháp: Clone (Deep Copy)</strong></p>
-  <pre class="lesson-4-code"><code class="lesson-4-code-rust">let s1 = String::from("hello");
+  <p class="lesson-text"><strong>Giải pháp: Clone (Deep Copy)</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">let s1 = String::from("hello");
 let s2 = s1.clone(); // Copy toàn bộ dữ liệu
 
 println!("s1 = {}, s2 = {}", s1, s2); // OK</code></pre>
 
-  <h4 class="lesson-4-section">5. Ownership và Functions (Hàm)</h4>
-  <pre class="lesson-4-code"><code class="lesson-4-code-rust">fn main() {
+  <h4 class="lesson-section">5. Ownership và Functions (Hàm)</h4>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn main() {
     let s = String::from("hello");
 
     takes_ownership(s);     // s bị MOVE vào hàm → không dùng được nữa!
@@ -74,8 +74,8 @@ fn makes_copy(some_integer: i32) {
     println!("{}", some_integer);
 }</code></pre>
 
-  <h4 class="lesson-4-section">6. Tóm tắt so sánh C# vs Rust</h4>
-  <table class="lesson-4-table">
+  <h4 class="lesson-section">6. Tóm tắt so sánh C# vs Rust</h4>
+  <table class="lesson-table">
     <thead>
       <tr>
         <th>Hành động</th>
@@ -91,9 +91,9 @@ fn makes_copy(some_integer: i32) {
     </tbody>
   </table>
 
-  <h4 class="lesson-4-section">7. Bài tập thực hành: Sửa lỗi Ownership</h4>
-  <p class="lesson-4-text"><strong>Code lỗi:</strong></p>
-  <pre class="lesson-4-code"><code class="lesson-4-code-rust">fn main() {
+  <h4 class="lesson-section">7. Bài tập thực hành: Sửa lỗi Ownership</h4>
+  <p class="lesson-text"><strong>Code lỗi:</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn main() {
     let token_name = String::from("Bitcoin");
     
     print_token(token_name);
@@ -105,126 +105,20 @@ fn print_token(name: String) {
     println!("Processing: {}", name);
 }</code></pre>
 
-  <p class="lesson-4-text"><strong>Lời giải (Cách 1 - Dùng clone):</strong></p>
-  <pre class="lesson-4-code"><code class="lesson-4-code-rust">print_token(token_name.clone()); // Đưa bản sao
+  <p class="lesson-text"><strong>Lời giải (Cách 1 - Dùng clone):</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">print_token(token_name.clone()); // Đưa bản sao
 println!("Token confirmed: {}", token_name); // Giờ thì OK!</code></pre>
 
-  <h3 class="lesson-4-conclusion">KẾT LUẬN BÀI 4</h3>
-  <div class="lesson-4-final">
+  <h3 class="lesson-summary">KẾT LUẬN BÀI 4</h3>
+  <div class="lesson-summary-box">
     <p>Ownership giống như việc trao tay tiền mặt ngoài đời thực:</p>
-    <ul class="lesson-4-list">
+    <ul class="lesson-summary-list">
       <li>Nếu tôi đưa tờ 500k cho bạn (<strong>Move</strong>), tôi không còn nữa.</li>
       <li>Muốn cả hai cùng có → phải <strong>photo màu (clone)</strong> – tốn kém.</li>
       <li>int, bool giống như email → gửi đi vẫn còn bản gốc (<strong>Copy</strong>).</li>
     </ul>
-    <p class="lesson-4-ending">Ở bài tiếp theo, chúng ta sẽ học cách <strong>"cho mượn tiền"</strong> mà không cần "cho luôn". Đó là <strong>References & Borrowing</strong>.<br>
-    <em>(Bạn đã hiểu tại sao tôi gọi Rust là ngôn ngữ kỷ luật chưa? Hãy nghỉ ngơi một chút trước khi sang Bài 5 nhé!)</em></p>
   </div>
+    <p class="lesson-ending">Ở bài tiếp theo, chúng ta sẽ học cách <strong>"cho mượn tiền"</strong> mà không cần "cho luôn". Đó là <strong>References & Borrowing</strong>.<br>
+    <em>(Bạn đã hiểu tại sao tôi gọi Rust là ngôn ngữ kỷ luật chưa? Hãy nghỉ ngơi một chút trước khi sang Bài 5 nhé!)</em></p>
+  
 </div>
-
-<style>
-  .lesson-4-container {
-    --bg: #ffffff;
-    --text: #2d2d2d;
-    --heading: #1a1a1a;
-    --code-bg: #f6f8fa;
-    --border: #e1e4e8;
-    --primary: #0366d6;
-    --green: #28a745;
-    --red: #d73a49;
-    --purple-gradient-start: #667eea;
-    --purple-gradient-end: #764ba2;
-    
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    line-height: 1.7;
-    color: var(--text);
-    background: var(--bg);
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem;
-    box-sizing: border-box;
-  }
-  .lesson-4-intro {
-    font-size: 1.18em;
-    text-align: center;
-    background: #fff8e1;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 35px;
-    border-left: 6px solid #ffc107;
-  }
-  .lesson-4-part { font-size: 1.6em; text-align: center; color: #c41f3e; margin: 40px 0 15px; }
-  .lesson-4-chapter { font-size: 2em; text-align: center; color: #722ed1; margin-bottom: 10px; }
-  .lesson-4-title { font-size: 1.9em; text-align: center; margin: 30px 0 10px; }
-  .lesson-4-subtitle { font-size: 0.9em; color: #8b5cf6; font-style: italic; }
-  .lesson-4-text { margin: 18px 0; font-size: 1.05em; }
-  .lesson-4-highlight { background: #e6f7ff; padding: 14px; border-left: 5px solid #1890ff; font-weight: bold; }
-  .lesson-4-warning { background: #fff2e8; padding: 14px; border-left: 5px solid #fa541c; margin: 20px 0; }
-  .lesson-4-note { text-align: center; font-style: italic; color: #d4380d; margin: 20px 0; }
-  .lesson-4-rules {
-    background: #f9f0ff;
-    padding: 20px;
-    border-radius: 10px;
-    margin: 25px 0;
-    border: 2px solid #d3adc6;
-  }
-  .lesson-4-rule {
-    font-size: 1.3em;
-    font-weight: bold;
-    margin: 18px 0;
-    padding: 10px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  }
-  .lesson-4-list { padding-left: 25px; margin: 18px 0; }
-  .lesson-4-list li { margin: 10px 0; }
-  .lesson-4-code {
-    background: #1e1e1e;
-    color: #dcdcdc;
-    padding: 16px;
-    border-radius: 10px;
-    overflow-x: auto;
-    margin: 20px 0;
-    font-family: 'Consolas', 'Monaco', monospace;
-    position: relative;
-  }
-  .lesson-4-code-rust::before {
-    content: "Rust";
-    position: absolute;
-    top: 8px; right: 12px;
-    background: #e34c26;
-    color: white;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 0.8em;
-    font-weight: bold;
-  }
-  .lesson-4-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 25px 0;
-    background: #fafafa;
-  }
-  .lesson-4-table th, .lesson-4-table td {
-    border: 1px solid #ddd;
-    padding: 12px;
-    text-align: left;
-  }
-  .lesson-4-table th { background: #f5f5f5; font-weight: bold; }
-  .lesson-4-conclusion { font-size: 1.6em; text-align: center; color: #089e7f; margin: 50px 0 20px; }
-  .lesson-4-final {
-    background: linear-gradient(135deg, #fff1eb 0%, #ffe7ba 100%);
-    padding: 25px;
-    border-radius: 12px;
-    border: 2px solid #ff7a45;
-    margin-top: 30px;
-  }
-  .lesson-4-ending {
-    font-size: 1.15em;
-    text-align: center;
-    margin-top: 30px;
-    font-style: italic;
-    color: #595959;
-  }
-</style>

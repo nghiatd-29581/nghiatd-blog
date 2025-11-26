@@ -1,14 +1,14 @@
-<div class="lesstion-3-container">
-  <p class="lesstion-3-intro">Đây là nội dung chi tiết cho <strong>Bài 3</strong>. Đây là một bài học nền tảng cực kỳ quan trọng.<br>
+<div class="lesson-container">
+  <p class="lesson-intro">Đây là nội dung chi tiết cho <strong>Bài 3</strong>. Đây là một bài học nền tảng cực kỳ quan trọng.<br>
   Trong C#, bạn thường chỉ quen tay gõ int, long, double. Nhưng trong lập trình Blockchain và Hệ thống, việc chọn sai kiểu dữ liệu (ví dụ: dùng int cho số dư token) có thể dẫn đến lỗ hổng bảo mật tỉ đô (như lỗi Integer Overflow). Rust ép bạn phải kỷ luật ngay từ bước này.</p>
-  <h1 class="lesstion-3-part">PHẦN 1: TƯ DUY CỐT LÕI & "CAI NGHIỆN" GC</h1>
-  <h2 class="lesstion-3-chapter">CHƯƠNG 1: HELLO RUST & TOOLING</h2>
-  <h3 class="lesstion-3-title">BÀI 3: PRIMITIVE TYPES & CONTROL FLOW <span class="lesstion-3-subtitle">(KIỂU NGUYÊN THỦY & ĐIỀU KHIỂN LUỒNG)</span></h3>
-  <p class="lesstion-3-text">Chào bạn, hôm nay chúng ta sẽ đi vào "từng viên gạch" cấu tạo nên chương trình Rust.<br>
+  <h1 class="lesson-part">PHẦN 1: TƯ DUY CỐT LÕI & "CAI NGHIỆN" GC</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 1: HELLO RUST & TOOLING</h2>
+  <h3 class="lesson-title">BÀI 3: PRIMITIVE TYPES & CONTROL FLOW <span class="lesson-subtitle">(KIỂU NGUYÊN THỦY & ĐIỀU KHIỂN LUỒNG)</span></h3>
+  <p class="lesson-text">Chào bạn, hôm nay chúng ta sẽ đi vào "từng viên gạch" cấu tạo nên chương trình Rust.<br>
   Nếu C# cố gắng làm cho mọi thứ trở nên "tiện lợi" (ví dụ: int mặc định là 32-bit, tự động ép kiểu ngầm định), thì Rust ưu tiên sự <strong>Rõ ràng (Explicit)</strong>. Trong Rust, bạn phải biết chính xác mình đang dùng bao nhiêu bit bộ nhớ. Điều này cực kỳ quan trọng để tối ưu gas fee trong Smart Contract sau này.</p>
-  <h4 class="lesstion-3-section">1. Scalar Types: Những con số biết nói</h4>
-  <p class="lesstion-3-text">Trong C#, hệ thống kiểu số khá đơn giản. Trong Rust, nó được phân loại cực kỳ chi tiết dựa trên số bit.</p>
-  <table class="lesstion-3-table">
+  <h4 class="lesson-section">1. Scalar Types: Những con số biết nói</h4>
+  <p class="lesson-text">Trong C#, hệ thống kiểu số khá đơn giản. Trong Rust, nó được phân loại cực kỳ chi tiết dựa trên số bit.</p>
+  <table class="lesson-table">
     <thead>
       <tr>
         <th>Loại C#</th>
@@ -25,13 +25,13 @@
       <tr><td>char (2 bytes - UTF16)</td><td>char (4 bytes - Unicode)</td><td>char của Rust chứa được cả emoji.</td></tr>
     </tbody>
   </table>
-  <p class="lesstion-3-warning">Cảnh báo Blockchain:<br>
+  <p class="lesson-warning">Cảnh báo Blockchain:<br>
   Trong Ethereum (Solidity), kiểu dữ liệu chuẩn là uint256. Rust hỗ trợ u128 là native lớn nhất. Để xử lý số lớn như ví Ethereum, sau này ta sẽ dùng thư viện (như BigInt), nhưng tư duy về u64 (cho số lượng coin nhỏ) là nền tảng.</p>
-  <p class="lesstion-3-text">Cách viết số (Literals):</p>
-  <pre class="lesstion-3-code"><code class="lesstion-3-code-rust">let price: u64 = 1_000_000_000; // 1 tỷ
+  <p class="lesson-text">Cách viết số (Literals):</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">let price: u64 = 1_000_000_000; // 1 tỷ
 let hex_val = 0xff;</code></pre>
-  <h4 class="lesstion-3-section">2. Toán tử & Overflow: Bài học đau thương</h4>
-  <pre class="lesstion-3-code"><code class="lesstion-3-code-rust">fn main() {
+  <h4 class="lesson-section">2. Toán tử & Overflow: Bài học đau thương</h4>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn main() {
     let a: u8 = 255; 
     // u8 chạy từ 0 đến 255.   
     // Nếu chạy 'cargo run' (debug): Chương trình CRASH ngay tại đây.
@@ -40,9 +40,9 @@ let hex_val = 0xff;</code></pre>
     println!("{}", b);
 }</code></pre>
 
-  <h4 class="lesstion-3-section">3. Compound Types: Tuples & Arrays</h4>
-  <p class="lesstion-3-text"><strong>Tuples (Bộ giá trị):</strong></p>
-  <pre class="lesstion-3-code"><code class="lesstion-3-code-rust">fn main() {
+  <h4 class="lesson-section">3. Compound Types: Tuples & Arrays</h4>
+  <p class="lesson-text"><strong>Tuples (Bộ giá trị):</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn main() {
     // Một tuple chứa: (ID, Amount, Currency)
     let transaction: (i32, f64, &str) = (500, 6.5, "USD");
 
@@ -53,11 +53,11 @@ let hex_val = 0xff;</code></pre>
     println!("Giao dịch {} chuyển {} {}", transaction.0, transaction.1, transaction.2);
 }</code></pre>
 
-  <p class="lesstion-3-text"><strong>Arrays (Mảng tĩnh):</strong></p>
-  <pre class="lesstion-3-code"><code class="lesstion-3-code-rust">let arr: [i32; 5] = [1, 2, 3, 4, 5]; // Nằm trên Stack</code></pre>
+  <p class="lesson-text"><strong>Arrays (Mảng tĩnh):</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">let arr: [i32; 5] = [1, 2, 3, 4, 5]; // Nằm trên Stack</code></pre>
 
-  <h4 class="lesstion-3-section">4. Control Flow: Mọi thứ đều là Expression (Biểu thức)</h4>
-  <pre class="lesstion-3-code"><code class="lesstion-3-code-rust">fn main() {
+  <h4 class="lesson-section">4. Control Flow: Mọi thứ đều là Expression (Biểu thức)</h4>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn main() {
     let condition = true;
     
     // if trả về giá trị, gán thẳng vào biến number
@@ -70,29 +70,29 @@ let hex_val = 0xff;</code></pre>
     println!("Number is: {}", number);
 }</code></pre>
 
-  <h4 class="lesstion-3-section">5. Loops: 3 chàng lính ngự lâm</h4>
-  <div class="lesstion-3-loop">
+  <h4 class="lesson-section">5. Loops: 3 chàng lính ngự lâm</h4>
+  <div class="lesson-loop">
     <p><strong>A. loop</strong></p>
-    <pre class="lesstion-3-code"><code class="lesstion-3-code-rust">loop {
+    <pre class="lesson-code"><code class="lesson-code-rust">loop {
     println!("Chạy mãi mãi...");
     break;
 }</code></pre>
 
     <p><strong>B. while</strong></p>
-    <pre class="lesstion-3-code"><code class="lesstion-3-code-rust">let mut n = 3;
+    <pre class="lesson-code"><code class="lesson-code-rust">let mut n = 3;
 while n != 0 {
     println!("{}!", n);
     n -= 1;
 }</code></pre>
 
     <p><strong>C. for (mạnh mẽ nhất)</strong></p>
-    <pre class="lesstion-3-code"><code class="lesstion-3-code-rust">for number in 1..4 {
+    <pre class="lesson-code"><code class="lesson-code-rust">for number in 1..4 {
     println!("Số: {}", number);
 }</code></pre>
   </div>
 
-  <h4 class="lesstion-3-section">6. Bài tập thực hành: Tính phí Gas (Giả lập)</h4>
-  <pre class="lesstion-3-code"><code class="lesstion-3-code-rust">fn main() {
+  <h4 class="lesson-section">6. Bài tập thực hành: Tính phí Gas (Giả lập)</h4>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn main() {
     let limit = 50_000;
     let price = 20; // Gwei
 
@@ -112,80 +112,19 @@ fn calculate_fee(limit: u64, price: u64) -> u64 {
     }
 }</code></pre>
 
-  <h3 class="lesstion-3-summary">TỔNG KẾT BÀI 3</h3>
-  <ol class="lesstion-3-summary-list">
-    <li>Types: Rust rất kỹ tính (u32 khác i32). Hãy tập thói quen dùng <code>u64</code> hoặc <code>usize</code> cho các số đếm/kích thước.</li>
-    <li>Overflow: Hãy cẩn thận với cộng trừ nhân chia số nguyên.</li>
-    <li>Expression: <code>if</code> là biểu thức trả về giá trị.</li>
-    <li>Implicit Return: Dòng cuối cùng không có <code>;</code> chính là return.</li>
-  </ol>
-
-  <p class="lesstion-3-homework"><strong>Bài tập về nhà:</strong><br>
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 3</h3>
+   <div class="lesson-summary-box">
+    <ol class="lesson-summary-list">
+      <li>Types: Rust rất kỹ tính (u32 khác i32). Hãy tập thói quen dùng <code>u64</code> hoặc <code>usize</code> cho các số đếm/kích thước.</li>
+      <li>Overflow: Hãy cẩn thận với cộng trừ nhân chia số nguyên.</li>
+      <li>Expression: <code>if</code> là biểu thức trả về giá trị.</li>
+      <li>Implicit Return: Dòng cuối cùng không có <code>;</code> chính là return.</li>
+    </ol>
+  </div>
+  <p class="lesson-homework"><strong>Bài tập về nhà:</strong><br>
   Viết chương trình đổi nhiệt độ từ Fahrenheit sang Celsius.<br>
   Công thức: <code>C = (F - 32) / 1.8</code><br>
   Lưu ý: Rust không cho phép cộng trừ int với float tự do như C#. Bạn phải ép kiểu (ví dụ: <code>let f_float = f_int as f64;</code>).</p>
 
-  <p class="lesstion-3-ending">(Hẹn gặp lại ở Chương 2, nơi chúng ta sẽ đối đầu với "Con trùm" của Rust: Ownership & Borrowing. Hãy chuẩn bị tinh thần, vì đây là lúc C# Dev dễ bỏ cuộc nhất!)</p>
+  <p class="lesson-ending">(Hẹn gặp lại ở Chương 2, nơi chúng ta sẽ đối đầu với "Con trùm" của Rust: Ownership & Borrowing. Hãy chuẩn bị tinh thần, vì đây là lúc C# Dev dễ bỏ cuộc nhất!)</p>
 </div>
-
-<style>
-  .lesstion-3-container {
-/* Biến CSS chỉ có hiệu lực bên trong */
-    --bg: #ffffff;
-    --text: #2d2d2d;
-    --heading: #1a1a1a;
-    --code-bg: #f6f8fa;
-    --border: #e1e4e8;
-    --primary: #0366d6;
-    --green: #28a745;
-    --red: #d73a49;
-    --purple-gradient-start: #667eea;
-    --purple-gradient-end: #764ba2;
-    
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    line-height: 1.7;
-    color: var(--text);
-    background: var(--bg);
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem;
-    box-sizing: border-box;
-  }
-  .lesstion-3-intro { font-size: 1.1em; margin-bottom: 30px; text-align: center; font-weight: 500; }
-  .lesstion-3-part { font-size: 1.6em; text-align: center; margin: 40px 0 20px; color: #d4380d; }
-  .lesstion-3-chapter { font-size: 2em; text-align: center; margin-bottom: 10px; color: #8b5cf6; }
-  .lesstion-3-title { font-size: 1.8em; text-align: center; margin: 30px 0 10px; color: #1f1f1f; }
-  .lesstion-3-subtitle { font-size: 0.9em; display: block; color: #555; font-style: italic; }
-  .lesstion-3-text { margin: 16px 0; }
-  .lesstion-3-section { font-size: 1.35em; margin: 35px 0 12px; color: #d4380d; font-weight: bold; }
-  .lesstion-3-warning { background: #fff2e8; border-left: 5px solid #fa541c; padding: 12px 16px; margin: 20px 0; }
-  .lesstion-3-table { width: 100%; border-collapse: collapse; margin: 20px 0; background: #fafafa; }
-  .lesstion-3-table th, .lesstion-3-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-  .lesstion-3-table th { background: #f5f5f5; font-weight: bold; }
-  .lesstion-3-code {
-    background: #282c34;
-    color: #abb2bf;
-    padding: 14px;
-    border-radius: 8px;
-    overflow-x: auto;
-    margin: 18px 0;
-    font-family: 'Consolas', 'Monaco', monospace;
-    position: relative;
-  }
-  .lesstion-3-code-rust::before {
-    content: "Rust";
-    position: absolute;
-    top: 6px; right: 10px;
-    background: #e34c26;
-    color: white;
-    font-size: 0.8em;
-    padding: 2px 8px;
-    border-radius: 4px;
-  }
-  .lesstion-3-loop > p { font-weight: bold; margin-top: 20px; }
-  .lesstion-3-summary { font-size: 1.5em; text-align: center; margin: 50px 0 20px; color: #089e7f; }
-  .lesstion-3-summary-list { font-size: 1.1em; margin: 20px 0; }
-  .lesstion-3-summary-list code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; }
-  .lesstion-3-homework { background: #e6f7ff; border: 1px solid #91d5ff; padding: 16px; border-radius: 8px; margin: 30px 0; font-size: 1.05em; }
-  .lesstion-3-ending { font-size: 1.15em; text-align: center; margin-top: 50px; font-style: italic; color: #555; }
-</style>
