@@ -43,7 +43,7 @@ export default function NotFound() {
                 <span className="text-green-400">$</span> cat /book1/chapter9/lesson19
               </div>
 
-              <div className="text-6xl font-bold text-red-500 glitch" data-text="404">
+              <div className="text-6xl font-bold text-red-500" data-text="404">
                 {glitch ? "4O4" : "404"}
               </div>
 
