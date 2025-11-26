@@ -57,7 +57,7 @@ export default function NotFound() {
                 <p className="mb-4">Cảnh báo từ compiler:</p>
                 <p className="text-lg">
                   "Nghĩa đang gõ phím điên cuồng đây... bài này sắp ra lò rồi mà! 
-                  bà con chút nha <span className="text-pink-400">♥</span>"
+                  bà con chờ chút nha <span className="text-pink-400">♥</span>"
                 </p>
               </div>
 
@@ -76,7 +76,7 @@ export default function NotFound() {
                 <span className="text-green-400">$</span> rustc --explain E0000
                 <br />
                 <span className="text-yellow-400">
-                  help: bài này sẽ có trong vòng 24h tới... hoặc khi anh hết cà phê
+                  help: bài này sẽ có trong vòng 24h tới... hoặc đến khi viết xong
                 </span>
               </div>
             </div>
