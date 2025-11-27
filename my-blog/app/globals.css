@@ -135,3 +135,24 @@ body {
   }
   .lesson-advice { background: #fff7e6; padding: 25px; border-radius: 12px; border: 3px solid #ffb302; margin: 35px 0; }
   .lesson-advice-list { font-size: 1.1em; font-weight: bold; }
+  .lesson-composition {
+    background: #f9f0ff; padding: 25px; border-radius: 12px; text-align: center; font-size: 1.2em; font-weight: bold; border: 3px solid #b37feb; margin: 30px 0;
+  }
+  .lesson-struct-types {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 30px 10px;
+  }
+  .lesson-type {
+    background: #fff7e6; padding: 10px; border-radius: 12px; border: 2px solid #ffb302;
+  }
+  .lesson-code {
+    background: #1e1e1e; color: #dcdcdc; padding: 20px; border-radius: 12px; overflow-x: auto;
+    margin: 20px 0; font-family: 'Consolas', monospace; position: relative;
+  }
+  .lesson-code-csharp::before { content: "C#"; position: absolute; top: 1px; right: 1px; background: #9b4fca; color: white; padding: 1px 1px; border-radius: 1px; font-weight: bold; }
+  .lesson-code-rust::before { content: "Rust"; position: absolute; top: 1px; right: 1px; background: #e34c26; color: white; padding: 1px 1px; border-radius: 1px; font-weight: bold; }
+  .lesson-code-comparison {
+    display: flex; gap: 5px; margin: 5px 0; flex-wrap: wrap;
+  }
+  .lesson-csharp, .lesson-rust {
+    flex: 1; min-width: 300px;
+  }

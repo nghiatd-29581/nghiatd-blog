@@ -1,0 +1,167 @@
+<div class="lesson-container">
+  <p class="lesson-intro">Chào mừng bạn đến với <strong>Chương 3</strong>. Đây là chương sẽ <strong>thay đổi hoàn toàn cách bạn thiết kế kiến trúc phần mềm</strong>.<br><br>
+  Ở C#, bạn bắt đầu dự án bằng việc tạo folder <code>Models</code> → chuột phải → <em>Create Class</em> → nghĩ về kế thừa: <code>Admin : User : Person</code>…<br>
+  Ở Rust, nếu giữ tư duy đó → bạn sẽ <strong>đâm đầu vào ngõ cụt</strong>.<br>
+  <strong>Rust không có Class. Rust không có Kế thừa.</strong><br>
+  Rust ép bạn tư duy theo hướng <strong>Ghép nối (Composition)</strong> – và đó là điều tuyệt vời nhất!</p>
+
+  <h1 class="lesson-part">PHẦN 1: TƯ DUY CỐT LÕI & "CAI NGHIỆN" GC</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 3: CẤU TRÚC DỮ LIỆU & PATTERN MATCHING</h2>
+  <h3 class="lesson-title">BÀI 7: STRUCTS VS. CLASSES <span class="lesson-subtitle">(DỮ LIỆU & HÀNH VI)</span></h3>
+
+  <p class="lesson-core">Trong bài này, chúng ta sẽ <strong>“đập đi xây lại” tư duy về Đối tượng</strong>.</p>
+
+  <h4 class="lesson-section">1. Giải phẫu Class: Sự chia ly của Dữ liệu và Hành vi</h4>
+  <table class="lesson-table">
+    <thead>
+      <tr>
+        <th>Khía cạnh</th>
+        <th>C# Class</th>
+        <th>Rust Struct + Impl</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Khai báo dữ liệu</td><td><code>class User { int Id; }</code></td><td><code>struct User { id: i32 }</code></td></tr>
+      <tr><td>Định nghĩa hàm</td><td>Viết ngay trong class</td><td>Viết trong <code>impl User { }</code> riêng biệt</td></tr>
+      <tr><td>Constructor</td><td><code>public User() { }</code></td><td>Hàm tĩnh <code>fn new() -> User</code></td></tr>
+      <tr><td>Từ khóa this</td><td><code>this.Id</code></td><td><code>self</code>, <code>&self</code>, <code>&mut self</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="lesson-code-comparison">
+    <div class="lesson-csharp">
+      <p><strong>C# (Quen thuộc)</strong></p>
+      <pre class="lesson-code"><code class="lesson-code-csharp">public class User {
+    public string Username { get; set; }
+    public bool Active { get; set; }
+
+    public User(string name) {
+        Username = name;
+        Active = true;
+    }
+
+    public void Deactivate() {
+        this.Active = false;
+    }
+}</code></pre>
+    </div>
+    <div class="lesson-rust">
+      <p><strong>Rust (Tư duy mới)</strong></p>
+      <pre class="lesson-code"><code class="lesson-code-rust">// 1. Chỉ định nghĩa dữ liệu
+struct User {
+    username: String,
+    active: bool,
+}
+
+// 2. Định nghĩa hành vi riêng biệt
+impl User {
+    fn new(username: String) -> User {
+        User { username, active: true }
+    }
+
+    fn deactivate(&mut self) {
+        self.active = false;
+    }
+}</code></pre>
+    </div>
+  </div>
+
+  <p class="lesson-highlight">Tại sao Rust tách ra?<br>
+  → Khi nhìn <code>struct</code> → bạn biết chính xác Memory Layout.<br>
+  → Khi nhìn <code>impl</code> → bạn chỉ tập trung vào logic.<br>
+  → Có thể viết <strong>nhiều block impl</strong> cho cùng một struct (rất mạnh!).</p>
+
+  <h4 class="lesson-section">2. Cái chết của Kế thừa (Inheritance)</h4>
+  <p class="lesson-warning">Rust <strong>không có</strong> <code>:</code>, không có <code>extends</code>, không có <code>base()</code>.</p>
+  <p class="lesson-text">Lý do: Kế thừa gây ra <strong>“Gorilla holding a banana”</strong> → bạn chỉ muốn quả chuối (tái sử dụng), nhưng phải bê cả con khỉ và khu rừng về → dẫn đến <strong>Fragile Base Class Problem</strong>.</p>
+
+  <h4 class="lesson-section">3. Tư duy Composition: "HAS-A" thay vì "IS-A"</h4>
+  <div class="lesson-composition">
+    <p><strong>Thay vì hỏi:</strong> “Admin <em>LÀ</em> cái gì?”<br>
+    → Hãy hỏi: “Admin <em>CÓ</em> cái gì?”</p>
+  </div>
+
+  <div class="lesson-code-comparison">
+    <div class="lesson-csharp">
+      <p><strong>Cách C# (Kế thừa - Cũ)</strong></p>
+      <pre class="lesson-code"><code class="lesson-code-csharp">class BaseAccount { public string Address; }
+class SmartContractAccount : BaseAccount {
+    public string ContractCode;
+}</code></pre>
+    </div>
+    <div class="lesson-rust">
+      <p><strong>Cách Rust (Composition - Mới)</strong></p>
+      <pre class="lesson-code"><code class="lesson-code-rust">struct Address(String);
+
+struct AccountInfo { address: Address, balance: u64 }
+struct ContractData { code: String, storage_root: String }
+
+struct SmartContractAccount {
+    info: AccountInfo,
+    contract: ContractData,
+}</code></pre>
+    </div>
+  </div>
+
+  <h4 class="lesson-section">4. Các biến thể của Struct trong Rust</h4>
+  <div>
+    <div class="lesson-type">
+      <p><strong>A. Named-Field Structs</strong> (Tiêu chuẩn)</p>
+      <pre class="lesson-code"><code >struct Point { x: i32, y: i32 }</code></pre>
+    </div>
+    <div class="lesson-type">
+      <p><strong>B. Tuple Structs</strong> (New Type Pattern – cực mạnh trong Crypto)</p>
+      <pre class="lesson-code"><code >struct TxHash(String);
+struct WalletAddress(String);
+
+// Giờ không thể nhầm lẫn nữa!
+fn transfer(from: WalletAddress, to: WalletAddress, hash: TxHash) {}</code></pre>
+    </div>
+    <div class="lesson-type">
+      <p><strong>C. Unit-Like Structs</strong> (Struct rỗng)</p>
+      <pre class="lesson-code"><code >struct Logger; // Dùng để implement Trait</code></pre>
+    </div>
+  </div>
+
+  <h4 class="lesson-section">5. Bài tập thực hành: Refactor từ Inheritance sang Composition</h4>
+  <pre class="lesson-code"><code class="lesson-code-rust">// Component chung
+struct Health { hp: i32, max_hp: i32 }
+impl Health { fn is_alive(&self) -> bool { self.hp > 0 } }
+
+struct Identity { name: String }
+
+// Player và Monster đều "CÓ" Health và Identity
+struct Player { identity: Identity, health: Health, level: u32 }
+struct Monster { identity: Identity, health: Health, damage: i32 }
+
+fn main() {
+    let mut boss = Monster {
+        identity: Identity { name: String::from("Dragon") },
+        health: Health { hp: 1000, max_hp: 1000 },
+        damage: 50,
+    };
+
+    println!("{} has {} HP", boss.identity.name, boss.health.hp);
+}</code></pre>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 7</h3>
+  <div class="lesson-summary-box">
+    <ol class="lesson-summary-list">
+      <li><strong>Struct</strong> = Dữ liệu. <strong>Impl</strong> = Hành vi.</li>
+      <li>Ưu tiên <strong>Composition</strong> thay vì Inheritance.</li>
+      <li>Dùng <strong>Tuple Struct</strong> để tạo Type Safety cực mạnh.</li>
+      <li>Code có thể dài hơn một chút (boss.health.hp), nhưng hệ thống sẽ <strong>Loose Coupling</strong> và <strong>dễ bảo trì vô cùng</strong>.</li>
+    </ol>
+  </div>
+
+  <div class="lesson-question">
+    <p><strong>Câu hỏi lớn:</strong><br>
+    “Vậy nếu không có kế thừa, làm sao viết hàm <code>attack(target)</code> nhận cả Player lẫn Monster?”</p>
+  </div>
+
+  <p class="lesson-ending">
+    Câu trả lời nằm ở bài tiếp theo:<br>
+    <strong>Traits</strong> – thứ thay thế hoàn hảo cho Interface + Abstract Class trong Rust.<br><br>
+    (Hẹn gặp lại bạn ở <strong>Bài 8: Enums & Pattern Matching</strong> – vũ khí bí mật giúp Rust “bá đạo” hơn C# switch-case ngàn lần!)
+  </p>
+</div>
