@@ -1,0 +1,353 @@
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với <strong>Bài 8</strong>. Nếu Bài 7 (Structs) là khung xương, thì Bài 8 (Enums) chính là <strong>"cơ bắp"</strong> giúp Rust xử lý các trạng thái phức tạp một cách uyển chuyển.<br><br>
+    Đây là tính năng mà khi quay lại C#, bạn sẽ cảm thấy <strong>nhớ nó nhất</strong>. Tôi gọi nó là <strong>"Vũ khí bí mật"</strong> vì nó giúp bạn loại bỏ hoàn toàn hàng tá dòng code kiểm tra null, check type, và hạn chế lỗi logic ở quy mô lớn.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 1: TƯ DUY CỐT LÕI & "CAI NGHIỆN" GC</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 3: CẤU TRÚC DỮ LIỆU & PATTERN MATCHING</h2>
+  <h3 class="lesson-title">BÀI 8: ENUMS & PATTERN MATCHING <span class="lesson-subtitle">(VŨ KHÍ BÍ MẬT)</span></h3>
+
+  <h4 class="lesson-section">1. Enum trong C# vs. Enum trong Rust: Một trời một vực</h4>
+  <p class="lesson-text"><strong>Cấp độ 1: Giống C# (C-style Enums)</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">
+enum Status {
+    Pending,
+    Processing,
+    Completed,
+    Failed,
+}
+// Cách dùng y hệt C#
+let current_status = Status::Pending;</code></pre>
+
+  <p class="lesson-text"><strong>Cấp độ 2: Enum chứa Dữ liệu (The Superpower)</strong></p>
+   <p class="lesson-text">Đây là điểm khác biệt. Mỗi biến thể (variant) của Enum có thể chứa dữ liệu khác nhau, thậm chí kiểu dữ liệu khác nhau.</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">
+// Định nghĩa phương thức thanh toán
+enum PaymentMethod {
+    Cash, // Không chứa dữ liệu
+    CreditCard { number: String, cvv: u16 }, // Chứa Struct
+    Crypto(String), // Chứa String (Wallet Address)
+}
+
+fn main() {
+    let pay_one = PaymentMethod::Cash;
+    let pay_two = PaymentMethod::Crypto(String::from("0x123...abc"));
+    let pay_three = PaymentMethod::CreditCard { 
+        number: String::from("4444-5555"), 
+        cvv: 123 
+    };
+}</code></pre>
+
+  <p class="lesson-text">Trong Rust, Enum (Enumeration) mạnh mẽ hơn gấp 10 lần. Nó là <strong>Algebraic Data Types (ADT)</strong>. Nghĩa là: Mỗi trạng thái (Variant) của Enum có thể chứa dữ liệu riêng biệt của nó.</p>
+  
+  <p class="lesson-text">Hãy tưởng tượng một hệ thống thanh toán Crypto.</p>
+  <ul class="lesson-list">
+    <li>Nếu trả bằng thẻ tín dụng → Cần lưu số thẻ, tên, CVV.</li>
+    <li>Nếu trả bằng Crypto → Cần lưu địa chỉ ví, Hash.</li>
+    <li>Nếu trả tiền mặt → Không cần lưu gì cả.</li>
+  </ul>
+
+  <p class="lesson-text">Cách Rust mô hình hóa (Cực gọn):</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">enum PaymentMethod {
+    Cash,                          // Không chứa dữ liệu
+    CreditCard(String, String),    // Chứa (CardNumber, HolderName)
+    Crypto {                       // Chứa Struct ẩn danh (Address, Network)
+        wallet_address: String, 
+        network: String 
+    }, 
+}</code></pre>
+
+  <p class="lesson-highlight">
+    Tại sao nó hay?<br>
+    Bạn không cần tạo một class cha Payment rồi tạo 3 class con kế thừa. Bạn cũng không cần tạo một class khổng lồ với các field Nullable (lúc thì CardNumber có giá trị, lúc thì null).<br>
+    <strong>Rust đảm bảo:</strong> Đã là Crypto thì chắc chắn có wallet_address. Đã là Cash thì chắc chắn không có rác đi kèm.
+  </p>
+
+  <h4 class="lesson-section">2. match: Kẻ hủy diệt switch-case</h4>
+  
+  <p class="lesson-text">Trong C#, switch-case dùng để so sánh giá trị.<br>
+  Trong Rust, <strong>match</strong> dùng để so khớp mẫu hình (Pattern Matching).<br>
+  Sự khác biệt lớn nhất: <strong>Tính triệt để (Exhaustiveness)</strong>.<br>
+  Rust bắt buộc bạn phải xử lý <strong>TẤT CẢ</strong> các trường hợp có thể xảy ra của Enum. Nếu thiếu một trường hợp, Code không thể biên dịch.</p>
+
+  <p class="lesson-text"><strong>Sức mạnh 1: Destructuring (Bóc tách dữ liệu)</strong></p>
+  <p class="lesson-text">Khi bạn match một Enum, bạn có thể lấy dữ liệu bên trong nó ra ngay lập tức.</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">
+fn process_payment(payment: PaymentMethod) {
+    match payment {
+        PaymentMethod::Cash => {
+            println!("Thanh toán tiền mặt. Không cần xử lý.");
+        }
+        // Bóc tách dữ liệu wallet ra biến 'addr'
+        PaymentMethod::Crypto(addr) => {
+            println!("Đang gửi transaction tới ví: {}", addr);
+        }
+        // Bóc tách field của struct
+        PaymentMethod::CreditCard { number, .. } => { // '..' nghĩa là không quan tâm CVV
+            println!("Đang trừ tiền thẻ số: {}", number);
+        }
+    }
+}
+</code></pre>
+
+<p class="lesson-text"><strong>Sức mạnh 2: Exhaustiveness (Tính bao phủ toàn diện)</strong></p>
+  <p class="lesson-text">Đây là tính năng "cứu mạng" dev. Trong C#, nếu bạn thêm một case mới vào Enum (ví dụ <code>Refunded</code>), 
+    nhưng quên cập nhật <code>switch</code>, chương trình vẫn chạy và có thể gây lỗi logic tiềm ẩn.</p>
+  <p class="lesson-text">Trong Rust,<strong> Trình biên dịch sẽ TỪ CHỐI biên dịch</strong> nếu bạn không xử lý TẤT CẢ các trường hợp của Enum trong khối <code>match</code> .Lỗi: <code>pattern</code> 'Refunded' not covered.</p>
+   <p class="lesson-text"></p>Bạn buộc phải xử lý case đó, hoặc dùng dấu gạch dưới _ (tương đương default trong C#) để bỏ qua.</p>
+  
+  <p class="lesson-text">Ví dụ: Xử lý thanh toán.</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn process_payment(method: PaymentMethod) {
+    match method {
+        PaymentMethod::Cash => {
+            println!("Khách trả tiền mặt. Vui lòng đếm kỹ!");
+        }
+        PaymentMethod::CreditCard(number, name) => {
+            // Destructuring: Rút dữ liệu ra ngay tại chỗ
+            println!("Đang quẹt thẻ {} của chủ thẻ {}...", number, name);
+        }
+        PaymentMethod::Crypto { wallet_address, network } => {
+            println!("Chờ xác nhận trên mạng {} từ ví {}...", network, wallet_address);
+        }
+    }
+}</code></pre>
+
+  <table class="lesson-table">
+    <thead>
+      <tr>
+        <th>Đặc điểm</th>
+        <th>C# switch</th>
+        <th>Rust match</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Xử lý thiếu case</td><td>Vẫn chạy (nguy hiểm nếu quên case mới).</td><td><strong>Lỗi biên dịch</strong> (An toàn tuyệt đối).</td></tr>
+      <tr><td>Lấy dữ liệu</td><td>Phải cast kiểu, check properties.</td><td><strong>Destructuring:</strong> Lấy dữ liệu ra ngay trong dòng match.</td></tr>
+      <tr><td>Trả về giá trị</td><td>Là Statement (thường phải gán biến ngoài).</td><td><strong>Là Expression</strong> (Trả về giá trị trực tiếp).</td></tr>
+    </tbody>
+  </table>
+
+  <h4 class="lesson-section">3. Sức mạnh của Expression (Biểu thức)</h4>
+  
+  <p class="lesson-text">Vì match là biểu thức trả về giá trị, bạn có thể gán nó trực tiếp cho biến. Đây là cách viết code cực kỳ "Rustacean".</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">// Giả lập Enum trạng thái giao dịch
+enum Status {
+    Pending,
+    Success,
+    Failed,
+}
+
+fn get_message(status: Status) -> String {
+    // Không cần từ khóa 'return'
+    // Biến 'result' sẽ nhận giá trị trả về từ khối match
+    let result = match status {
+        Status::Pending => String::from("Đang chờ xử lý..."),
+        Status::Success => String::from("Giao dịch thành công!"),
+        Status::Failed => String::from("Giao dịch thất bại."),
+    };
+
+    result // Return
+}</code></pre>
+
+  <h4 class="lesson-section">4. Catch-all Pattern (_) : Thay thế default</h4>
+  
+  <p class="lesson-text">Giống default trong C#, nếu bạn không muốn liệt kê hết 100 trường hợp, bạn dùng dấu gạch dưới <code>_</code> để đại diện cho "tất cả những cái còn lại".</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">let number = 5;
+
+match number {
+    1 => println!("Là số một"),
+    2 => println!("Là số hai"),
+    _ => println!("Là số nào đó khác"), // Bắt buộc phải có nếu chưa phủ hết các số i32
+}</code></pre>
+
+  <h4 class="lesson-section">5. if let: Cú pháp đường mật (Syntactic Sugar)</h4>
+  
+  <p class="lesson-text">Đôi khi bạn chỉ quan tâm đúng 1 trường hợp (ví dụ: Chỉ xử lý nếu là Crypto, còn lại kệ). Dùng match thì hơi dài dòng vì phải thêm <code>_ => ()</code>.<br>
+  Rust cung cấp <code>if let</code>:</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">let payment = PaymentMethod::Crypto { 
+    wallet_address: String::from("0x123..."), 
+    network: String::from("ETH") 
+};
+
+// Chỉ chạy block này NẾU payment match với mẫu hình bên trái
+if let PaymentMethod::Crypto { wallet_address, network } = payment {
+    println!("Phát hiện thanh toán Crypto mạng {}!", network);
+} else {
+    println!("Không phải Crypto, bỏ qua.");
+}</code></pre>
+  
+  <p class="lesson-note">C# Developer: Cái này na ná <code>if (obj is Crypto c) { ... }</code> trong C# pattern matching mới.</p>
+
+  <h4 class="lesson-section">6. Option Enum: Cái chết của null</h4>
+  
+  <p class="lesson-text">Đây là ví dụ kinh điển nhất về Enum trong thư viện chuẩn Rust.<br>
+  <strong>Rust KHÔNG CÓ NULL.</strong><br>
+  Thay vào đó, nó có Enum <code>Option&lt;T&gt;</code>:</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">enum Option<T> {
+    Some(T), // Có giá trị T
+    None,    // Không có gì cả (tương đương null)
+}</code></pre>
+
+  <p class="lesson-text">Điều này ép bạn phải dùng match (hoặc các hàm xử lý tương đương) để kiểm tra xem có hàng (Some) hay không (None) trước khi dùng. <strong>Bạn không bao giờ quên check null được nữa.</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn main() {
+    let some_number = Some(5);
+    let absent_number: Option<i32> = None;
+
+    // Muốn cộng 1? Phải tháo bao bì (unwrap) ra
+    // let sum = some_number + 1; // LỖI! Không cộng Option với số được.
+
+    let sum = match some_number {
+        Some(i) => i + 1,
+        None => 0,
+    };
+    println!("Kết quả: {}", sum);
+}</code></pre>
+
+  <h4 class="lesson-section">7. Bài tập thực hành:</h4>
+  
+  <p class="lesson-text"><strong>Bài toán: Hệ thống Log Web3</strong><br>
+  Xây dựng hệ thống Log cho một node Blockchain.</p>
+  
+  <ol class="lesson-list">
+    <li>Định nghĩa Enum <code>Web3Event</code>:<br>
+       • <code>BlockMined</code>: Chứa block_number (u64) và miner_address (String).<br>
+       • <code>Transaction</code>: Chứa tx_hash (String) và fee (u64).<br>
+       • <code>Error</code>: Chứa message (String).</li>
+    <li>Viết hàm <code>process_log</code> nhận vào <code>Web3Event</code> và in ra thông báo tương ứng.</li>
+  </ol>
+
+  <p class="lesson-text"><strong>Code mẫu:</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">// 1. Định nghĩa Enum với dữ liệu đi kèm
+enum Web3Event {
+    BlockMined { block_number: u64, miner: String }, // Struct-like variant
+    Transaction(String, u64),                        // Tuple variant
+    Error(String),                                   // Tuple variant đơn
+}
+
+fn process_log(event: Web3Event) {
+    match event {
+        // Pattern Matching với Struct-like
+        Web3Event::BlockMined { block_number, miner } => {
+            println!("Block #{} được đào bởi ví {}", block_number, miner);
+        }
+        
+        // Pattern Matching với Tuple
+        Web3Event::Transaction(tx_hash, fee) => {
+            println!("Giao dịch {} phí {} Gwei", tx_hash, fee);
+        }
+        
+        // Bắt lỗi
+        Web3Event::Error(msg) => {
+            println!("Cảnh báo: {}", msg);
+        }
+    }
+}
+
+fn main() {
+    let log1 = Web3Event::BlockMined { 
+        block_number: 19_000_000, 
+        miner: String::from("0xMinerrrr") 
+    };
+    
+    let log2 = Web3Event::Transaction(
+        String::from("0xAbc..."), 
+        21000
+    );
+
+    process_log(log1);
+    process_log(log2);
+}</code></pre>
+
+<p class="lesson-text"><strong>Bài toán: State Machine cho Giao dịch Blockchain</strong><br>
+  Chúng ta sẽ xây dựng một máy trạng thái (State Machine) mô phỏng vòng đời giao dịch.</p>
+  <p class="lesson-text">Đây là ứng dụng thực tế nhất của Enum</p>
+  <ol class="lesson-list">
+    <li>Enum TxState có 3 trạng thái:<br>
+       • <code>Pending</code>: Không có dữ liệu.<br>
+       • <code>Confirmed</code>: Chứa block_number (u64) và tx_hash (String).<br>
+       • <code>Failed</code>: Chứa error_code (i32) và message (String).</li>
+    <li>Viết hàm <code>print_tx_status</code> dùng match để hiển thị thông tin chi tiết.</li>
+  </ol>
+
+  <p class="lesson-text"><strong>Code mẫu:</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">// 1. Định nghĩa Enum đa hình
+enum TxState {
+    Pending,
+    Confirmed { block: u64, hash: String },
+    Failed(i32, String), // Tuple style cho gọn
+}
+
+fn main() {
+    let tx1 = TxState::Pending;
+    let tx2 = TxState::Confirmed { 
+        block: 123456, 
+        hash: String::from("0xabc...def") 
+    };
+    let tx3 = TxState::Failed(404, String::from("Out of Gas"));
+
+    print_tx_status(&tx1);
+    print_tx_status(&tx2);
+    print_tx_status(&tx3);
+}
+
+// 2. Hàm xử lý logic với Match
+fn print_tx_status(state: &TxState) {
+    match state {
+        TxState::Pending => {
+            println!("⏳ Giao dịch đang chờ xử lý...");
+        },
+        TxState::Confirmed { block, hash } => {
+            // Destructuring: Lấy block và hash ra dùng luôn
+            println!("✅ Thành công! Block: {}, Hash: {}", block, hash);
+        },
+        TxState::Failed(code, msg) => {
+            println!("❌ Thất bại! Mã lỗi: {}, Lý do: {}", code, msg);
+        },
+    }
+}</code></pre>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 8</h3>
+  
+  <div class="lesson-summary-box">
+    <p class="lesson-strong">Enum và Pattern Matching là cặp đôi hoàn hảo giúp code Rust trở nên tường minh và an toàn.</p>
+    <ol class="lesson-summary-list">
+      <li><strong>Enum Rust > C# Enum:</strong> Nó chứa được dữ liệu, thay thế được Class/Inheritance trong nhiều trường hợp.</li>
+      <li><strong>Match > Switch:</strong> Bắt buộc xử lý hết các trường hợp (Exhaustive), trả về giá trị, và giải nén dữ liệu (Destructuring).</li>
+      <li><strong>Tư duy:</strong> Đừng dùng Enum chỉ để đánh số. Hãy dùng Enum để mô tả <strong>Trạng thái của hệ thống</strong>.</li>
+    </ol>
+  </div>
+
+
+  <table class="lesson-table">
+    <thead>
+      <tr>
+        <th>Tính năng</th>
+        <th>C#</th>
+        <th>Rust</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Enum</td><td>Chỉ là số nguyên (0, 1, 2).</td><td>Có thể chứa Struct, Tuple, String...</td></tr>
+      <tr><td>Null</td><td><code>null</code> tồn tại mọi nơi.Nguy hiểm.</td><td>Không có null. Dùng Option<T> an toàn.</td></tr>
+      <tr><td>Switch/Match</td><td>Statement. Có thể thiếu case (nếu không có default).</td><td>Expression. Bắt buộc phủ hết mọi case.</td></tr>
+      <tr><td>Lấy dữ liệu</td><td>Phải cast kiểu thủ công.</td><td>Tự động bóc tách (Destructuring) trong match.</td></tr>
+    </tbody>
+  </table>
+<p class="lesson-tip">Lời khuyên:Từ nay, khi bạn thấy một logic kiểu "Nếu là A thì có dữ liệu X, nếu là B thì có dữ liệu Y", ĐỪNG tạo Class kế thừa, HÃY nghĩ ngay đến Enum trong Rust.</p>
+  <div class="lesson-homework">
+    <p><strong>Bài tập về nhà:</strong></p>
+    <p>Hãy định nghĩa một Enum <code>Shape</code> (Hình học):</p>
+    <ul class="lesson-list">
+      <li><code>Circle</code>: Chứa radius (f64).</li>
+      <li><code>Rectangle</code>: Chứa width, height (f64).</li>
+      <li><code>Square</code>: Chứa side (f64).</li>
+    </ul>
+    <p>Viết hàm <code>calculate_area(shape: Shape) -> f64</code> sử dụng <code>match</code> để tính diện tích từng loại.</p>
+  </div>
+
+  <p class="lesson-ending">
+    (Hẹn gặp lại ở <strong>Chương 4</strong>, nơi chúng ta sẽ học về <strong>Traits</strong> - Khái niệm tương đương Interface nhưng linh hoạt hơn nhiều.<br>
+    Đó là mảnh ghép cuối cùng để bạn xây dựng kiến trúc phần mềm hoàn chỉnh!)
+  </p>
+</div>
