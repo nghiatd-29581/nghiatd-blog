@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 12: Result Enum – Rust cho C# Developer</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Bài 12. Đây là bài học sẽ giải phóng bạn khỏi "địa ngục" try-catch-finally lồng nhau (Spaghetti code) mà bạn thường gặp trong các dự án C# lớn.<br><br>
+    Trong C#, Exception (Ngoại lệ) giống như một quả bom nổ chậm. Bạn không biết hàm nào sẽ ném bom, và nếu bạn quên bắt (catch), ứng dụng sẽ sập (Crash).<br><br>
+    Trong Rust, lỗi không phải là "Ngoại lệ". Lỗi là một phần của Dữ liệu. Bạn xử lý lỗi giống như xử lý dữ liệu bình thường.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 2: HỆ THỐNG TYPE & KIẾN TRÚC PHẦN MỀM</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 5: ERROR HANDLING - KHÔNG CÒN NULL REFERENCE EXCEPTION</h2>
+  <h3 class="lesson-title">BÀI 12: RESULT ENUM (THAY THẾ TRY-CATCH)</h3>
+
+  <h4 class="lesson-section">1. Ẩn dụ: "Gói hàng chuyển phát nhanh"</h4>
+  
+  <p class="lesson-text">Hãy tưởng tượng bạn gọi một hàm read_file().</p>
+  
+  <ul class="lesson-list">
+    <li><strong>C# (Exception):</strong> Bạn ra lệnh cho nhân viên "Đọc file đi".<br>
+      • Nếu thành công: Nhân viên đưa tài liệu cho bạn.<br>
+      • Nếu thất bại: Nhân viên... ném gạch vào cửa sổ nhà bạn (Throw Exception). Để an toàn, bạn phải xây hàng rào lưới (try-catch) bao quanh ngôi nhà.</li>
+    <li><strong>Rust (Result):</strong> Bạn ra lệnh cho nhân viên. Nhân viên đưa lại cho bạn một Gói hàng niêm phong (Result).<br>
+      • Bạn mở gói hàng ra (match).<br>
+      • Trường hợp 1: Bên trong là Tài liệu (Ok).<br>
+      • Trường hợp 2: Bên trong là Tờ giấy ghi lý do thất bại (Err).<br>
+      • Tuyệt đối không có gạch đá bay lung tung. Bạn bình tĩnh xử lý tờ giấy đó.</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Cấu trúc Result&lt;T, E&gt;</h4>
+  
+  <p class="lesson-text">Result là phiên bản nâng cấp của Option. Nếu Option chỉ bảo "Có" hoặc "Không", thì Result bảo "Thành công (kèm dữ liệu)" hoặc "Thất bại (kèm lý do)".</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">enum Result&lt;T, E&gt; {
+    Ok(T),  // Thành công: Chứa kết quả kiểu T
+    Err(E), // Thất bại: Chứa lỗi kiểu E
+}</code></pre>
+
+  <p class="lesson-text"><strong>Ví dụ: Hàm chia hai số.</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">// Trả về Result: 
+// - Nếu ngon lành: trả về f64
+// - Nếu lỗi: trả về String (lý do lỗi)
+fn divide(a: f64, b: f64) -> Result&lt;f64, String&gt; {
+    if b == 0.0 {
+        // Trả về lỗi
+        return Err(String::from("Không thể chia cho 0"));
+    }
+    // Trả về kết quả
+    Ok(a / b)
+}
+
+fn main() {
+    let ket_qua = divide(10.0, 0.0);
+    
+    match ket_qua {
+        Ok(val) => println!("Kết quả là: {}", val),
+        Err(msg) => println!("Lỗi rồi: {}", msg),
+    }
+}</code></pre>
+
+  <h4 class="lesson-section">3. Toán tử ? - "Chuyền bóng trách nhiệm"</h4>
+
+  <p class="lesson-text">Đây là Killer Feature của Rust giúp code sạch hơn C# gấp 10 lần.</p>
+  
+  <p class="lesson-text"><strong>Code Rust kiểu "ngây thơ" (Đừng viết thế này)</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">// Code Rust kiểu "ngây thơ" (Đừng viết thế này)
+fn read_username_from_file() -> Result&lt;String, io::Error&gt; {
+    let f = File::open("hello.txt");
+    
+    let mut f = match f {
+        Ok(file) => file,
+        Err(e) => return Err(e), // Lỗi thì return ngay
+    };
+
+    let mut s = String::new();
+    match f.read_to_string(&mut s) {
+        Ok(_) => Ok(s),
+        Err(e) => Err(e), // Lỗi thì return ngay
+    }
+}</code></pre>
+
+  <p class="lesson-text"><strong>Giải pháp: Toán tử ?</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">use std::fs::File;
+use std::io;
+use std::io::Read;
+
+fn read_username_from_file() -> Result&lt;String, io::Error&gt; {
+    // 1. Mở file. Nếu lỗi -> Return lỗi luôn. Nếu Ok -> gán vào f.
+    let mut f = File::open("hello.txt")?; 
+    
+    let mut s = String::new();
+    // 2. Đọc file. Nếu lỗi -> Return lỗi luôn. Nếu Ok -> Tiếp tục.
+    f.read_to_string(&mut s)?; 
+    
+    // 3. Trả về kết quả cuối cùng
+    Ok(s)
+}</code></pre>
+
+  <p class="lesson-text"><strong>Thậm chí có thể viết gộp (Chaining):</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn read_username_very_short() -> Result&lt;String, io::Error&gt; {
+    let mut s = String::new();
+    File::open("hello.txt")?.read_to_string(&mut s)?;
+    Ok(s)
+}</code></pre>
+
+  <h4 class="lesson-section">4. So sánh thực tế: C# vs Rust</h4>
+
+  <p class="lesson-text"><strong>C# (Try-Catch Style):</strong></p>
+  <pre class="lesson-code lesson-code-csharp">public string GetDbConfig() {
+    try {
+        var file = File.Open("config.txt"); // Có thể throw FileNotFoundException
+        var content = file.ReadAll();       // Có thể throw IOException
+        return content;
+    } catch (Exception e) {
+        // Bạn phải nhớ log hoặc throw tiếp
+        Console.WriteLine(e.Message);
+        return null; // Hoặc throw;
+    }
+}</pre>
+
+  <p class="lesson-text"><strong>Rust (Result Style):</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">// Nhìn chữ ký hàm là biết ngay hàm này CÓ THỂ LỖI (trả về Result)
+fn get_db_config() -> Result&lt;String, io::Error&gt; {
+    // Không có try-catch nào cả. Luồng code phẳng (linear).
+    let content = std::fs::read_to_string("config.txt")?;
+    Ok(content)
+}
+
+// Ở hàm main (nơi sử dụng)
+fn main() {
+    match get_db_config() {
+        Ok(cfg) => println!("Config: {}", cfg),
+        Err(e) => eprintln!("Không đọc được config: {}", e), // Xử lý lỗi tập trung tại đây
+    }
+}</code></pre>
+
+  <h4 class="lesson-section">5. Panic! - Khi không thể cứu vãn</h4>
+  
+  <p class="lesson-text">Vậy Rust có "Crash" không? Có. Đó là macro <code>panic!</code>.<br>
+  <code>panic!</code> giống như throw new Exception mà không ai bắt. Nó dừng chương trình ngay lập tức.</p>
+  
+  <p class="lesson-text">Dùng <code>panic!</code> khi:</p>
+  <ul class="lesson-list">
+    <li>Gặp lỗi không thể phục hồi (Code sai logic, thiếu file hệ thống bắt buộc).</li>
+    <li>Đang viết Prototype/Test.</li>
+  </ul>
+  
+  <pre class="lesson-code"><code class="lesson-code-rust">if alien_invasion {
+    panic!("Người ngoài hành tinh tấn công! Tắt server ngay!");
+}</code></pre>
+
+  <h4 class="lesson-section">6. Bài tập thực hành: Tính toán an toàn</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">use std::num::ParseIntError;
+
+// Hàm này trả về: Hoặc là số đã nhân đôi, Hoặc là lỗi parse
+fn parse_and_double(input: &str) -> Result&lt;i32, ParseIntError&gt; {
+    // input.trim() để xóa khoảng trắng thừa
+    // input.parse::&lt;i32&gt;() trả về Result
+    // Dấu ? sẽ tự động return Err nếu parse thất bại
+    let number = input.trim().parse::&lt;i32&gt;()?;
+    
+    Ok(number * 2)
+}
+
+fn main() {
+    let inputs = vec!["10", "  20  ", "abc", "50"];
+
+    for item in inputs {
+        match parse_and_double(item) {
+            Ok(n) => println!("'{}' x 2 = {}", item, n),
+            Err(e) => println!("Lỗi khi xử lý '{}': {}", item, e),
+        }
+    }
+}</code></pre>
+
+  <p class="lesson-text"><strong>Output:</strong></p>
+  <pre class="lesson-code">
+'10' x 2 = 20
+'  20  ' x 2 = 40
+Lỗi khi xử lý 'abc': invalid digit found in string
+'50' x 2 = 100
+</pre>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 12</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Error Handling của Rust ban đầu có vẻ dài dòng hơn C# (vì phải gõ Result, Ok, Err), nhưng nó mang lại lợi ích to lớn:</p>
+    <ol class="lesson-list">
+      <li><strong>Explicitness (Tường minh):</strong> Nhìn vào hàm -> Result&lt;...&gt; là biết ngay nó có thể hỏng. Không còn chuyện gọi hàm và "cầu nguyện" nó không throw exception.</li>
+      <li><strong>Robustness (Bền vững):</strong> Trình biên dịch ép bạn phải xử lý trường hợp lỗi (Err). Bạn không thể "quên" catch lỗi được.</li>
+      <li><strong>Clean Code:</strong> Toán tử ? giúp code gọn gàng, luồng xử lý chính nằm bên trái, xử lý lỗi được ẩn đi một cách tinh tế.</li>
+    </ol>
+  </div>
+
+  <p class="lesson-text"><strong>Chúc mừng bạn!</strong> Bạn đã hoàn thành phần kiến thức cốt lõi khó nhất của Rust.</p>
+  <ul class="lesson-list">
+    <li>Bạn đã cai nghiện GC (Ownership).</li>
+    <li>Bạn đã quên đi Null (Option).</li>
+    <li>Bạn đã thay thế Try-Catch (Result).</li>
+  </ul>
+
+  <p class="lesson-text">Ở phần tiếp theo, chúng ta sẽ bước vào thế giới thực tế: Xây dựng Project, Quản lý Module và Test.<br>
+  (Bạn có muốn tôi tổng hợp lại toàn bộ Phần 1 & 2 thành một Mục lục tóm tắt để bạn dễ hình dung chặng đường đã qua trước khi sang Phần 3 không?)</p>
+
+  <p class="lesson-ending">
+    (Hẹn gặp lại ở <strong>Chương 5: Error Handling - Không còn NullReferenceException</strong>).
+  </p>
+</div>
+
+</body>
+</html>

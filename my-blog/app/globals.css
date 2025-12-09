@@ -114,7 +114,7 @@ body {
   }
   .lesson-code {
       background: #1e1e1e; color: #dcdcdc; padding: 28px; border-radius: 16px; overflow-x: auto;
-      margin: 35px 0; font-family: 'Consolas', 'Courier New', monospace; position: relative; box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+      margin: 35px 0; font-family: 'Consolas', 'Courier New', monospace; position: relative; box-shadow: 0 1px 15px rgba(0, 0, 0, 0.2);
     }
   .lesson-summary { font-size: 1.7em; text-align: center; color: #089e7f; margin: 60px 0 20px; }
   .lesson-summary-box {
@@ -166,10 +166,13 @@ body {
     background: #f0fdf4; padding: 20px; border-left: 8px solid #22c55e; border-radius: 12px; margin: 25px 0; font-weight: bold; font-size: 1.1em;
   }
   .lesson-list { 
-    background: #eeeeee;
-    padding-left: 30px; 
+    background: #f2f2f2;
+     padding: 25px;
     margin: 25px 0; 
     font-size: 1.1em;
+    border-radius: 16px; 
+    border: 4px;
+    box-shadow: 0 1px 25px rgba(0,0,0,0.2);
   }
   .lesson-list li { 
     margin: 12px 0; 
