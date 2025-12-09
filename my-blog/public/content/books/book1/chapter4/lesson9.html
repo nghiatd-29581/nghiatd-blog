@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 9: Traits – Rust cho C# Developer</title>
+ 
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với <strong>Phần 2</strong>. Đây là giai đoạn chúng ta bắt đầu xây dựng kiến trúc phần mềm (Architecture).<br><br>
+    Trong C#, khi muốn chuẩn hóa hành vi (ví dụ: mọi Database Driver đều phải có hàm Connect()), bạn dùng Interface.<br>
+    Trong Rust, chúng ta dùng Traits.<br>
+    Tuy nhiên, nếu gọi Trait là Interface thì mới chỉ đúng 50%. Trait linh hoạt và mạnh mẽ hơn nhiều. Hãy cùng khám phá.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 2: HỆ THỐNG TYPE & KIẾN TRÚC PHẦN MỀM</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 4: TRAITS & GENERICS</h2>
+  <h3 class="lesson-title">BÀI 9: TRAITS <span class="lesson-subtitle">(GIỐNG INTERFACE C# NHƯNG "CƠ BẮP" HƠN)</span></h3>
+
+  <h4 class="lesson-section">1. Ẩn dụ: "Giấy Chứng Nhận Kỹ Năng"</h4>
+  
+  <p class="lesson-text">Hãy tưởng tượng về các nhân vật trong một Game nhập vai:</p>
+  
+  <ul class="lesson-list">
+    <li><strong>C# Interface: Giống như Nghề nghiệp (Class) hoặc Chủng tộc. Khi sinh ra (khởi tạo Class), bạn phải định nghĩa ngay là bạn thuộc nghề gì, kế thừa từ ai, implement interface nào. Nó dính liền với định danh của bạn.</strong></li>
+    <li><strong>Rust Trait:</strong> Giống như Giấy chứng nhận kỹ năng (Skill Badge).<br><br>
+      • Một Human (Struct) có thể đi học và lấy chứng chỉ Bơi lội (Trait).<br><br>
+      • Một Robot (Struct) cũng có thể lắp thêm module để lấy chứng chỉ Bơi lội.<br><br>
+      • Đặc biệt: Bạn có thể cấp chứng chỉ Biết bay cho một con Chó (kiểu dữ liệu có sẵn mà bạn không tạo ra), miễn là bạn là người định nghĩa ra cái chứng chỉ đó.</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Cú pháp: Định nghĩa và Thực thi</h4>
+
+  <p class="lesson-text"><strong>A. Định nghĩa Trait (Giống định nghĩa Interface)</strong><br>
+  C# dùng interface, Rust dùng trait.</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">// Định nghĩa hành vi: Bất kỳ ai có Trait này đều phải biết "tóm tắt"
+pub trait Summary {
+    fn summarize(&self) -> String; // Chỉ khai báo chữ ký hàm
+}</code></pre>
+
+  <p class="lesson-text"><strong>B. Implement Trait cho Struct</strong><br>
+  Trong C#, bạn viết : ISummary ngay cạnh tên class.<br>
+  Trong Rust, bạn dùng block <code>impl [Trait] for [Type]</code>. Tách biệt hoàn toàn.</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">struct NewsArticle {
+    pub headline: String,
+    pub content: String,
+}
+
+struct Tweet {
+    pub username: String,
+    pub content: String,
+}
+
+// Cấp chứng chỉ "Summary" cho NewsArticle
+impl Summary for NewsArticle {
+    fn summarize(&self) -> String {
+        format!("{}, by ...", self.headline)
+    }
+}
+
+// Cấp chứng chỉ "Summary" cho Tweet
+impl Summary for Tweet {
+    fn summarize(&self) -> String {
+        format!("{}: {}", self.username, self.content)
+    }
+}</code></pre>
+
+  <h4 class="lesson-section">3. Các Trait "Tiêu chuẩn" (The Big Three)</h4>
+
+  <p class="lesson-list">Trong C#, mọi Object đều có sẵn .ToString(), .Equals(), .GetHashCode().<br>
+  Trong Rust, Struct mặc định <strong>KHÔNG CÓ GÌ CẢ</strong>. Nó "trần trụi" để tối ưu hiệu năng. Muốn có tính năng nào, bạn phải xin cấp Trait đó.<br><br>
+  Có 3 Trait quan trọng nhất bạn phải biết:</p>
+
+  <p class="lesson-text">1. <strong>Debug</strong> (Dành cho Lập trình viên)<br>
+  • Tương đương C#: Khi bạn Debug xem giá trị biến.<br>
+  • Cách dùng: In ra bằng <code>{:?}</code>.<br>
+  • Làm biếng: Dùng attribute <code>#[derive(Debug)]</code> để Rust tự viết code cho bạn.</p>
+
+  <p class="lesson-text">2. <strong>Display</strong> (Dành cho Người dùng cuối)<br>
+  • Tương đương C#: Override ToString().<br>
+  • Cách dùng: In ra bằng <code>{}</code>.<br>
+  • Lưu ý: Không thể derive, bạn bắt buộc phải tự viết hàm định dạng chuỗi.</p>
+
+  <p class="lesson-text">3. <strong>Clone & Copy</strong> (Sao chép)<br>
+  • Tương đương C#: ICloneable.<br>
+  • Tác dụng: Cho phép nhân bản object (Deep copy).</p>
+
+  <p class="lesson-text"><strong>Ví dụ thực tế:</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">use std::fmt; // Thư viện format
+
+// 1. Debug: Để Rust tự làm (derive)
+#[derive(Debug)] 
+struct User {
+    username: String,
+    level: u32,
+}
+
+// 2. Display: Tự tay định nghĩa cách in đẹp đẽ
+impl fmt::Display for User {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Ghi vào buffer f
+        write!(f, "User {} (Level {})", self.username, self.level)
+    }
+}
+
+fn main() {
+    let u = User { username: String::from("DevPro"), level: 99 };
+
+    // Dùng Display (cho user xem)
+    println!("Thông báo: {}", u); 
+    // Output: Thông báo: User DevPro (Level 99)
+
+    // Dùng Debug (cho dev xem cấu trúc nội tại)
+    println!("Log: {:?}", u); 
+    // Output: Log: User { username: "DevPro", level: 99 }
+}</code></pre>
+
+  <h4 class="lesson-section">4. Siêu năng lực: Implement Trait cho kiểu có sẵn</h4>
+
+  <p class="lesson-text">Đây là điểm Rust <strong>"ăn đứt"</strong> C# về độ linh hoạt (Extension Method trong C# làm được điều tương tự về cú pháp gọi, nhưng không thực sự biến kiểu đó thành subtype của interface).<br><br>
+  Bài toán: Bạn muốn kiểu i32 (số nguyên) có khả năng... "nói chuyện"? Hoặc bạn muốn String có khả năng encrypt()?<br><br>
+  Trong Rust, bạn có thể implement Trait của bạn cho các kiểu dữ liệu của thư viện chuẩn.</p>
+
+  <p class="lesson-text"><strong>Ví dụ: Tạo Trait IsEven cho kiểu i32.</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">// 1. Định nghĩa Trait mới
+trait CheckEven {
+    fn is_even(&self) -> bool;
+}
+
+// 2. Implement Trait này cho... i32 (Kiểu dữ liệu có sẵn của Rust!)
+impl CheckEven for i32 {
+    fn is_even(&self) -> bool {
+        self % 2 == 0
+    }
+}
+
+fn main() {
+    let number = 10;
+    
+    // Bây giờ số 10 (i32) đã có method is_even()
+    if number.is_even() {
+        println!("Số chẵn!");
+    }
+}</code></pre>
+
+  <p class="lesson-text"><strong>Quy tắc mồ côi (Orphan Rule):</strong><br>
+  Để tránh lộn xộn, Rust quy định: Bạn chỉ được implement một Trait cho một Type nếu:</p>
+  <ol class="lesson-list">
+    <li>Trait đó do bạn định nghĩa (nằm trong crate của bạn).</li>
+    <li>HOẶC Type đó do bạn định nghĩa.<br>
+       Bạn không thể implement Trait của người khác cho Type của người khác.</li>
+  </ol>
+
+  <h4 class="lesson-section">5. Default Implementation (Hàm mặc định)</h4>
+
+  <p class="lesson-text">Giống như Default Interface Methods trong C# 8.0+. Bạn có thể viết code mặc định cho Trait.</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">trait Summary {
+    // Hàm này bắt buộc phải viết đè
+    fn get_author(&self) -> String;
+
+    // Hàm này có sẵn code, override hay không tùy bạn
+    fn summarize(&self) -> String {
+        format!("(Read more from {}...)", self.get_author())
+    }
+}</code></pre>
+
+  <h4 class="lesson-section">6. So sánh tổng kết C# vs Rust</h4>
+
+  <div class="lesson-table">
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr><th>Đặc điểm</th><th>C# Interface</th><th>Rust Trait</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Dữ liệu</td><td>Không chứa field (trừ static const).</td><td>Không chứa field.</td></tr>
+          <tr><td>Khai báo</td><td>class A : IInterface</td><td>impl Trait for A</td></tr>
+          <tr><td>Mở rộng</td><td>Extension Methods (cú pháp giả).</td><td><strong>Implement Trait cho Existing Types (chính chủ).</strong></td></tr>
+          <tr><td>Đa kế thừa</td><td>Implement nhiều Interface.</td><td>Implement nhiều Trait.</td></tr>
+          <tr><td>ToString</td><td>Có sẵn (Object.ToString).</td><td>Phải implement Display hoặc Debug.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h4 class="lesson-section">7. Bài tập thực hành: "Currency Formatter"</h4>
+
+  <p class="lesson-text"><strong>Yêu cầu:</strong></p>
+  <ol class="lesson-list>
+    <li>Tạo một struct Wallet chứa amount (u64) và currency (String).</li>
+    <li>Implement trait Display cho Wallet để khi <code>println!("{}", wallet)</code> nó in ra dạng: <strong>1000 USD</strong>.</li>
+    <li>Tạo một trait ToVND có hàm <code>to_vnd(&self) -> u64</code>. Giả sử tỷ giá 1 USD = 25,000.</li>
+    <li>Implement ToVND cho Wallet.</li>
+  </ol>
+
+  <p class="lesson-text"><strong>Lời giải mẫu:</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">use std::fmt;
+
+// Struct
+struct Wallet {
+    amount: u64,
+    currency: String,
+}
+
+// 1. Implement Display (Thay thế ToString)
+impl fmt::Display for Wallet {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} {}", self.amount, self.currency)
+    }
+}
+
+// 2. Định nghĩa Trait quy đổi
+trait ToVND {
+    fn to_vnd(&self) -> u64;
+}
+
+// 3. Implement Trait quy đổi cho Wallet
+impl ToVND for Wallet {
+    fn to_vnd(&self) -> u64 {
+        if self.currency == "USD" {
+            self.amount * 25_000
+        } else {
+            self.amount // Giả sử mặc định là VND
+        }
+    }
+}
+
+fn main() {
+    let my_wallet = Wallet {
+        amount: 100,
+        currency: String::from("USD"),
+    };
+
+    println!("Số dư: {}", my_wallet); // Gọi Display: "100 USD"
+    println!("Quy đổi: {} VND", my_wallet.to_vnd()); // Gọi hàm từ Trait
+}</code></pre>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 9</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Trait chính là xương sống của sự linh hoạt trong Rust.</p>
+    <ul class="lesson-list">
+      <li>Muốn in ra màn hình? Implement Display.</li>
+      <li>Muốn so sánh bằng nhau (==)? Implement PartialEq.</li>
+      <li>Muốn sắp xếp (sort)? Implement Ord.</li>
+    </ul>
+    <p class="lesson-strong">Thay vì nhớ tên hàm (Equals, CompareTo), hãy nhớ tên Trait.</p>
+  </div>
+
+  <div class="lesson-homework">
+    <p><strong>Bài tập về nhà:</strong><br><br>
+    Hãy thử implement trait <code>Add</code> (trong thư viện <code>std::ops::Add</code>) cho struct <code>Point {x: i32, y: i32}</code> để bạn có thể thực hiện phép cộng hai điểm:<br>
+    <code>let p3 = p1 + p2;>.<br><br>
+    <em>(Gợi ý: Đây là cách Rust thực hiện Operator Overloading - Quá tải toán tử).</em>
+  </div>
+
+  <p class="lesson-ending">
+    (Hẹn gặp lại ở <strong>Bài 10: Generics</strong>. Chúng ta sẽ xem Trait kết hợp với Generics tạo ra sức mạnh hủy diệt như thế nào!)
+  </p>
+</div>
+
+</body>
+</html>

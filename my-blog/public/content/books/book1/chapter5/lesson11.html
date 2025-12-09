@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 11: Option Enum – Rust cho C# Developer</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Chương 5. Đây là chương sẽ giúp bạn ngủ ngon hơn vào mỗi tối thứ Sáu, vì bạn sẽ không còn bị dựng dậy bởi lỗi NullReferenceException trên môi trường Production nữa.<br><br>
+    Tony Hoare, người sáng tạo ra khái niệm null, đã từng xin lỗi và gọi đó là "Sai lầm trị giá hàng tỷ đô la" (The Billion Dollar Mistake). C# (những phiên bản đầu) đã dính phải sai lầm này.<br>
+    Rust sinh sau đẻ muộn, nên Rust sửa sai triệt để. Trong Rust, <strong>NULL KHÔNG TỒN TẠI</strong>.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 2: HỆ THỐNG TYPE & KIẾN TRÚC PHẦN MỀM</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 5: ERROR HANDLING - KHÔNG CÒN NULL REFERENCE EXCEPTION</h2>
+  <h3 class="lesson-title">BÀI 11: OPTION ENUM (THAY THẾ NULL)</h3>
+
+  <h4 class="lesson-section">1. Ẩn dụ: Chiếc Hộp Quà (The Gift Box)</h4>
+  
+  <p class="lesson-text">Để hiểu Option, hãy quên khái niệm "biến trỏ vào hư vô" (null) đi. Hãy tưởng tượng về một Chiếc Hộp.</p>
+  
+  <ul class="lesson-list">
+    <li><strong>Trong C#:</strong><br>
+      • Bạn khai báo string s. Bạn đinh ninh nó là cái iPhone.<br>
+      • Bạn cầm nó lên và bấm nút "Gọi".<br>
+      • Nếu xui xẻo (s == null), thực ra không có cái iPhone nào cả. Tay bạn bấm vào không khí → Bùm! (Exception: Object reference not set to an instance...).</li>
+    <li><strong>Trong Rust (Option&lt;T&gt;):</strong><br>
+      • Bạn nhận được một Chiếc Hộp Dán Kín (Option).<br>
+      • Rust <strong>CẤM</strong> bạn bấm nút gọi ngay.<br>
+      • Rust bắt bạn phải thực hiện hành động: <strong>MỞ HỘP RA (Check)</strong>.<br><br>
+        • Trường hợp 1: Mở ra thấy cái iPhone → OK, lấy ra dùng (Some).<br>
+        • Trường hợp 2: Mở ra thấy rỗng tuếch → OK, xử lý việc hộp rỗng (None).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Cốt lõi:</strong> Bạn không bao giờ được phép chạm vào giá trị thật nếu chưa kiểm tra chiếc hộp. Trình biên dịch sẽ chặn họng bạn ngay lúc gõ code nếu bạn lười biếng.</p>
+
+  <h4 class="lesson-section">2. Định nghĩa: Option là một Enum</h4>
+  
+  <p class="lesson-text">Trong thư viện chuẩn của Rust, Option được định nghĩa đơn giản thế này:</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">enum Option&lt;T&gt; {
+    Some(T), // Hộp có quà (chứa giá trị kiểu T)
+    None,    // Hộp rỗng (tương đương null)
+}</code></pre>
+
+  <p class="lesson-text">Bởi vì nó quá phổ biến, Rust cho phép bạn dùng Some và None trực tiếp mà không cần gõ Option::Some.</p>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Tình huống</th><th>C# Code</th><th>Rust Code</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Bắt buộc có giá trị</td><td><code>int x = 5;</code> (Vẫn an toàn vì là value type)<br><code>string s = "Hi";</code> (Có thể null nếu không bật Nullable context)</td><td><code>let x: i32 = 5;</code><br>(Chắc chắn 100% có giá trị. Không bao giờ null).</td></tr>
+        <tr><td>Có thể có hoặc không</td><td><code>int? x = null;</code><br><code>string s = null;</code></td><td><code>let x: Option&lt;i32&gt; = None;</code><br><code>let s: Option&lt;String&gt; = Some(String::from("Hi"));</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4 class="lesson-section">3. Cách dùng: Mở hộp (Unboxing)</h4>
+
+  <p class="lesson-text"><strong>Cách 1: Dùng match (An toàn nhất - Khuyên dùng)</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn main() {
+    let some_number = Some(5);
+    let no_number: Option&lt;i32&gt; = None;
+
+    process_number(some_number);
+    process_number(no_number);
+}
+
+fn process_number(input: Option&lt;i32&gt;) {
+    match input {
+        Some(i) => println!("Trong hộp có số: {}", i), // i là i32 thực sự
+        None => println!("Hộp rỗng!"),
+    }
+}</code></pre>
+
+  <p class="lesson-text"><strong>Cách 2: Dùng unwrap() (Liều lĩnh - Giống C#)</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">let x = Some(10);
+let val = x.unwrap(); // Trả về 10
+
+let y: Option&lt;i32&gt; = None;
+let val_y = y.unwrap(); // CRASH CHƯƠNG TRÌNH (Panic) ngay lập tức!</code></pre>
+
+  <p class="lesson-text"><strong>Cách 3: Dùng unwrap_or() (An toàn và gọn - Giống ?? trong C#)</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">// Rust
+let x: Option&lt;i32&gt; = None;
+let value = x.unwrap_or(0); // Nếu None, trả về 0
+
+// Tương đương C#
+// int? x = null;
+// int value = x ?? 0;</code></pre>
+
+  <h4 class="lesson-section">4. Practical Example: Tìm kiếm User</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">struct User {
+    id: i32,
+    username: String,
+}
+
+// Giả lập hàm tìm kiếm trong DB
+// Trả về Option&lt;User&gt; thay vì User (để tránh null)
+fn find_user_by_id(id: i32) -> Option&lt;User&gt; {
+    if id == 1 {
+        Some(User {
+            id: 1,
+            username: String::from("admin"),
+        })
+    } else {
+        None // Không tìm thấy
+    }
+}
+
+fn main() {
+    let user_option = find_user_by_id(2); // Thử tìm ID 2 (không có)
+
+    // Cách xử lý chuẩn chỉ
+    match user_option {
+        Some(user) => {
+            println!("Xin chào, {}!", user.username);
+        }
+        None => {
+            println!("Không tìm thấy User này.");
+        }
+    }
+
+    // Cách viết tắt (Nếu chỉ quan tâm trường hợp có User)
+    // if let Some(user) = find_user_by_id(1) {
+    //     println!("Found: {}", user.username);
+    // }
+}</code></pre>
+
+  <h4 class="lesson-section">5. Combinators: map và chuỗi xử lý (Functional Programming)</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">let user_opt = find_user_by_id(1);
+
+let name_len = user_opt
+    .map(|user| user.username) // Nếu Some(user) -> Lấy username. Nếu None -> Giữ nguyên None
+    .map(|name| name.len())    // Nếu Some(name) -> Lấy độ dài.
+    .unwrap_or(0);             // Nếu bất kỳ bước nào là None -> Trả về 0
+
+println!("Độ dài tên: {}", name_len);</code></pre>
+
+  <p class="lesson-text">Tư duy: Bạn đang lắp ráp một dây chuyền xử lý cái hộp mà không cần mở nó ra ngay lập tức.</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 11</h3>
+
+  <div class="lesson-summary-box">
+    <ol class="lesson-list">
+      <li><strong>Không có Null:</strong> Rust buộc bạn phải đối mặt với sự vắng mặt của giá trị ngay từ lúc khai báo kiểu (Option&lt;T&gt;).</li>
+      <li><strong>An toàn tuyệt đối:</strong> Bạn không thể "lỡ quên" check null. Code sẽ không biên dịch nếu bạn cố tình cộng Option&lt;i32&gt; với i32.</li>
+      <li><strong>Công cụ:</strong><br>
+         • <code>match</code>: Xử lý rõ ràng từng trường hợp.<br>
+         • <code>unwrap</code>: Mở hộp thô bạo (dễ crash).<br>
+         • <code>unwrap_or</code>: Mở hộp an toàn với giá trị dự phòng.</li>
+    </ol>
+  </div>
+
+  <div class="lesson-homework">
+    <p><strong>Bài tập về nhà:</strong><br><br>
+    Viết hàm <code>divide(numerator: f64, denominator: f64) -> Option&lt;f64&gt;</code>.<br><br>
+    • Nếu mẫu số (denominator) bằng 0.0, trả về None.<br>
+    • Nếu không, trả về Some(kết quả).<br><br>
+    • Ở hàm main, gọi hàm này và in ra kết quả.</p>
+  </div>
+
+  <p class="lesson-ending">
+    (Hẹn gặp lại ở <strong>Bài 12: Result Enum</strong>. Option chỉ giải quyết việc "Có/Không". Còn nếu muốn biết "Tại sao lỗi?" (Ví dụ: File not found, Permission denied), chúng ta cần một công cụ mạnh hơn: <strong>Result</strong>).
+  </p>
+</div>
+
+</body>
+</html>

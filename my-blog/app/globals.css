@@ -113,9 +113,9 @@ body {
     background: #f6ffed; padding: 16px; border-left: 6px solid #52c41a; border-radius: 10px; margin: 20px 0; font-weight: bold;
   }
   .lesson-code {
-    background: #1e1e1e; color: #dcdcdc; padding: 20px; border-radius: 12px; overflow-x: auto;
-    margin: 25px 0; font-family: 'Consolas', monospace; position: relative;
-  }
+      background: #1e1e1e; color: #dcdcdc; padding: 28px; border-radius: 16px; overflow-x: auto;
+      margin: 35px 0; font-family: 'Consolas', 'Courier New', monospace; position: relative; box-shadow: 0 1px 15px rgba(0, 0, 0, 0.2);
+    }
   .lesson-summary { font-size: 1.7em; text-align: center; color: #089e7f; margin: 60px 0 20px; }
   .lesson-summary-box {
     background: linear-gradient(135deg, #f6ffed 0%, #e6f7ff 100%);
@@ -153,12 +153,8 @@ body {
   .lesson-type {
     background: #fff7e6; padding: 10px; border-radius: 12px; border: 2px solid #ffb302;
   }
-  .lesson-code {
-    background: #1e1e1e; color: #dcdcdc; padding: 20px; border-radius: 12px; overflow-x: auto;
-    margin: 20px 0; font-family: 'Consolas', monospace; position: relative;
-  }
-  .lesson-code-csharp::before { content: "C#"; position: absolute; top: 1px; right: 1px; background: #9b4fca; color: white; padding: 1px 1px; border-radius: 1px; font-weight: bold; }
-  .lesson-code-rust::before { content: "Rust"; position: absolute; top: 1px; right: 1px; background: #e34c26; color: white; padding: 1px 1px; border-radius: 1px; font-weight: bold; }
+  .lesson-code-csharp::before { content: "C#"; position: absolute; top: 0px; right: 0px; background: #9b4fca; color: white; padding: 0px 0px; border-radius: 1px; font-weight: bold; }
+  .lesson-code-rust::before { content: "Rust"; position: absolute; top: 0px; right: 0px; background: #e34c26; color: white; padding: 0px 0px; border-radius: 1px; font-weight: bold; }
   .lesson-code-comparison {
     display: flex; gap: 5px; margin: 5px 0; flex-wrap: wrap;
   }
@@ -170,10 +166,17 @@ body {
     background: #f0fdf4; padding: 20px; border-left: 8px solid #22c55e; border-radius: 12px; margin: 25px 0; font-weight: bold; font-size: 1.1em;
   }
   .lesson-list { 
-    padding-left: 30px; 
+    background: #f2f2f2;
+     padding: 25px;
     margin: 25px 0; 
     font-size: 1.1em;
+    border-radius: 16px; 
+    border: 4px;
+    box-shadow: 0 1px 25px rgba(0,0,0,0.2);
   }
   .lesson-list li { 
     margin: 12px 0; 
   }
+  .lesson-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin: 40px 0; }
+  .lesson-item { background: #f0fdf4; padding: 25px; border-radius: 16px; border: 4px solid #22c55e; text-align: center; font-size: 1.1em; }
+  .lesson-strong { font-weight: bold; color: #166534; font-size: 1.2em; }
