@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 10: Generics – Rust cho C# Developer</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Bài 10. Đây là bài học "dễ thở" nhất trong chuỗi ngày qua, vì cú pháp Generics của Rust và C# giống nhau đến 90%.<br><br>
+    Tuy nhiên, sự khác biệt nằm ở cơ chế bên dưới nắp ca-pô. Hiểu được điều này, bạn sẽ hiểu tại sao Rust lại tự tin tuyên bố: "Bạn có thể viết code trừu tượng (abstract) đẹp như thơ, mà chạy nhanh như code Assembly viết tay".
+  </p>
+
+  <h1 class="lesson-part">PHẦN 2: HỆ THỐNG TYPE & KIẾN TRÚC PHẦN MỀM</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 4: TRAITS & GENERICS</h2>
+  <h3 class="lesson-title">BÀI 10: GENERICS - "BÌNH MỚI RƯỢU CŨ" NHƯNG NGON HƠN</h3>
+
+  <h4 class="lesson-section">1. Ẩn dụ: "Khuôn Đúc" vs. "Nhân Viên Đa Năng"</h4>
+  
+  <p class="lesson-text">Để hiểu sự khác biệt về hiệu năng giữa C# và Rust, hãy tưởng tượng bạn cần xử lý đóng gói hàng hóa cho 2 loại: Hộp Vuông và Hộp Tròn.</p>
+  
+  <ul class="lesson-list">
+    <li><strong>C# (JIT Compilation):</strong> Giống như thuê một Nhân viên đa năng. Anh ta cầm một tờ hướng dẫn chung chung &lt;T&gt;. Khi hàng chạy đến, anh ta nhìn xem đó là Hộp Vuông hay Hộp Tròn, rồi mới quyết định cách gói. Quá trình "nhìn và quyết định" này diễn ra khi nhà máy đang chạy (Runtime), gây ra một chút độ trễ (Overhead).</li>
+    <li><strong>Rust (Monomorphization):</strong> Giống như một Khuôn Đúc. Trước khi nhà máy mở cửa (Compile time), Rust nhìn thấy bạn dùng 2 loại hộp. Nó âm thầm nhân bản dây chuyền thành 2 dây chuyền riêng biệt: Một chuyên cho Hộp Vuông, một chuyên cho Hộp Tròn. Khi chạy, không cần kiểm tra gì cả, cứ thế mà chạy tối đa tốc độ.</li>
+  </ul>
+  
+  <p class="lesson-text"><strong>Kết luận:</strong> Rust tốn thời gian biên dịch lâu hơn, tốn dung lượng ổ cứng (file binary nặng hơn) nhưng <strong>Tốc độ chạy là tuyệt đối (Zero-cost Abstraction)</strong>.</p>
+
+  <h4 class="lesson-section">2. Cú pháp: Anh em sinh đôi với C#</h4>
+
+  <p class="lesson-text"><strong>A. Trong khai báo Hàm</strong></p>
+  <pre class="lesson-code lesson-code-csharp">public T ReturnItem&lt;T&gt;(T item) {
+    return item;
+}</pre>
+  
+  <pre class="lesson-code"><code class="lesson-code-rust">// Cú pháp y hệt: &lt;T&gt; sau tên hàm
+fn return_item&lt;T&gt;(item: T) -&gt; T {
+    item
+}</code></pre>
+
+  <p class="lesson-text"><strong>B. Trong khai báo Struct (Class)</strong></p>
+  <pre class="lesson-code lesson-code-csharp">public class Point&lt;T&gt; {
+    public T X;
+    public T Y;
+}</pre>
+  
+  <pre class="lesson-code"><code class="lesson-code-rust">struct Point&lt;T&gt; {
+    x: T,
+    y: T,
+}
+
+fn main() {
+    let integer_point = Point { x: 5, y: 10 }; // T tự động hiểu là i32
+    let float_point = Point { x: 1.0, y: 4.0 }; // T tự động hiểu là f64
+}</code></pre>
+
+  <h4 class="lesson-section">3. Zero-Cost Abstractions: Phép thuật "Monomorphization"</h4>
+  
+  <pre class="lesson-code"><code class="lesson-code-rust">fn print_item&lt;T: std::fmt::Display&gt;(item: T) {
+    println!("{}", item);
+}
+
+fn main() {
+    print_item(10);        // Dùng với i32
+    print_item("Hello");   // Dùng với &str
+}</code></pre>
+
+  <p class="lesson-text">Khi biên dịch, Rust sẽ âm thầm tạo ra 2 hàm riêng biệt (tên giả định):<br>
+  1. <code>fn print_item_i32(item: i32) { ... }</code><br>
+  2. <code>fn print_item_str(item: &str) { ... }</code><br>
+  =&gt; CPU không hề biết "Generic" là cái gì. Không có boxing/unboxing, không có runtime type check.</p>
+
+  <h4 class="lesson-section">4. Generics Constraints (Ràng buộc): Kết hợp với Traits</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">// Code Lỗi (Rust ngây thơ):
+fn largest&lt;T&gt;(a: T, b: T) -&gt; T {
+    if a &gt; b { // LỖI: Rust không biết T có so sánh được không?
+        a
+    } else {
+        b
+    }
+}</code></pre>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">// Code Đúng (Dùng Trait Bound):
+// Cách 1: Viết thẳng hàng
+fn largest&lt;T: PartialOrd&gt;(a: T, b: T) -&gt; T { ... }
+
+// Cách 2: Dùng mệnh đề 'where' (Giống hệt C#)
+fn largest&lt;T&gt;(a: T, b: T) -&gt; T 
+where T: PartialOrd 
+{
+    if a &gt; b {
+        a
+    } else {
+        b
+    }
+}</code></pre>
+
+  <h4 class="lesson-section">5. Đa Generics & Method Implementation</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">struct Point&lt;T, U&gt; {
+    x: T,
+    y: U,
+}
+
+// 1. Implement cho mọi loại T, U
+impl&lt;T, U&gt; Point&lt;T, U&gt; {
+    fn mixup&lt;V, W&gt;(self, other: Point&lt;V, W&gt;) -&gt; Point&lt;T, W&gt; {
+        Point {
+            x: self.x,
+            y: other.y,
+        }
+    }
+}
+
+// 2. Chỉ Implement riêng cho loại Point&lt;f64, f64&gt;
+impl Point&lt;f64, f64&gt; {
+    fn distance_from_origin(&self) -&gt; f64 {
+        (self.x.powi(2) + self.y.powi(2)).sqrt()
+    }
+}
+
+fn main() {
+    let p2 = Point { x: 3.0, y: 4.0 };
+    println!("Distance: {}", p2.distance_from_origin()); // OK
+}</code></pre>
+
+  <h4 class="lesson-section">6. Bài tập thực hành: "Cái Hộp Thần Kỳ"</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">use std::fmt::Display;
+
+// 1. Struct Generic
+struct Wrapper&lt;T&gt; {
+    value: T,
+}
+
+impl&lt;T&gt; Wrapper&lt;T&gt; {
+    fn new(value: T) -&gt; Self {
+        Wrapper { value }
+    }
+}
+
+// 2. Implement có điều kiện
+impl&lt;T: Display + PartialOrd&gt; Wrapper&lt;T&gt; {
+    fn compare_and_print(&self, other: T) {
+        if self.value &gt; other {
+            println!("Giá trị trong hộp ({}) LỚN HƠN bên ngoài ({})", self.value, other);
+        } else {
+            println!("Giá trị trong hộp ({}) NHỎ HƠN hoặc BẰNG bên ngoài ({})", self.value, other);
+        }
+    }
+}
+
+fn main() {
+    let w_int = Wrapper::new(50);
+    let w_str = Wrapper::new("Alice");
+
+    w_int.compare_and_print(100); 
+    w_str.compare_and_print("Bob"); 
+}</code></pre>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 10</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Generics trong Rust là người bạn thân thiết nhất của C# Developer vì sự tương đồng về cú pháp.</p>
+    <ol class="lesson-list">
+      <li>Cú pháp &lt;T&gt;: Giống C# 99%.</li>
+      <li>Monomorphization: Rust "copy-paste" code cho từng kiểu dữ liệu cụ thể lúc biên dịch -&gt; Code chạy cực nhanh, không overhead.</li>
+      <li>Bounds: Dùng <code>where T: Trait</code> để quy định khả năng của T.</li>
+      <li>Zero-cost: Đừng ngại dùng Generics vì sợ chậm. Trong Rust, dùng Generics hay viết tay từng hàm cụ thể hiệu năng là như nhau.</li>
+    </ol>
+  </div>
+
+  <p class="lesson-text"><strong>Bước tiếp theo:</strong><br>
+  Đến đây, bạn đã nắm được cách xây dựng cấu trúc (Struct), hành vi (Trait), và tái sử dụng (Generics).<br>
+  Tuy nhiên, có một thứ "đáng sợ" nhưng cực kỳ an toàn mà chúng ta chưa đụng tới: Xử lý lỗi (Error Handling).<br>
+  Tại sao Rust không có try-catch? Tại sao null lại biến mất?</p>
+
+  <p class="lesson-ending">
+    (Hẹn gặp lại ở <strong>Chương 5: Error Handling - Không còn NullReferenceException</strong>).
+  </p>
+</div>
+
+</body>
+</html>
