@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 13: Vectors & HashMaps – Rust cho C# Developer</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Bài 13. Trong bài này, chúng ta sẽ làm việc với những công cụ lưu trữ dữ liệu linh hoạt nhất.<br><br>
+    Ở C#, khi bạn cần một danh sách co giãn được, bạn dùng List&lt;T&gt;. Khi bạn cần tra cứu theo từ khóa, bạn dùng Dictionary&lt;K,V&gt;. Đây là "bánh mì và bơ" (cơm bữa) của mọi lập trình viên C#.<br><br>
+    Trong Rust, hai người bạn tương đương đó là <strong>Vector (Vec&lt;T&gt;)</strong> và <strong>HashMap (HashMap&lt;K,V&gt;)</strong>. Tuy nhiên, vì Rust quản lý bộ nhớ thủ công, cách chúng hoạt động sẽ có vài điểm "giật mình" liên quan đến Ownership mà bạn cần chú ý.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 2: HỆ THỐNG TYPE & KIẾN TRÚC PHẦN MỀM</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 6: COLLECTIONS & ITERATORS</h2>
+  <h3 class="lesson-title">BÀI 13: VECTORS & HASHMAPS (KHO CHỨA DỮ LIỆU ĐỘNG)</h3>
+
+  <h4 class="lesson-section">1. Vectors (Vec&lt;T&gt;): Phiên bản Rust của List&lt;T&gt;</h4>
+
+  <p class="lesson-text"><strong>Ẩn dụ:</strong><br>
+  Hãy tưởng tượng Vec&lt;T&gt; giống như một Hàng Ghế Trong Rạp Chiếu Phim.</p>
+
+  <ul class="lesson-list">
+    <li>Các ghế nằm liền kề nhau (bộ nhớ liên tiếp).</li>
+    <li>Nếu rạp hết chỗ, quản lý sẽ phải xây một phòng chiếu mới to hơn và mời tất cả khán giả sang đó ngồi (Re-allocation: Tốn kém, nhưng cần thiết để co giãn).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>A. Khởi tạo và Thêm phần tử</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn main() {
+    // Cách 1: Tạo rỗng (phải có mut để thêm sửa)
+    let mut v: Vec&lt;i32&gt; = Vec::new(); 
+    v.push(5);
+    v.push(6);
+
+    // Cách 2: Dùng Macro (Rust tự suy luận kiểu) -> Khuyên dùng
+    let mut v2 = vec![1, 2, 3]; 
+    v2.push(4);
+}</code></pre>
+
+  <p class="lesson-text"><strong>B. Truy cập phần tử: "An toàn" vs "Liều lĩnh"</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn main() {
+    let v = vec![1, 2, 3, 4, 5];
+
+    // Cách 1: Indexing Syntax (Giống C#) -> Liều lĩnh
+    // Nếu index sai -> Panic (Crash) ngay lập tức.
+    let third: &i32 = &v[2]; 
+    println!("Phần tử thứ 3 là: {}", third);
+
+    // Cách 2: Method .get() (Giống TryGetValue) -> An toàn
+    // Trả về Option<&T>. Không bao giờ crash.
+    match v.get(100) {
+        Some(value) => println!("Tìm thấy: {}", value),
+        None => println!("Không có phần tử thứ 100!"),
+    }
+}</code></pre>
+
+  <p class="lesson-text"><strong>Lời khuyên:</strong> Trong Production, hãy ưu tiên dùng .get() nếu index đến từ input của người dùng.</p>
+
+  <p class="lesson-text"><strong>C. Ownership khi lưu trữ</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">{
+    let v = vec![String::from("Hello"), String::from("World")];
+    // v sở hữu 2 chuỗi này.
+} // Hết scope -> v bị drop -> 2 chuỗi Hello và World bị dọn dẹp khỏi Heap.</code></pre>
+
+  <h4 class="lesson-section">2. HashMaps (HashMap&lt;K, V&gt;): Phiên bản Rust của Dictionary&lt;K,V&gt;</h4>
+
+  <p class="lesson-text"><strong>Ẩn dụ:</strong><br>
+  HashMap giống như Tủ Gửi Đồ Ở Siêu Thị.</p>
+
+  <ul class="lesson-list">
+    <li>Key (Chìa khóa): Bạn giữ thẻ số (ví dụ số 101).</li>
+    <li>Value (Đồ vật): Cái túi xách bạn cất trong ngăn 101.</li>
+    <li>Hashing: Là quá trình cô nhân viên nhìn số thẻ và chỉ cho bạn đúng cái ngăn tủ đó.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>A. Khởi tạo và Thêm mới</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">use std::collections::HashMap; // Phải import
+
+fn main() {
+    let mut scores = HashMap::new();
+
+    // Thêm dữ liệu (Insert)
+    // Key: String, Value: i32
+    scores.insert(String::from("Blue Team"), 10);
+    scores.insert(String::from("Red Team"), 50);
+
+    // LƯU Ý QUAN TRỌNG VỀ OWNERSHIP:
+    // Vì String không phải Copy type, nên "Blue Team" đã bị MOVE vào trong HashMap.
+    // Bạn không thể dùng biến key ở ngoài được nữa nếu đã truyền vào đây.
+}</code></pre>
+
+  <p class="lesson-text"><strong>B. Truy cập</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">    let team_name = String::from("Blue Team");
+    
+    // get trả về Option<&i32> -> Mượn giá trị để xem
+    if let Some(score) = scores.get(&team_name) {
+        println!("Điểm: {}", score);
+    }</code></pre>
+
+  <h4 class="lesson-section">3. Entry API: Tính năng "Killer" của Rust</h4>
+  <pre class="lesson-code"><code class="lesson-code-rust">    let text = "hello world hello rust";
+    let mut map = HashMap::new();
+
+    for word in text.split_whitespace() {
+        // 1. map.entry(word): Tìm ô chứa từ này (chỉ hash 1 lần).
+        // 2. .or_insert(0): Nếu ô trống (Vacant), nhét số 0 vào và trả về tham chiếu đến nó.
+        //                   Nếu có rồi (Occupied), trả về tham chiếu đến giá trị hiện tại.
+        // 3. *count += 1: Dereference để cộng 1 vào giá trị đó.
+        let count = map.entry(word).or_insert(0);
+        *count += 1;
+    }
+    
+    println!("{:?}", map);
+    // Output: {"hello": 2, "world": 1, "rust": 1}</code></pre>
+
+  <h4 class="lesson-section">4. Bảng so sánh C# vs Rust</h4>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Thao tác</th><th>C# List&lt;T&gt; / Dictionary&lt;K,V&gt;</th><th>Rust Vec&lt;T&gt; / HashMap&lt;K,V&gt;</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Thêm phần tử</td><td>.Add(item)</td><td>.push(item) (Vec) / .insert(k, v) (Map)</td></tr>
+        <tr><td>Truy cập index</td><td>list[0] (Exception nếu lỗi)</td><td>&v[0] (Panic) hoặc v.get(0) (Option - An toàn)</td></tr>
+        <tr><td>Dung lượng</td><td>Tự động resize.</td><td>Tự động resize (hoặc Vec::with_capacity(n) để tối ưu).</td></tr>
+        <tr><td>Update Map</td><td>Check ContainsKey rồi gán.</td><td>.entry(key).or_insert(val) (Entry API).</td></tr>
+        <tr><td>Ownership</td><td>Lưu tham chiếu Object.</td><td>Chiếm hữu (Move) Object vào collection (trừ khi Object implement Copy).</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4 class="lesson-section">5. Bài tập thực hành: Hệ thống quản lý nhân viên</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">use std::collections::HashMap;
+
+fn add_employee(
+    directory: &mut HashMap&lt;String, Vec&lt;String&gt;&gt;, 
+    department: &str, 
+    employee: &str
+) {
+    // Logic: Tìm phòng ban, nếu chưa có thì tạo vector rỗng, sau đó push nhân viên vào
+    directory
+        .entry(String::from(department)) // Tìm Key
+        .or_insert(Vec::new())           // Nếu chưa có, tạo Vec mới
+        .push(String::from(employee));   // Push vào Vec đang tham chiếu
+}
+
+fn main() {
+    let mut company: HashMap&lt;String, Vec&lt;String&gt;&gt; = HashMap::new();
+
+    add_employee(&mut company, "IT", "Alice");
+    add_employee(&mut company, "IT", "Bob");
+    add_employee(&mut company, "HR", "Carol");
+
+    // Lấy danh sách phòng IT
+    // Dùng & để mượn, không move
+    match company.get("IT") {
+        Some(employees) => {
+            println!("Phòng IT gồm: {:?}", employees);
+            // Lưu ý: employees ở đây là &Vec&lt;String&gt;
+        },
+        None => println!("Phòng IT không tồn tại"),
+    }
+}</code></pre>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 13</h3>
+
+  <div class="lesson-summary-box">
+    <ol class="lesson-list">
+      <li><strong>Vector</strong> và <strong>HashMap</strong> là hai công cụ lưu trữ chính bạn sẽ dùng <strong>90% thời gian</strong>.</li>
+      <li><strong>.get()</strong> luôn an toàn hơn <strong>[]</strong> vì nó trả về Option, ép bạn xử lý trường hợp không tìm thấy.</li>
+      <li><strong>Entry API</strong> của HashMap là một tuyệt kỹ giúp code gọn và nhanh hơn C# trong các bài toán thống kê/gom nhóm.</li>
+      <li><strong>Ownership:</strong> Hãy cẩn thận khi đẩy dữ liệu vào Collection, Collection sẽ nuốt trọn quyền sở hữu của biến đó (trừ khi bạn đẩy bản clone hoặc biến đó là Copy type như i32).</li>
+    </ol>
+  </div>
+
+  <div class="lesson-homework">
+    <p><strong>Bài tập về nhà:</strong><br><br>
+    Hãy thử kết hợp bài Enum và Vector:<br><br>
+    • Tạo Enum <code>SpreadsheetCell</code> có các biến thể: <code>Int(i32)</code>, <code>Float(f64)</code>, <code>Text(String)</code>.<br>
+    • Tạo một <code>Vec&lt;SpreadsheetCell&gt;</code>.<br>
+    • Đẩy các loại dữ liệu khác nhau vào vector đó (điều mà <code>List&lt;int&gt;</code> của C# không làm được).<br>
+    • Duyệt qua vector và in giá trị ra.</p>
+  </div>
+
+  <p class="lesson-ending">
+    (Hẹn gặp lại ở <strong>Bài 14: Iterators & Closures</strong>. Chúng ta sẽ xem LINQ của C# khi sang Rust sẽ biến hình thành thứ gì nhé!)
+  </p>
+</div>
+
+</body>
+</html>
