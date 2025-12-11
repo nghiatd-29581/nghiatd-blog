@@ -89,13 +89,11 @@ body {
   .lesson-title { font-size: 1.95em; text-align: center; margin: 30px 0 15px; }
   .lesson-subtitle { font-size: 0.9em; color: #9254de; font-style: italic; }
   .lesson-note { background: #f6ffed; border-left: 6px solid #52c41a; padding: 20px; font-size: 1.1em; margin: 25px 0; border-radius: 8px; }
-  .lesson-table {
-    width: 100%; 
-    border-collapse: collapse; 
-    margin: 35px 0; 
-    background: white;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  }
+   .lesson-table-wrapper { overflow-x: auto; margin: 45px 0; }
+    .lesson-table {
+      width: 100%; min-width: 700px; border-collapse: collapse; background: #f8fafc;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
   .lesson-table th, .lesson-table td {
     border: 1px solid #ddd; padding: 14px; text-align: left;
   }
