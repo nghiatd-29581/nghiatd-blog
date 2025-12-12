@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 14: Iterators & Closures – Rust cho C# Developer</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Bài 14. Đây có lẽ là bài học mà các C# Developer mong chờ nhất.<br><br>
+    Tại sao? Vì LINQ (Language Integrated Query) là "bảo vật" của C#. Khả năng xử lý dữ liệu mượt mà Select().Where().ToList() đã làm hư hỏng chúng ta, khiến chúng ta lười viết vòng lặp for truyền thống.<br><br>
+    Tin vui cho bạn: <strong>Rust cũng có LINQ</strong>. Nó được gọi là <strong>Iterators</strong>, và nó còn <strong>"xịn"</strong> hơn ở chỗ: Nó không tạo ra Overhead (chi phí hiệu năng) lúc chạy. Code Functional đẹp như thơ nhưng chạy nhanh như Assembly.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 2: HỆ THỐNG TYPE & KIẾN TRÚC PHẦN MỀM</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 6: COLLECTIONS & ITERATORS</h2>
+  <h3 class="lesson-title">BÀI 14: ITERATORS & CLOSURES (LINQ PHIÊN BẢN RUST)</h3>
+
+  <h4 class="lesson-section">1. Closures: Hàm ẩn danh (Lambda Expressions)</h4>
+  
+  <p class="lesson-text">Trước khi học Iterator, ta cần biết cách viết hàm ngắn gọn (Anonymous Function).</p>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Đặc điểm</th><th>C# Lambda</th><th>Rust Closure</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Cơ bản</td><td>x => x + 1</td><td>|x| x + 1</td></tr>
+        <tr><td>Có Block</td><td>x => { return x + 1; }</td><td>|x| { x + 1 }</td></tr>
+        <tr><td>Không tham số</td><td>() => Console.WriteLine("Hi")</td><td>|| println!("Hi")</td></tr>
+        <tr><td>Nhiều tham số</td><td>(x, y) => x + y</td><td>|x, y| x + y</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="lesson-text"><strong>Ví dụ thực tế:</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">fn main() {
+    let add_one = |x: i32| x + 1; // Có thể ghi rõ kiểu hoặc để Rust tự đoán
+    
+    let result = add_one(5);
+    println!("Kết quả: {}", result); // 6
+}</code></pre>
+
+  <p class="lesson-text"><strong>Lưu ý về Capture Environment:</strong><br>
+  Closures trong Rust có thể "bắt" (capture) các biến bên ngoài scope của nó. Việc này liên quan chặt chẽ đến Ownership (Move hay Borrow), nhưng ở mức độ sử dụng cơ bản giống LINQ, bạn cứ dùng tự nhiên như C#.</p>
+
+  <h4 class="lesson-section">2. Iterators: Cỗ máy lười biếng (Lazy Evaluation)</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">fn main() {
+    let v = vec![1, 2, 3];
+
+    // Dòng này KHÔNG chạy loop, KHÔNG cộng 1.
+    // Nó chỉ tạo ra một bản kế hoạch (Blueprint).
+    let iter = v.iter().map(|x| x + 1); 
+
+    // Khi gọi collect(), Rust mới bắt đầu chạy loop và thực hiện kế hoạch.
+    let v2: Vec<i32> = iter.collect();
+    
+    println!("{:?}", v2); // [2, 3, 4]
+}</code></pre>
+
+  <h4 class="lesson-section">3. Bảng tra cứu: C# LINQ sang Rust Iterator</h4>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Thao tác</th><th>C# LINQ</th><th>Rust Iterator Adapter</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Biến đổi</td><td>.Select(x => ...)</td><td>.map(|x| ...)</td></tr>
+        <tr><td>Lọc</td><td>.Where(x => ...)</td><td>.filter(|x| ...)</td></tr>
+        <tr><td>Kết thúc (List)</td><td>.ToList()</td><td>.collect()</td></tr>
+        <tr><td>Đếm</td><td>.Count()</td><td>.count()</td></tr>
+        <tr><td>Kiểm tra</td><td>.Any(), .All()</td><td>.any(), .all()</td></tr>
+        <tr><td>Lấy n phần tử</td><td>.Take(n)</td><td>.take(n)</td></tr>
+        <tr><td>Bỏ qua</td><td>.Skip(n)</td><td>.skip(n)</td></tr>
+        <tr><td>Gấp (Aggregates)</td><td>.Aggregate(...)</td><td>.fold(...)</td></tr>
+        <tr><td>Tìm kiếm</td><td>.FirstOrDefault()</td><td>.find(...) (Trả về Option)</td></tr>
+        <tr><td>Ghép chuỗi</td><td>.Zip(...)</td><td>.zip(...)</td></tr>
+        <tr><td>Duyệt (Side effect)</td><td>.ForEach(...)</td><td>.for_each(...)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4 class="lesson-section">4. Ba loại Iterator: Câu chuyện Ownership</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">fn main() {
+    let mut numbers = vec![1, 2, 3];
+
+    // 1. iter(): Chỉ đọc
+    let sum: i32 = numbers.iter().sum(); 
+    println!("Sum: {}", sum); // numbers vẫn còn dùng được
+
+    // 2. iter_mut(): Sửa đổi tại chỗ
+    numbers.iter_mut().for_each(|x| *x *= 2);
+    println!("Doubled: {:?}", numbers); // [2, 4, 6]
+
+    // 3. into_iter(): Chuyển nhà (Move)
+    // Sau dòng này, 'numbers' bị HỦY.
+    let new_numbers: Vec<i32> = numbers.into_iter().filter(|x| *x > 3).collect();
+    
+    // println!("{:?}", numbers); // LỖI: Use of moved value
+    println!("Filtered: {:?}", new_numbers);
+}</code></pre>
+
+  <h4 class="lesson-section">5. Zero-Cost Abstractions: Tại sao Rust nhanh hơn?</h4>
+  <p class="lesson-text">Trong C#, LINQ thường chậm hơn vòng lặp for thủ công một chút (do tạo object delegate, call stack ảo...).<br>
+  Trong Rust, <strong>Iterator là Zero-cost Abstraction</strong>.<br>
+  Trình biên dịch sẽ dịch chuỗi .map().filter().fold() thành mã máy <strong>y hệt hoặc thậm chí tối ưu hơn</strong> như khi bạn viết vòng lặp for thủ công.</p>
+
+  <h4 class="lesson-section">6. Bài tập thực hành: Xử lý giao dịch tài chính</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">struct Transaction {
+    id: u32,
+    amount: i32, // Có thể âm (Debit) hoặc dương (Credit)
+}
+
+fn main() {
+    let transactions = vec![
+        Transaction { id: 1, amount: 100 },
+        Transaction { id: 2, amount: -50 },
+        Transaction { id: 3, amount: 200 },
+    ];
+
+    let exchange_rate = 25_000;
+
+    // Chuỗi xử lý (Pipeline)
+    let total_credit_vnd: i32 = transactions
+        .iter()                       // 1. Mượn để đọc
+        .filter(|t| t.amount > 0)     // 2. Lọc số dương
+        .map(|t| t.amount * exchange_rate) // 3. Quy đổi
+        .sum();                       // 4. Cộng tổng (Consumer)
+
+    println!("Tổng tiền nhận (VND): {}", total_credit_vnd);
+}</code></pre>
+
+  <p class="lesson-text"><strong>Phân tích collect():</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">// Gom các số chẵn thành Vector
+let evens: Vec<i32> = vec![1, 2, 3, 4].into_iter().filter(|x| x % 2 == 0).collect();
+
+// Hoặc viết kiểu Turbofish (Ngầu hơn)
+let evens = vec![1, 2, 3, 4]
+    .into_iter()
+    .filter(|x| x % 2 == 0)
+    .collect::&lt;Vec&lt;i32&gt;&gt;();
+</code></pre>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 14</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Bạn thấy đấy, chuyển từ C# sang Rust không có nghĩa là mất đi sự tiện lợi của LINQ. Bạn chỉ cần nhớ ánh xạ từ khóa:</p>
+    <ul class="lesson-list">
+      <li><strong>Select</strong> → <code>.map</code></li>
+      <li><strong>Where</strong> → <code>.filter</code></li>
+      <li><strong>ToList</strong> → <code>.collect</code></li>
+    </ul>
+    <p class="lesson-strong">Điểm cộng lớn nhất:</strong> Bạn đang viết code cấp cao (High-level) nhưng hiệu năng lại là cấp thấp (Low-level).</p>
+  </div>
+
+  <div class="lesson-homework">
+    <p><strong>Bài tập về nhà:</strong><br><br>
+    Hãy tạo một <code>Vec&lt;String&gt;</code> chứa các số: <code>vec!["10", "20", "invalid", "30"]</code>.<br>
+    Sử dụng Iterator để:<br><br>
+    1. Lọc ra các chuỗi có thể parse thành số (gợi ý: dùng <code>filter_map</code> kết hợp với <code>str::parse</code> và <code>Result::ok</code>).<br>
+    2. Tính tổng các số đó.</p>
+  </div>
+
+  <p class="lesson-ending">
+    (Bạn đã hoàn thành Phần 2 một cách xuất sắc! Chúng ta đã có đủ công cụ để xây dựng một dự án thực tế. Phần 3 sẽ là: <strong>DỰ ÁN THỰC CHIẾN - XÂY DỰNG CLI TOOL QUẢN LÝ VÍ CRYPTO</strong>).
+  </p>
+</div>
+
+</body>
+</html>
