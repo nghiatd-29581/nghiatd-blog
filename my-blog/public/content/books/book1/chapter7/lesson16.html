@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 16: Shared State (Mutex & Arc) – Rust cho C# Developer</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Bài 16. Đây là bài học giải quyết tình huống mà "Gửi tin nhắn" (Message Passing) không làm được.<br><br>
+    Trong C#, khi muốn nhiều luồng cùng truy cập một biến (ví dụ: danh sách kết nối database, bộ đếm toàn cục), bạn dùng lock (object).<br><br>
+    Trong Rust, chúng ta cũng có khóa, nhưng nó an toàn hơn gấp bội. Bạn không thể truy cập dữ liệu nếu quên khóa, và bạn cũng không thể quên mở khóa.<br><br>
+    Cặp bài trùng <strong>Arc&lt;Mutex&lt;T&gt;&gt;</strong> chính là tiêu chuẩn vàng để quản lý Shared State trong Rust.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 3: CONCURRENCY & BLOCKCHAIN APPLICATION</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 7: FEARLESS CONCURRENCY</h2>
+  <h3 class="lesson-title">BÀI 16: SHARED STATE (MUTEX & ARC)</h3>
+
+  <h4 class="lesson-section">1. Ẩn dụ: Cái Micro trong phòng Karaoke</h4>
+  
+  <p class="lesson-text">Hãy tưởng tượng một nhóm bạn đi hát Karaoke (Multi-threading). Chỉ có một cái Micro duy nhất (Dữ liệu cần chia sẻ).</p>
+
+  <p class="lesson-text">1. <strong>Mutex (Mutual Exclusion - Khóa):</strong> Là quy tắc "Ai cầm Micro mới được hát".</p>
+  <ul class="lesson-list">
+    <li>Nếu Micro đang nằm trên bàn (Unlock), ai cũng có thể lấy.</li>
+    <li>Nếu A đang cầm Micro (Lock), B muốn hát phải đứng chờ (Block) cho đến khi A đặt Micro xuống.</li>
+    <li><strong>Khác biệt với C#:</strong> Trong Rust, cái Micro (Mutex) bọc lấy bài hát (Data). Bạn không thể hát nếu không cầm Micro. Trong C#, Micro và Bài hát là 2 thứ riêng biệt, bạn có thể "hát chui" mà không cần Micro nếu lập trình viên quên viết lock.</li>
+  </ul>
+
+  <p class="lesson-text">2. <strong>Arc (Atomic Reference Counting - Sở hữu chung):</strong> Là Cái Tivi trong phòng.</p>
+  <ul class="lesson-list">
+    <li>Tất cả mọi người đều "sở hữu" cái Tivi đó cùng lúc.</li>
+    <li>Không ai được phép bê cái Tivi về nhà (Drop/Free memory) chừng nào vẫn còn người khác đang nhìn vào nó.</li>
+    <li>Khi người cuối cùng ra khỏi phòng, cái Tivi mới được dọn đi.</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Mutex&lt;T&gt;: Khóa dữ liệu, không phải khóa Code</h4>
+
+  <pre class="lesson-code lesson-code-csharp">// C#
+object _lockObj = new object();
+int _counter = 0;
+
+lock (_lockObj) { // Khóa đoạn code này
+    _counter++; // Hy vọng lập trình viên nhớ dùng _lockObj mỗi khi đụng vào _counter
+}</pre>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">// Rust
+use std::sync::Mutex;
+
+// counter nằm TRONG Mutex. Không cách nào lấy counter ra mà không unlock.
+let counter = Mutex::new(0); 
+
+{
+    // lock() trả về một cái "Guard" (Người bảo vệ)
+    // unwrap() dùng để bắt lỗi nếu thread khác bị panic khi đang giữ khóa (Poisoned Mutex)
+    let mut num = counter.lock().unwrap(); 
+
+    // Bây giờ bạn mới sửa được dữ liệu
+    *num += 1; 
+} // Ra khỏi scope, Guard bị drop -> TỰ ĐỘNG UNLOCK.</code></pre>
+
+  <p class="lesson-text"><strong>An toàn tuyệt đối:</strong> Bạn không bao giờ quên Unlock được, vì Rust tự làm việc đó khi biến num đi ra khỏi phạm vi {}.</p>
+
+  <h4 class="lesson-section">3. Arc&lt;T&gt;: Đa sở hữu an toàn (Atomic Reference Counting)</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">use std::sync::{Arc, Mutex};
+use std::thread;
+
+fn main() {
+    // B1: Khởi tạo Shared State: Arc bọc lấy Mutex bọc lấy số 0
+    // counter_arc thuộc kiểu Arc<Mutex<i32>>
+    let counter_arc = Arc::new(Mutex::new(0));
+    
+    let mut handles = vec![];
+
+    for _ in 0..10 {
+        // B2: Tạo bản sao quyền sở hữu (Clone Arc) cho thread con
+        // Lưu ý: Việc clone này cực nhẹ (chỉ tăng reference count +1)
+        let counter_clone = Arc::clone(&counter_arc);
+
+        let handle = thread::spawn(move || {
+            // B3: Xin quyền truy cập (Lock)
+            // lock() sẽ chặn (block) thread này nếu thread khác đang giữ khóa
+            let mut num = counter_clone.lock().unwrap();
+
+            // B4: Thao tác dữ liệu
+            *num += 1;
+        }); // Hết scope, num bị drop, Mutex tự động UNLOCK.
+
+        handles.push(handle);
+    }
+
+    // B5: Chờ tất cả thread chạy xong
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    // B6: In kết quả
+    // Lúc này chỉ còn Main thread sở hữu Arc, ta lock để lấy giá trị ra
+    println!("Kết quả: {}", *counter_arc.lock().unwrap());
+}</code></pre>
+
+  <h4 class="lesson-section">5. Deadlock và Cạm bẫy "Re-entrant"</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">let data = Mutex::new(5);
+let d1 = data.lock().unwrap();
+let d2 = data.lock().unwrap(); // TREO MÁY TẠI ĐÂY</code></pre>
+
+  <h4 class="lesson-section">6. Ứng dụng Blockchain: Mempool (Hàng chờ giao dịch)</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
+
+// Giả lập giao dịch
+type Transaction = String; 
+
+fn main() {
+    // Mempool chia sẻ chung
+    let mempool = Arc::new(Mutex::new(Vec::<Transaction>::new()));
+
+    // Thread 1: Giả lập nhận Transaction từ mạng
+    let mempool_producer = Arc::clone(&mempool);
+    thread::spawn(move || {
+        for i in 1..=5 {
+            let tx = format!("Tx #{}", i);
+            
+            // Scope này giúp Unlock ngay sau khi push xong
+            {
+                let mut pool = mempool_producer.lock().unwrap();
+                pool.push(tx.clone());
+                println!("Network: Đã thêm {}", tx);
+            } // Unlock ngay tại đây
+            
+            thread::sleep(Duration::from_millis(100));
+        }
+    });
+
+    // Thread 2: Giả lập Miner lấy Transaction
+    let mempool_miner = Arc::clone(&mempool);
+    thread::spawn(move || {
+        loop {
+            thread::sleep(Duration::from_millis(200));
+            
+            let mut pool = mempool_miner.lock().unwrap();
+            if !pool.is_empty() {
+                let tx = pool.remove(0); // Lấy tx đầu tiên
+                println!("Miner: Đang xử lý {}...", tx);
+            } else {
+                // Nếu không có tx, nhả lock ngay để Producer còn ghi vào
+                // (Hết vòng lặp block lock sẽ tự drop, hoặc ta không làm gì)
+            }
+        }
+    });
+
+    // Giữ main thread sống
+    thread::sleep(Duration::from_secs(2));
+}</code></pre>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 16</h3>
+
+  <div class="lesson-summary-box">
+    <ol class="lesson-list">
+      <li><strong>Mutex&lt;T&gt;:</strong> Biến dữ liệu thành một căn phòng khóa kín. Muốn vào (truy cập T) phải có chìa khóa (gọi .lock()).</li>
+      <li><strong>Arc&lt;T&gt;:</strong> Giúp chia sẻ quyền sở hữu cái Mutex đó cho nhiều Thread.</li>
+      <li><strong>Tự động Unlock:</strong> Không bao giờ sợ quên nhả khóa nhờ cơ chế Drop của Rust.</li>
+      <li><strong>Cảnh báo:</strong> Tránh gọi .lock() hai lần trong cùng một luồng (Deadlock). Hãy giữ thời gian giữ khóa (Critical Section) ngắn nhất có thể.</li>
+    </ol>
+  </div>
+
+  <div class="lesson-homework">
+    <p><strong>Bài tập về nhà:</strong><br><br>
+    Hãy thử kết hợp mpsc (Bài 15) và Arc&lt;Mutex&gt; (Bài 16):<br><br>
+    • Tạo một hệ thống gồm nhiều Worker Thread.<br>
+    • Dùng Arc&lt;Mutex&gt; để chia sẻ một biến TotalResult.<br>
+    • Dùng mpsc để Main thread gửi lệnh "Cộng 1", "Cộng 5" cho các Worker.<br>
+    • Worker nhận lệnh từ Channel, Lock TotalResult và cộng vào.</p>
+  </div>
+
+  <p class="lesson-ending">
+    (Chúc mừng bạn đã hoàn thành Phần 3! Chúng ta đã có đủ vũ khí để bước vào Phần 4: <strong>DỰ ÁN THỰC CHIẾN - XÂY DỰNG CLI TOOL VÍ CRYPTO</strong>. Hãy chuẩn bị tinh thần, chúng ta sẽ code thật sự!)
+  </p>
+</div>
+
+</body>
+</html>

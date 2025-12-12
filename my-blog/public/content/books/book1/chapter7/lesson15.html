@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 15: Threads & Message Passing – Rust cho C# Developer</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Phần 3. Đây là phần thú vị nhất, nơi chúng ta chạm đến sức mạnh thực sự của Rust: Xử lý đa luồng (Concurrency) và ứng dụng vào Blockchain.<br><br>
+    Trong C#, bạn thường nghe câu: "Multi-threading là con dao hai lưỡi". Deadlock, Race Condition là những cơn ác mộng.<br><br>
+    Trong Rust, chúng ta có thuật ngữ: <strong>"Fearless Concurrency"</strong> (Đa luồng không sợ hãi). Tại sao? Vì Rust Compiler sẽ chặn đứng mọi lỗi Race Condition ngay từ lúc bạn viết code. Nếu code biên dịch được, 99% nó an toàn về luồng.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 3: CONCURRENCY & BLOCKCHAIN APPLICATION</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 7: FEARLESS CONCURRENCY</h2>
+  <h3 class="lesson-title">BÀI 15: THREADS & MESSAGE PASSING (ĐỪNG CHIA SẺ BỘ NHỚ, HÃY GỬI TIN NHẮN)</h3>
+
+  <h4 class="lesson-section">1. Triết lý: Bảng Trắng vs. Băng Chuyền</h4>
+  
+  <p class="lesson-text">Để hiểu sự khác biệt, hãy dùng một ẩn dụ về cách làm việc nhóm:</p>
+  
+  <ul class="lesson-list">
+    <li><strong>C# (Shared Memory - Truyền thống):</strong> Tưởng tượng một cái Bảng Trắng (Shared State) đặt giữa phòng. Tất cả nhân viên (Threads) đều lao vào viết lên đó cùng lúc. Để tránh hỗn loạn, bạn phải đưa cho họ một cái "Token" (Lock/Mutex). Ai cầm Token mới được viết. Nếu quên Token -> Loạn (Race Condition). Nếu một người cầm Token rồi đi ngủ -> Tắc nghẽn (Deadlock).</li>
+    <li><strong>Rust (Message Passing - Hiện đại):</strong> Tưởng tượng một dây chuyền nhà máy. Anh A làm xong việc, anh đặt sản phẩm lên Băng Chuyền (Channel) và quên nó đi. Anh B ở cuối băng chuyền nhặt lên và xử lý tiếp. Không ai tranh giành tài nguyên của ai cả.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Câu thần chú của Rust (và Go):</strong><br>
+  "Do not communicate by sharing memory; instead, share memory by communicating."<br>
+  (Đừng giao tiếp bằng cách chia sẻ bộ nhớ; hãy chia sẻ bộ nhớ bằng cách giao tiếp).</p>
+
+  <h4 class="lesson-section">2. Khởi tạo Thread: spawn vs Task.Run</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">use std::thread;
+use std::time::Duration;
+
+fn main() {
+    // Tạo một thread mới
+    let handle = thread::spawn(|| {
+        for i in 1..5 {
+            println!("Thread con: số {}", i);
+            thread::sleep(Duration::from_millis(1));
+        }
+    });
+
+    // Main thread cũng chạy song song
+    for i in 1..3 {
+        println!("Main thread: số {}", i);
+        thread::sleep(Duration::from_millis(1));
+    }
+
+    }
+
+    // Quan trọng: Phải chờ thread con chạy xong (giống Task.WaitAll hoặc await)
+    // Nếu không có dòng này, khi Main thread hết việc, nó sẽ tắt luôn Thread con!
+    handle.join().unwrap();
+}</code></pre>
+
+  <h4 class="lesson-section">3. Ownership & Từ khóa move: Cú sốc đầu tiên</h4>
+
+  <pre class="lesson-code lesson-code-csharp">var data = new List&lt;int&gt; { 1, 2, 3 };
+Task.Run(() => {
+    Console.WriteLine(data[0]); // C# cho phép (nhưng nguy hiểm nếu Main thread sửa data)
+});</pre>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">let v = vec![1, 2, 3];
+
+thread::spawn(|| {
+    println!("Vector: {:?}", v); // LỖI BIÊN DỊCH NGAY!
+});</code></pre>
+
+  <p class="lesson-text"><strong>Giải pháp: move</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">thread::spawn(move || { // Chú ý từ khóa 'move'
+    println!("Vector: {:?}", v);
+});
+// Ở đây main thread không còn dùng được 'v' nữa -> An toàn tuyệt đối.</code></pre>
+
+  <h4 class="lesson-section">4. Channels (mpsc): Đường ống dẫn tin</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">use std::thread;
+use std::sync::mpsc; // Import thư viện channel
+use std::time::Duration;
+
+fn main() {
+    // 1. Tạo channel. Trả về một tuple (người gửi, người nhận)
+    let (tx, rx) = mpsc::channel();
+
+    // 2. Tạo 3 thread "thợ đào"
+    for i in 0..3 {
+        let tx_clone = tx.clone(); 
+        
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(500));
+            
+            let result = format!("Miner #{} tìm thấy Block!", i);
+            
+            tx_clone.send(result).unwrap(); 
+        });
+    }
+
+    drop(tx); 
+
+    // 3. Main thread ngồi nhận tin nhắn
+    for received in rx {
+        println!("Server nhận được: {}", received);
+    }
+}</code></pre>
+
+  <h4 class="lesson-section">5. So sánh C# Channels vs Rust mpsc</h4>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Đặc điểm</th><th>C# System.Threading.Channels</th><th>Rust std::sync::mpsc</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Mô hình</td><td>SPSC, MPSC, SPMC, MPMC (Đa năng).</td><td>MPSC (Mặc định).</td></tr>
+        <tr><td>Blocking</td><td>await reader.ReadAsync() (Non-blocking).</td><td>rx.recv() (Block thread) hoặc rx.try_recv() (Non-block).</td></tr>
+        <tr><td>Kết thúc</td><td>writer.Complete().</td><td>Tự động đóng khi tất cả Sender (tx) bị Drop ra khỏi scope.</td></tr>
+        <tr><td>Clone</td><td>Truyền tham chiếu object Channel.</td><td>Phải .clone() đầu gửi (tx) cho mỗi thread.</td></tr>
+        <tr><td>An toàn</td><td>Có thể bị race condition nếu share sai cách.</td><td>Ownership đảm bảo tin nhắn đã gửi đi là mất quyền sở hữu -> Không race condition.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4 class="lesson-section">6. Bài tập thực hành: Hệ thống Chat đơn giản</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">use std::thread;
+use std::sync::mpsc;
+use std::time::Duration;
+
+fn main() {
+    let (tx, rx) = mpsc::channel();
+    
+    let tx1 = tx.clone();
+    thread::spawn(move || {
+        let msgs = vec!["Hi", "from", "Rust"];
+        for msg in msgs {
+            tx1.send(msg).unwrap();
+            thread::sleep(Duration::from_millis(100));
+        }
+    });
+
+    let tx2 = tx.clone();
+    thread::spawn(move || {
+        let msgs = vec!["Hello", "from", "C#"];
+        for msg in msgs {
+            tx2.send(msg).unwrap();
+            thread::sleep(Duration::from_millis(150));
+        }
+    });
+
+    drop(tx);
+
+    for received in rx {
+        println!("Got: {}", received);
+    }
+}</code></pre>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 15</h3>
+
+  <div class="lesson-summary-box">
+    <ol class="lesson-list">
+      <li><strong>spawn + move:</strong> Cặp bài trùng để tạo luồng và chuyển dữ liệu an toàn.</li>
+      <li><strong>channel (tx, rx):</strong> Cách giao tiếp an toàn nhất. Hãy tưởng tượng nó như dòng nước chảy một chiều.</li>
+      <li><strong>Không cần Lock:</strong> Trong ví dụ trên, chúng ta không dùng bất kỳ cái Mutex hay lock nào mà dữ liệu vẫn chạy mượt mà, không xung đột. Đó chính là <strong>Fearless Concurrency</strong>.</li>
+    </ol>
+  </div>
+
+  <div class="lesson-homework">
+    <p><strong>Bài tập về nhà:</strong><br><br>
+    Bạn hãy thử bỏ dòng <code>drop(tx)</code> trong ví dụ "Mỏ đào Crypto" và chạy thử. Bạn sẽ thấy chương trình bị treo (hang) mãi mãi. Hãy giải thích tại sao?<br>
+    <em>(Gợi ý: Người nhận rx vẫn đang chờ tín hiệu từ tx gốc của Main thread).</em></p>
+  </div>
+
+  <p class="lesson-ending">
+    (Hẹn gặp lại ở <strong>Bài 16: Shared State</strong>. Đôi khi gửi tin nhắn là không đủ, chúng ta bắt buộc phải dùng chung bộ nhớ (như một cái Database connection pool). Rust sẽ bảo vệ bạn khỏi Deadlock bằng Mutex và Arc như thế nào?)
+  </p>
+</div>
+
+</body>
+</html>
