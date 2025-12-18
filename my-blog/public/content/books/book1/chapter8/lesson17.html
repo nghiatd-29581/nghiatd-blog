@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 17: Async Rust (Tokio Runtime) – Rust cho C# Developer</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Bài 17. Đây là bài học đánh dấu bước chuyển mình quan trọng: từ lập trình đồng bộ (Synchronous) sang lập trình bất đồng bộ (Asynchronous).<br><br>
+    Nếu bạn đã làm Backend với C# .NET Core, bạn chắc chắn đã quen với async/await. Nó giúp server xử lý hàng nghìn request cùng lúc mà không bị nghẽn (non-blocking).<br><br>
+    Rust cũng có async/await với cú pháp giống hệt. Nhưng coi chừng! Cơ chế bên dưới của Rust trái ngược hoàn toàn với C#. Nếu bê nguyên tư duy C# sang, code của bạn sẽ... không chạy, hoặc chạy sai.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 3: CONCURRENCY & BLOCKCHAIN APPLICATION</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 8: ASYNC/AWAIT & SMART CONTRACTS</h2>
+  <h3 class="lesson-title">BÀI 17: ASYNC RUST (TOKIO RUNTIME)</h3>
+
+  <h4 class="lesson-section">1. Ẩn dụ: "Pizza Nóng" (C#) vs. "Phiếu Order" (Rust)</h4>
+  
+  <p class="lesson-text">Để hiểu sự khác biệt cốt lõi, hãy tưởng tượng bạn đang ở trong một nhà hàng.</p>
+  
+  <ul class="lesson-list">
+    <li><strong>C# (Task - Eager/Nóng vội):</strong><br>
+      • Khi bạn gọi hàm MakePizzaAsync(), đầu bếp ngay lập tức nhào bột và nướng bánh.<br>
+      • Kể cả khi bạn (người gọi hàm) bỏ đi làm việc khác và chưa cần cái bánh đó ngay, cái bánh vẫn được nướng. Nó là một Hot Task (Chạy ngay khi khởi tạo).<br>
+      • Runtime của .NET (CLR) tự động quản lý việc nướng bánh này ở hậu trường.</li>
+    <li><strong>Rust (Future - Lazy/Lười biếng):</strong><br>
+      • Khi bạn gọi hàm make_pizza_async(), đầu bếp... không làm gì cả.<br>
+      • Họ chỉ đưa cho bạn một tờ Phiếu Order (gọi là Future).<br>
+      • Bánh chỉ bắt đầu được nướng khi và chỉ khi bạn đưa phiếu đó cho Quản lý (Executor) và hét lên: "LÀM NGAY ĐI" (bằng cách dùng .await hoặc poll).<br>
+      • Nếu bạn cầm phiếu (Future) rồi vứt đi (Drop) mà không .await, cái bánh sẽ không bao giờ được tạo ra.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Kết luận:</strong> Async trong C# là "Chạy ngầm tự động". Async trong Rust là "Một bản kế hoạch, chỉ chạy khi được kích hoạt".</p>
+
+  <h4 class="lesson-section">2. So sánh sâu: Task (C#) vs. Future (Rust)</h4>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Đặc điểm</th><th>C# Task</th><th>Rust Future</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Trạng thái khởi tạo</td><td>Eager (Nóng): Chạy ngay lập tức khi gọi hàm.</td><td>Lazy (Lạnh): Không làm gì cả cho đến khi được poll.</td></tr>
+        <tr><td>Runtime</td><td>Tích hợp sẵn trong .NET CLR (bạn không cần cài gì thêm).</td><td>Không có sẵn. Rust là ngôn ngữ hệ thống, nó không ép bạn dùng runtime nào. Bạn phải cài thư viện ngoài (phổ biến nhất là Tokio).</td></tr>
+        <tr><td>Cơ chế</td><td>Callback-based / State Machine (tốn heap allocation).</td><td>State Machine (Zero-cost abstraction, tối ưu bộ nhớ cực tốt).</td></tr>
+        <tr><td>Hủy bỏ (Cancellation)</td><td>Cần truyền CancellationToken vào mọi hàm. Rất phiền phức.</td><td>Cực dễ. Chỉ cần drop() cái Future là xong. Việc thực thi dừng ngay lập tức.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="lesson-text"><strong>Ví dụ Code minh họa sự "Lười biếng" của Rust:</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">// Một hàm async đơn giản
+async fn hello_world() {
+    println!("Dòng này sẽ được in ra!");
+}
+
+fn main() {
+    // Gọi hàm async
+    let future = hello_world(); 
+    
+    // C#: Lúc này "Dòng này sẽ được in ra!" đã xuất hiện.
+    // Rust: Chương trình kết thúc mà KHÔNG in ra gì cả!
+    // Lý do: 'future' chưa được .await
+    
+    println!("Kết thúc main"); 
+}</code></pre>
+
+  <p class="lesson-text">Compiler sẽ cảnh báo bạn: "unused implementer of Future that must be used".</p>
+
+  <h4 class="lesson-section">3. Tokio Runtime: Động cơ cho Async Rust</h4>
+
+  <p class="lesson-text">Vì Rust không có Runtime tích hợp (để giữ cho ngôn ngữ gọn nhẹ), cộng đồng đã tạo ra các Runtime. Tokio là Runtime phổ biến nhất, mạnh mẽ nhất, được coi là tiêu chuẩn công nghiệp (tương đương Kestrel/ASP.NET Core engine).</p>
+
+  <p class="lesson-text"><strong>Tokio làm gì?</strong></p>
+  <ol class="lesson-list">
+    <li>Executor: Là "người quản lý" nhận các Future và sắp xếp chúng chạy trên các CPU Core.</li>
+    <li>IO Reactor: Xử lý việc đọc/ghi mạng, file, timer bất đồng bộ.</li>
+    <li>Scheduler: Cơ chế Work-stealing (cướp việc) thông minh, giúp phân tải đều cho các luồng.</li>
+  </ol>
+
+  <h4 class="lesson-section">4. Hướng dẫn cài đặt và sử dụng Tokio (Step-by-Step)</h4>
+
+  <p class="lesson-text"><strong>Bước 1: Tạo project và thêm thư viện</strong></p>
+  <pre class="lesson-code">
+cargo new async_crypto
+cd async_crypto
+cargo add tokio --features full
+</pre>
+
+  <p class="lesson-text">Lưu ý: --features full để bật toàn bộ tính năng (Time, IO, Macro...).</p>
+
+  <p class="lesson-text"><strong>Bước 2: Biến main thành Async</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">use tokio::time::{sleep, Duration};
+
+// Macro này biến hàm main thường thành một Runtime khởi chạy async code
+#[tokio::main]
+async fn main() {
+    println!("Bắt đầu ứng dụng...");
+    
+    // Bây giờ ta có thể dùng .await
+    let price = get_bitcoin_price().await;
+    println!("Giá BTC: ${}", price);
+}
+
+// Hàm giả lập lấy giá (tốn 2 giây)
+async fn get_bitcoin_price() -> u32 {
+    println!("Đang kết nối tới sàn giao dịch...");
+    sleep(Duration::from_secs(2)).await; // Không chặn thread, chỉ nhường CPU
+    println!("Đã lấy xong giá!");
+    45000
+}</code></pre>
+
+  <h4 class="lesson-section">5. Concurrency: Chạy song song với tokio::spawn và join!</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">#[tokio::main]
+async fn main() {
+    // Gọi 2 task nhưng CHƯA await ngay
+    let btc_task = get_price("BTC", 2000);
+    let eth_task = get_price("ETH", 1000); // ETH nhanh hơn chút
+
+    println!("Bắt đầu lấy dữ liệu song song...");
+
+    // Chạy cả 2 cùng lúc và chờ cả 2 xong
+    let (btc, eth) = tokio::join!(btc_task, eth_task);
+
+    println!("Kết quả: BTC=${}, ETH=${}", btc, eth);
+}
+
+async fn get_price(symbol: &str, delay_ms: u64) -> u32 {
+    sleep(Duration::from_millis(delay_ms)).await;
+    println!("Đã lấy giá {}", symbol);
+    if symbol == "BTC" { 45000 } else { 3000 }
+}</code></pre>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">#[tokio::main]
+async fn main() {
+    let handle = tokio::spawn(async {
+        // Task này chạy ngầm
+        for i in 0..5 {
+            println!("Task chạy nền: {}", i);
+            sleep(Duration::from_millis(500)).await;
+        }
+        "Hoàn thành" // Giá trị trả về
+    });
+
+    println!("Main thread vẫn đang làm việc khác...");
+    sleep(Duration::from_millis(1000)).await;
+
+    // Chờ task nền xong và lấy kết quả
+    let result = handle.await.unwrap(); 
+    println!("Task nền báo cáo: {}", result);
+}</code></pre>
+
+  <h4 class="lesson-section">6. Xây dựng Backend Server hiệu năng cao (Mô phỏng)</h4>
+
+  <pre class="lesson-code"><code class="lesson-code-rust">use tokio::time::{sleep, Duration};
+
+#[tokio::main]
+async fn main() {
+    // 1. Khởi chạy Blockchain Listener ở nền (Green Thread)
+    let listener_handle = tokio::spawn(async {
+        loop {
+            // Giả lập chờ block mới
+            sleep(Duration::from_secs(3)).await; 
+            println!("[Background] New Block found: #123456");
+            // Trong thực tế: Gửi event vào Database hoặc Channel
+        }
+    });
+
+    // 2. Main Thread đóng vai trò API Server
+    println!("API Server đang chạy tại port 8080...");
+    
+    // Giả lập phục vụ 3 request từ user
+    for i in 1..=3 {
+        println!("[API] Đang xử lý request từ User {}", i);
+        process_user_request(i).await;
+    }
+
+    // Server chạy mãi mãi (trong ví dụ này ta chờ listener một chút rồi tắt)
+    // listener_handle.await.unwrap(); // Bỏ comment dòng này nếu muốn chạy mãi
+}
+
+async fn process_user_request(id: i32) {
+    // Giả lập tính toán nặng/DB query tốn 1s
+    sleep(Duration::from_secs(1)).await;
+    println!("[API] Trả về kết quả cho User {}", id);
+}</code></pre>
+
+  <p class="lesson-text"><strong>Output mong đợi:</strong><br>
+  Bạn sẽ thấy [Background] và [API] xen kẽ nhau. Tokio tự động switch giữa các task mỗi khi gặp .await, tận dụng tối đa thời gian chờ (IO Wait).</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 17</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Async trong Rust mạnh mẽ nhưng đòi hỏi sự hiểu biết về cơ chế:</p>
+    <ol class="lesson-list">
+      <li><strong>Future là Lazy:</strong> Phải .await hoặc tokio::spawn thì code mới chạy.</li>
+      <li><strong>Tokio Runtime:</strong> Là trái tim của Async Rust, thay thế cho .NET CLR trong việc quản lý Task.</li>
+      <li><strong>join! vs spawn:</strong> Dùng join! cho các tác vụ đồng thời cục bộ. Dùng spawn! cho các tác vụ chạy nền độc lập (background jobs).</li>
+    </ol>
+  </div>
+
+  <div class="lesson-homework">
+    <p><strong>Bài tập về nhà:</strong><br><br>
+    Hãy viết một chương trình "Đua API":<br><br>
+    • Tạo danh sách 3 URL giả (dùng sleep với thời gian random để giả lập độ trễ mạng khác nhau).<br>
+    • Sử dụng tokio::select! (đây là một macro mới, hãy thử tìm hiểu tài liệu).<br>
+    • Nhiệm vụ: Chạy cả 3 request cùng lúc, nhưng chỉ lấy kết quả của request nào xong đầu tiên, hủy bỏ 2 request còn lại. (Giống Task.WhenAny của C# nhưng tự động hủy các task thua cuộc).</p>
+  </div>
+
+  <p class="lesson-ending">
+    (Hẹn gặp lại ở <strong>Bài 18: Smart Contracts với Rust</strong>. Chúng ta sẽ rời xa môi trường Server truyền thống để bước vào thế giới WebAssembly và Solana/Near, nơi Rust là vị vua tuyệt đối!).
+  </p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 18: Smart Contract Intro (Solana & Anchor) – Rust cho C# Developer</title>
+
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Bài 18. Đây là lúc chúng ta bước chân ra khỏi "vùng an toàn" của máy chủ truyền thống để bước vào thế giới Web3.<br><br>
+    Nếu C# là ngôn ngữ của Doanh nghiệp (Enterprise), thì Rust đang trở thành ngôn ngữ của Tài chính Phi tập trung (DeFi) và Blockchain. Solana, Polkadot, Near, Sui... các nền tảng Blockchain hiệu năng cao nhất đều chọn Rust làm ngôn ngữ chính.<br><br>
+    Tại sao? Vì trên Blockchain, hiệu năng = tiền. Code chạy càng nhanh, phí giao dịch (Gas fee) càng rẻ. Code càng an toàn, tiền tỷ của user càng khó bị hack. Rust đáp ứng cả hai.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 3: CONCURRENCY & BLOCKCHAIN APPLICATION</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 8: ASYNC/AWAIT & SMART CONTRACTS</h2>
+  <h3 class="lesson-title">BÀI 18: SMART CONTRACT INTRO (SOLANA & ANCHOR)</h3>
+
+  <h4 class="lesson-section">1. Ẩn dụ: Máy Bán Hàng Tự Động (Vending Machine)</h4>
+  
+  <p class="lesson-text">Smart Contract (Hợp đồng thông minh) là gì? Hãy quên từ "Hợp đồng" đi, nó nghe quá pháp lý. Hãy nghĩ về một cái Máy Bán Hàng Tự Động làm bằng bê tông cốt thép.</p>
+  
+  <ul class="lesson-list">
+    <li><strong>C# Web API (Mô hình cũ):</strong> Giống như một nhân viên thu ngân.<br>
+      • Bạn đưa tiền. Nhân viên nhận, kiểm tra, rồi đưa hàng.<br>
+      • Rủi ro: Nhân viên có thể tính nhầm, có thể bị ốm, server có thể sập, hoặc ông chủ (Admin) có thể lén lấy tiền trong két.</li>
+    <li><strong>Rust Smart Contract (Mô hình mới):</strong> Giống cái máy bán hàng tự động.<br>
+      • Nó là một khối code logic nằm trên Blockchain công khai.<br>
+      • Immutable (Bất biến): Một khi đã đặt cái máy đó xuống phố (Deploy), không ai sửa được mạch điện bên trong nó nữa (trừ khi có thiết kế cơ chế upgrade đặc biệt).<br>
+      • Trustless (Không cần tin tưởng): Bạn không cần tin ông chủ máy. Bạn chỉ cần tin vào logic của máy: Cứ bỏ đúng 10k -> Bánh rơi ra. Không có ngoại lệ.</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Cài đặt Môi trường (Step-by-Step)</h4>
+  
+  <p class="lesson-text">Chúng ta sẽ chọn Solana để thực hành vì nó dùng Rust 100% và có tốc độ xử lý nhanh nhất hiện nay.<br><br>
+  <strong>Lưu ý quan trọng cho C# Dev dùng Windows:</strong><br>
+  Việc lập trình Blockchain trên Windows gốc (Native) rất hay gặp lỗi thư viện.<br>
+  <strong>Khuyên dùng:</strong> Hãy cài đặt WSL2 (Windows Subsystem for Linux) và cài Ubuntu. Hãy coi như bạn đang dùng Linux để code phần này.</p>
+
+  <p class="lesson-text"><strong>Bước 1: Cài đặt Rust (trên WSL/Linux/Mac)</strong><br>
+  Nếu bạn đã cài rồi thì bỏ qua.</p>
+  <pre class="lesson-code lesson-code-bash">curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh</pre>
+
+  <p class="lesson-text"><strong>Bước 2: Cài đặt Solana CLI</strong><br>
+  Đây là công cụ để tương tác với mạng lưới Solana (giống dotnet CLI).</p>
+  <pre class="lesson-code lesson-code-bash">sh -c "$(curl -sSfL https://release.solana.com/v1.16.0/install)"</pre>
+
+  <p class="lesson-text">Sau khi cài xong, reset terminal và gõ <code>solana --version</code> để kiểm tra.</p>
+
+  <p class="lesson-text"><strong>Bước 3: Cài đặt Anchor Framework</strong><br>
+  Nếu Solana là nền tảng, thì Anchor chính là framework.<br><br>
+  • Solana thuần = Viết HTTP Handler bằng C socket thuần (Khó, dài).<br>
+  • Anchor = ASP.NET Core. Nó cung cấp cấu trúc, attributes (macros) để bạn viết code nhanh và an toàn.</p>
+  <pre class="lesson-code lesson-code-bash"># Cài đặt avm (Anchor Version Manager)
+cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+
+# Cài đặt phiên bản mới nhất của Anchor
+avm install latest
+avm use latest</pre>
+
+  <p class="lesson-text">Kiểm tra: <code>anchor --version</code></p>
+
+  <h4 class="lesson-section">3. Hello World trên Blockchain: Project "HelloAnchor"</h4>
+
+  <p class="lesson-text"><strong>Khởi tạo dự án:</strong></p>
+  <pre class="lesson-code lesson-code-bash">anchor init hello_anchor
+cd hello_anchor</pre>
+
+  <p class="lesson-text"><strong>Cấu trúc thư mục (C# Dev sẽ thấy quen):</strong></p>
+  <ul class="lesson-list">
+    <li><code>programs/hello_anchor/src/lib.rs</code>: Đây là Controller (Logic chính).</li>
+    <li><code>tests/</code>: Nơi viết test script (thường bằng TypeScript/JS) để giả lập Client gọi vào Contract.</li>
+    <li><code>Anchor.toml</code>: File cấu hình (giống appsettings.json + csproj).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Viết Code (lib.rs):</strong><br>
+  Mở file <code>programs/hello_anchor/src/lib.rs</code> và sửa nội dung như sau:</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">use anchor_lang::prelude::*;
+
+// Đây là ID của chương trình trên chuỗi (Anchor tự sinh, bạn sẽ thay đổi sau khi deploy lần đầu)
+declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"); 
+
+// Macro #[program] đánh dấu đây là Module chứa các RPC Endpoint (giống [ApiController])
+#[program]
+pub mod hello_anchor {
+    use super::*;
+
+    // Đây là một hàm (Instruction) có thể gọi từ ngoài vào
+    // ctx: Context chứa các tài khoản liên quan (Accounts)
+    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+        // Ghi log lên blockchain (tương tự Console.WriteLine)
+        msg!("Hello World! Chào mừng C# Dev đến với Solana!");
+        Ok(())
+    }
+}
+
+// Định nghĩa cấu trúc dữ liệu đầu vào (Validation)
+// Giống như định nghĩa DTO (Data Transfer Object) trong C#
+#[derive(Accounts)]
+pub struct Initialize {}</code></pre>
+
+  <p class="lesson-text"><strong>Giải thích cú pháp lạ:</strong></p>
+  <ul class="lesson-list">
+    <li><code>declare_id!</code>: Địa chỉ nhà của cái máy bán hàng này.</li>
+    <li><code>#[program]</code>: Attribute biến module Rust thường thành Smart Contract.</li>
+    <li><code>Context&lt;T&gt;</code>: Trong Blockchain, mọi dữ liệu đều nằm trong các "Account". Bạn muốn đọc/ghi dữ liệu nào, bạn phải khai báo trước qua Context. Ở ví dụ Hello World này ta chưa ghi gì nên struct Initialize để trống.</li>
+  </ul>
+
+  <h4 class="lesson-section">4. Biên dịch và Chạy thử (Localnet)</h4>
+
+  <p class="lesson-text"><strong>Bước 1: Build chương trình</strong></p>
+  <pre class="lesson-code lesson-code-bash">anchor build</pre>
+
+  <p class="lesson-text">Lần đầu chạy sẽ hơi lâu vì nó tải thư viện.</p>
+
+  <p class="lesson-text"><strong>Bước 2: Lấy Program ID</strong></p>
+  <pre class="lesson-code lesson-code-bash">solana address -k target/deploy/hello_anchor-keypair.json</pre>
+
+  <p class="lesson-text">Copy chuỗi ký tự in ra (Ví dụ: Abc123...) và dán vào phần <code>declare_id!("...")</code> trong file lib.rs và cả trong file Anchor.toml.<br>
+  -> Tại sao? Để xác thực rằng code này thuộc về địa chỉ đó.<br>
+  Build lại lần nữa: <code>anchor build</code>.</p>
+
+  <p class="lesson-text"><strong>Bước 3: Viết Test Script (Client)</strong></p>
+  <pre class="lesson-code lesson-code-ts">import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { HelloAnchor } from "../target/types/hello_anchor";
+
+describe("hello_anchor", () => {
+  // Cấu hình Provider (kết nối tới Localnet)
+  anchor.setProvider(anchor.AnchorProvider.env());
+
+  const program = anchor.workspace.HelloAnchor as Program<HelloAnchor>;
+
+  it("Is initialized!", async () => {
+    // Gọi hàm 'initialize' từ Smart Contract
+    const tx = await program.methods.initialize().rpc();
+    
+    console.log("Your transaction signature", tx);
+  });
+});</pre>
+
+  <p class="lesson-text"><strong>Bước 4: Chạy Test (Deploy & Run)</strong></p>
+  <pre class="lesson-code lesson-code-bash">anchor test</pre>
+
+  <p class="lesson-text"><strong>Điều gì xảy ra khi bạn gõ anchor test?</strong></p>
+  <ol class="lesson-list">
+    <li>Anchor khởi động một Local Solana Validator (một blockchain thu nhỏ chạy trên RAM máy bạn).</li>
+    <li>Nó tạo ví giả, bơm tiền giả (SOL) vào ví.</li>
+    <li>Nó Deploy code Rust của bạn lên Local Blockchain đó.</li>
+    <li>Nó chạy script TypeScript để gọi hàm initialize.</li>
+    <li>Nếu thành công, bạn sẽ thấy dòng Your transaction signature ... và tích xanh.</li>
+  </ol>
+
+  <h4 class="lesson-section">5. So sánh tư duy: C# Controller vs Solana Program</h4>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Khái niệm</th><th>C# Web API</th><th>Solana (Anchor)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Nơi lưu code</td><td>Server (IIS/Kestrel/Docker)</td><td>Blockchain Account (Executable)</td></tr>
+        <tr><td>Nơi lưu dữ liệu</td><td>Database (SQL Server/Redis)</td><td>Account (Dữ liệu nằm rải rác trên các file nhỏ gọi là Account)</td></tr>
+        <tr><td>Hàm xử lý</td><td>[HttpPost] Action()</td><td>pub fn instruction()</td></tr>
+        <tr><td>Chi phí</td><td>Trả tiền thuê server hàng tháng.</td><td>User trả tiền (Gas fee) mỗi lần gọi hàm.</td></tr>
+        <tr><td>Logs</td><td>Ghi vào File/Elasticsearch.</td><td>Ghi vào Transaction Logs (công khai).</td></tr>
+        <tr><td>State</td><td>Stateless (thường là vậy).</td><td>Stateless (Logic không lưu state, State lưu ở Account riêng được truyền vào qua Context).</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 18</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Hôm nay bạn đã thực hiện cú nhảy vọt lớn nhất trong sự nghiệp lập trình của mình:</p>
+    <ol class="lesson-list">
+      <li><strong>Cài đặt Toolchain:</strong> Rust, Solana, Anchor.</li>
+      <li><strong>Tư duy Web3:</strong> Code là luật, chạy trên mạng lưới phi tập trung.</li>
+      <li><strong>Hello World:</strong> Đã deploy thành công một Smart Contract lên Localnet.</li>
+    </ol>
+    <p class="lesson-text">Code Solana ban đầu trông có vẻ đáng sợ với nhiều Macro lạ (declare_id, #[program]), nhưng bản chất nó vẫn là Rust: Mạnh mẽ, An toàn và Tường minh.</p>
+  </div>
+
+  <div class="lesson-homework">
+    <p><strong>Bài tập về nhà:</strong><br><br>
+    Hãy sửa hàm initialize để nó nhận vào một tham số <code>name: String</code> và in ra <code>msg!("Xin chào {}", name);</code>.<br>
+    Đừng quên sửa cả file test TypeScript để truyền tham số vào nhé!<br>
+    <em>Gợi ý: pub fn initialize(_ctx: Context&lt;Initialize&gt;, name: String) -> Result&lt;()&gt;</em></p>
+  </div>
+
+  <p class="lesson-ending">
+    (Hẹn gặp lại ở <strong>Bài 19: Lưu trữ dữ liệu trên Blockchain</strong>. Chúng ta sẽ học cách tạo ra một Account để lưu biến đếm số (Counter) - tương đương việc tạo bảng Database trong C#).
+  </p>
+</div>
+
+</body>
+</html>
