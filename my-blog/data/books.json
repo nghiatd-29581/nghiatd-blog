@@ -149,8 +149,13 @@
           "lessons": [
             {
               "id": "lesson19",
-              "title": "Bài 19: Nghiên cứu tạo Ví Crypto Mini",
-              "htmlPath": "/content/books/book1/chapter9/lesson18.html"
+              "title": "Bài 19: Lưu trữ dữ liệu trên Blockchain",
+              "htmlPath": "/content/books/book1/chapter9/lesson19.html"
+            },
+            {
+              "id": "lesson20",
+              "title": "Bài 20: Cross-Program Invocation (CPI)",
+              "htmlPath": "/content/books/book1/chapter9/lesson20.html"
             }
           ]
         }

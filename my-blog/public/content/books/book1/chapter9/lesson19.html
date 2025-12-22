@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 19: Lưu trữ dữ liệu trên Blockchain – Rust cho C# Developer</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Bài 19. Hôm nay, chúng ta sẽ giải quyết bài toán cốt lõi của mọi ứng dụng: Lưu trữ dữ liệu (State Management).<br><br>
+    Trong C#, khi muốn lưu thông tin (ví dụ: số lần bấm nút), bạn nghĩ ngay đến Database (SQL Server, MongoDB) hoặc File System.<br><br>
+    Trên Blockchain, không có Database tập trung nào cả. Tất cả dữ liệu được lưu trong các Account (Tài khoản) nằm rải rác trên mạng lưới.<br><br>
+    Hãy cùng học cách "thuê nhà" trên Blockchain để chứa dữ liệu nhé!
+  </p>
+
+  <h1 class="lesson-part">PHẦN 3: CONCURRENCY & BLOCKCHAIN APPLICATION</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 8: ASYNC/AWAIT & SMART CONTRACTS</h2>
+  <h3 class="lesson-title">BÀI 19: LƯU TRỮ DỮ LIỆU TRÊN BLOCKCHAIN (ACCOUNT & STATE)</h3>
+
+  <h4 class="lesson-section">1. Ẩn dụ: Database Table vs. Những chiếc hộp ký gửi</h4>
+  
+  <p class="lesson-text">Để hiểu cách Solana lưu dữ liệu, hãy tưởng tượng sự khác biệt giữa Khách sạn và Dịch vụ tủ đồ.</p>
+  
+  <ul class="lesson-list">
+    <li><strong>C# (SQL Database - Khách sạn):</strong><br>
+      • Bạn xây một cái khách sạn (Create Table).<br>
+      • Khách đến (Data), bạn nhét bao nhiêu khách vào cũng được, miễn là ổ cứng server còn chỗ.<br>
+      • Bạn trả tiền thuê server hàng tháng cố định.</li>
+    <li><strong>Solana (Account - Tủ đồ ký gửi):</strong><br>
+      • Không có khách sạn chung nào cả. Mạng lưới là một bãi đất trống khổng lồ.<br>
+      • Khi bạn muốn lưu một dữ liệu (ví dụ: Biến đếm Counter), bạn phải thuê một cái tủ riêng biệt (Account).<br>
+      • Kích thước cố định: Bạn phải khai báo ngay từ đầu: "Tôi thuê cái tủ kích thước 8 bytes + 8 bytes". Bạn không thể nhét thêm đồ nếu tủ đầy (trừ khi làm thủ tục nới rộng - realloc).<br>
+      • Tiền thuê (Rent): Bạn phải bỏ một ít tiền (SOL) vào trong tủ để "giữ chỗ". Nếu rút hết tiền ra, cái tủ biến mất (Dữ liệu bị xóa).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Tư duy:</strong> Trong Solana, Program (Smart Contract) không chứa dữ liệu. Program chỉ chứa Logic. Dữ liệu nằm ở các Account riêng biệt mà Program đó có quyền ghi đè.</p>
+
+  <h4 class="lesson-section">2. Project Thực hành: Anchor Counter</h4>
+  
+  <p class="lesson-text">Chúng ta sẽ xây dựng một ứng dụng đếm số.</p>
+  
+  <ul class="lesson-list">
+    <li>Chức năng: Khởi tạo bộ đếm, Tăng bộ đếm.</li>
+    <li>Dữ liệu cần lưu: Một số nguyên dương (u64).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Bước 1: Khởi tạo Project</strong></p>
+  <pre class="lesson-code lesson-code-bash">anchor init anchor_counter
+cd anchor_counter</pre>
+
+  <p class="lesson-text">Nhớ lấy Program ID sau khi anchor build và update vào lib.rs + Anchor.toml như bài trước nhé.</p>
+
+  <p class="lesson-text"><strong>Bước 2: Định nghĩa Schema (Cấu trúc cái tủ)</strong><br>
+  Trong C#, bạn tạo Class Entity. Trong Rust, bạn tạo Struct với macro #[account].<br>
+  Mở lib.rs và thêm vào cuối file:</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">// 1. Định nghĩa cấu trúc dữ liệu sẽ lưu xuống Blockchain
+#[account]
+pub struct Counter {
+    pub count: u64, // Lưu số đếm (8 bytes)
+}</code></pre>
+
+  <p class="lesson-text"><strong>Bước 3: Định nghĩa Context cho hàm Khởi tạo (Thuê tủ)</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">#[derive(Accounts)]
+pub struct Initialize<'info> {
+    // Chúng ta muốn KHỞI TẠO (init) một account mới tên là 'counter'
+    #[account(
+        init, 
+        payer = user, 
+        space = 8 + 8 // Discriminator (8) + u64 (8)
+    )]
+    pub counter: Account<'info, Counter>, 
+
+    // Ai là người trả tiền thuê tủ (Rent) và phí giao dịch? -> Là 'user'
+    #[account(mut)]
+    pub user: Signer<'info>, 
+
+    // Hệ thống cần gọi System Program để thực hiện việc tạo account
+    pub system_program: Program<'info, System>,
+}</code></pre>
+
+  <p class="lesson-text"><strong>Giải thích space = 8 + 8:</strong></p>
+  <ul class="lesson-list">
+    <li>8 bytes đầu: Anchor TỰ ĐỘNG thêm vào một cái gọi là Discriminator. Nó giống như "Header" để phân biệt đây là Counter struct chứ không phải User struct. Bắt buộc phải có.</li>
+    <li>8 bytes sau: Kích thước của kiểu u64 (count).</li>
+    <li>Tổng: 16 bytes. Nếu bạn khai báo thiếu, giao dịch sẽ lỗi.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Bước 4: Định nghĩa Context cho hàm Tăng số (Sửa đồ trong tủ)</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">#[derive(Accounts)]
+pub struct Increment<'info> {
+    // Counter đã tồn tại, ta mượn nó để sửa (mut)
+    #[account(mut)]
+    pub counter: Account<'info, Counter>, 
+}</code></pre>
+
+  <p class="lesson-text"><strong>Bước 5: Viết Logic (Controller)</strong></p>
+  <pre class="lesson-code"><code class="lesson-code-rust">#[program]
+pub mod anchor_counter {
+    use super::*;
+
+    // Hàm 1: Khởi tạo (Chỉ chạy 1 lần cho mỗi account counter)
+    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+        // Lấy tham chiếu mutable đến account counter
+        let counter_account = &mut ctx.accounts.counter;
+        
+        // Gán giá trị ban đầu
+        counter_account.count = 0;
+        
+        msg!("Counter initialized at 0");
+        Ok(())
+    }
+
+    // Hàm 2: Tăng số
+    pub fn increment(ctx: Context<Increment>) -> Result<()> {
+        let counter_account = &mut ctx.accounts.counter;
+        
+        // Logic tăng số
+        counter_account.count += 1;
+        
+        msg!("Counter incremented. Current value: {}", counter_account.count);
+        Ok(())
+    }
+}</code></pre>
+
+  <h4 class="lesson-section">3. Viết Test Script (Client Side)</h4>
+
+  <pre class="lesson-code lesson-code-ts">import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { AnchorCounter } from "../target/types/anchor_counter";
+import { assert } from "chai"; // Thư viện assert
+
+describe("anchor_counter", () => {
+  const provider = anchor.AnchorProvider.env();
+  anchor.setProvider(provider);
+  const program = anchor.workspace.AnchorCounter as Program<AnchorCounter>;
+
+  // 1. Tạo một Keypair ngẫu nhiên cho Account Counter
+  // Mỗi lần chạy test là một Account mới tinh
+  const counterAccount = anchor.web3.Keypair.generate();
+
+  it("Is initialized!", async () => {
+    // 2. Gọi hàm initialize
+    await program.methods
+      .initialize()
+      .accounts({
+        counter: counterAccount.publicKey,
+        user: provider.wallet.publicKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([counterAccount]) // Cần chữ ký của counterAccount vì ta đang tạo mới nó
+      .rpc();
+
+    // Kiểm tra dữ liệu trên chuỗi
+    // Hàm fetch giúp đọc dữ liệu từ Account và parse về JSON
+    const account = await program.account.counter.fetch(counterAccount.publicKey);
+    
+    console.log("Count ban đầu: ", account.count.toString());
+    assert.ok(account.count.eq(new anchor.BN(0)));
+  });
+
+  it("Is incremented!", async () => {
+    // 3. Gọi hàm increment
+    await program.methods
+      .increment()
+      .accounts({
+        counter: counterAccount.publicKey, // Truyền đúng địa chỉ đã tạo ở trên
+      })
+      .rpc();
+
+    // Đọc lại dữ liệu để kiểm tra
+    const account = await program.account.counter.fetch(counterAccount.publicKey);
+    
+    console.log("Count sau khi tăng: ", account.count.toString());
+    assert.ok(account.count.eq(new anchor.BN(1)));
+  });
+});</pre>
+
+  <p class="lesson-text">Chạy test: <code>anchor test</code>.</p>
+
+  <h4 class="lesson-section">4. So sánh C# EF Core vs Solana Anchor</h4>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Thao tác</th><th>C# Entity Framework</th><th>Solana Anchor</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Định nghĩa bảng</td><td>public class Counter { int Id; int Count; }</td><td>pub struct Counter { pub count: u64 }</td></tr>
+        <tr><td>Tạo bản ghi mới</td><td>_context.Counters.Add(new Counter())</td><td>Gửi Transaction gọi hàm initialize với #[account(init)].</td></tr>
+        <tr><td>Khóa chính (PK)</td><td>Id (Int/Guid) tự tăng.</td><td>PublicKey (Địa chỉ ví) của Account đó.</td></tr>
+        <tr><td>Tìm bản ghi</td><td>_context.Counters.Find(id)</td><td>program.account.counter.fetch(publicKey)</td></tr>
+        <tr><td>Chi phí lưu trữ</td><td>Ổ cứng server (Rẻ).</td><td>Rent (Tiền SOL khóa trong account) (Đắt hơn).</td></tr>
+        <tr><td>Quyền sửa đổi</td><td>Admin DB hoặc Code Server.</td><td>Chỉ Program sở hữu Account đó mới sửa được (Check qua owner).</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 19</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Bạn vừa làm được điều thần kỳ: Tạo ra một ô nhớ vĩnh cửu trên Internet.</p>
+    <ol class="lesson-list">
+      <li><strong>Account là nơi chứa dữ liệu:</strong> Muốn lưu gì thì tạo Account nấy (Account User, Account Post, Account Comment...).</li>
+      <li><strong>Context là cửa khẩu:</strong> Muốn tạo hay sửa Account nào, phải khai báo rõ trong struct Context (Initialize, Increment).</li>
+      <li><strong>Space là tiền:</strong> Hãy tính toán kích thước struct cẩn thận (8 bytes discriminator + dữ liệu thật) để tiết kiệm phí thuê (Rent) cho user.</li>
+    </ol>
+  </div>
+
+  <div class="lesson-homework">
+    <p><strong>Bài tập về nhà:</strong><br><br>
+    Hãy mở rộng struct Counter để lưu thêm một trường: <code>pub authority: Pubkey</code>.<br><br>
+    • Trong hàm initialize, hãy lưu địa chỉ của người tạo (<code>ctx.accounts.user.key()</code>) vào trường authority này.<br><br>
+    • Mục đích: Để đánh dấu "Ai là chủ sở hữu của bộ đếm này".</p>
+  </div>
+
+  <p class="lesson-ending">
+    (Hẹn gặp lại ở <strong>Bài 20: Cross-Program Invocation (CPI)</strong>. Làm sao để Smart Contract A gọi Smart Contract B? Ví dụ: Máy đếm số gọi sang Máy ngân hàng để chuyển tiền mỗi khi đếm? Đó là Lego của thế giới DeFi).
+  </p>
+</div>
+
+</body>
+</html>
