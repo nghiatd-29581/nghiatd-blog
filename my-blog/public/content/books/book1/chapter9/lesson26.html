@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 26: Unit Test & Integration Test – Rust cho C# Developer</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Bài 26.<br><br>
+    Bạn đã có súng (Code Rust), đã có đạn (Token), và đã học cách nhắm bắn (Math). Bây giờ là lúc chúng ta bước vào trường bắn thực tế.<br><br>
+    Trong C#, nếu có lỗi (bug), bạn có thể hot-fix, patch server và redeploy trong 5 phút.<br><br>
+    Trong Blockchain, Code đã deploy là bất biến (Immutable). Nếu có bug gây mất tiền:<br><br>
+    1. Tiền mất vĩnh viễn.<br><br>
+    2. Bạn không thể sửa code cũ, chỉ có thể deploy code mới và năn nỉ user chuyển qua (mà lúc đó uy tín đã về 0).<br><br>
+    Vì thế, Integration Test trên Solana quan trọng gấp 10 lần so với Web2.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 4: DỰ ÁN TỐT NGHIỆP</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 9: VÍ CRYPTO MINI & DEX</h2>
+  <h3 class="lesson-title">BÀI 26: UNIT TEST & INTEGRATION TEST (KIỂM THỬ TOÀN TRÌNH)</h3>
+
+  <h4 class="lesson-section">1. Sự khác biệt tư duy: C# vs. Solana Testing</h4>
+  
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Đặc điểm</th><th>C# (NUnit / xUnit)</th><th>Solana (Anchor / Mocha / Chai)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Đối tượng</td><td>Test từng class, method riêng lẻ (Unit Test). Mock Database.</td><td>Test hành vi của cả hệ thống trên một Blockchain giả lập (Localnet).</td></tr>
+        <tr><td>Ngôn ngữ</td><td>Viết Test bằng C# (cùng ngôn ngữ với App).</td><td>Viết Test bằng TypeScript/JavaScript (Ngôn ngữ của Client).</td></tr>
+        <tr><td>Môi trường</td><td>Chạy trong RAM (Memory).</td><td>Chạy trên một node Validator thật (nhưng chạy local) để giả lập state, transaction, fee.</td></tr>
+        <tr><td>Flow</td><td>Arrange -> Act -> Assert</td><td>Setup Airdrop -> Send Transaction -> Fetch Account Data -> Assert</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="lesson-text"><strong>Tại sao lại test bằng TypeScript?</strong><br>
+  Vì Smart Contract không chạy một mình. Nó phục vụ Frontend (React/Next.js). Việc viết test bằng TS giúp bạn sim luôn cách Frontend sẽ gọi vào Contract sau này. Viết test xong là coi như xong luôn logic kết nối ví cho Frontend.</p>
+
+  <h4 class="lesson-section">2. Chuẩn bị Môi trường Test</h4>
+  
+  <p class="lesson-text">Chúng ta cần cài đặt thư viện để tương tác với Token (tạo mint, check balance...).<br>
+  Mở terminal tại thư mục gốc dự án và chạy:</p>
+  <pre class="lesson-code lesson-code-bash">yarn add @solana/spl-token @solana/web3.js chai
+# Hoặc nếu dùng npm
+npm install @solana/spl-token @solana/web3.js chai</pre>
+
+  <p class="lesson-text">Mở file <code>tests/rusty_dex.ts</code>. Đây là nơi chúng ta sẽ viết kịch bản.</p>
+
+  <h4 class="lesson-section">3. Bước 1: Setup Boilerplate & Helpers</h4>
+  
+  <pre class="lesson-code"><code class="lesson-code-ts">import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { RustyDex } from "../target/types/rusty_dex"; // Anchor tự generate type này
+import { 
+  getAssociatedTokenAddress, 
+  createMint, 
+  mintTo, 
+  TOKEN_PROGRAM_ID 
+} from "@solana/spl-token";
+import { assert } from "chai";
+
+describe("rusty_dex", () => {
+  // 1. Cấu hình Provider (Kết nối ví local)
+  const provider = anchor.AnchorProvider.env();
+  anchor.setProvider(provider);
+
+  const program = anchor.workspace.RustyDex as Program<RustyDex>;
+  
+  // Biến dùng chung cho các test case
+  let mintA: anchor.web3.PublicKey;
+  let mintB: anchor.web3.PublicKey;
+  
+  // User đóng vai người nạp tiền/swap
+  const user = anchor.web3.Keypair.generate();
+  
+  // PDA của Pool và các Vaults
+  let poolPda: anchor.web3.PublicKey;
+  let vaultA: anchor.web3.PublicKey;
+  let vaultB: anchor.web3.PublicKey;
+
+  // Ví token (ATA) của User
+  let userTokenA: anchor.web3.PublicKey;
+  let userTokenB: anchor.web3.PublicKey;
+
+  // HÀM HỖ TRỢ: Airdrop SOL và tạo môi trường
+  before(async () => {
+    // Airdrop 10 SOL cho user để làm phí gas
+    const signature = await provider.connection.requestAirdrop(user.publicKey, 10 * anchor.web3.LAMPORTS_PER_SOL);
+    await provider.connection.confirmTransaction(signature);
+
+    // Tạo Mint A (Giả sử là Token A)
+    mintA = await createMint(
+      provider.connection,
+      user, // Payer
+      user.publicKey, // Mint Authority
+      null, 
+      6 // Decimals
+    );
+
+    // Tạo Mint B (Giả sử là Token B)
+    mintB = await createMint(
+      provider.connection,
+      user, 
+      user.publicKey, 
+      null, 
+      6
+    );
+
+    console.log("Setup complete. MintA:", mintA.toBase58(), "MintB:", mintB.toBase58());
+  });
+  
+  // ... Các test case sẽ viết ở dưới ...
+});</code></pre>
+
+  <h4 class="lesson-section">4. Bước 2: Tìm địa chỉ PDA (Derive Addresses)</h4>
+  
+  <pre class="lesson-code"><code class="lesson-code-ts">  it("Finds PDA addresses", async () => {
+    // Tái tạo lại logic seeds: [b"pool", mint_a, mint_b]
+    [poolPda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("pool"), mintA.toBuffer(), mintB.toBuffer()],
+      program.programId
+    );
+
+    // Tìm Vault A PDA: [b"vault", pool, mint_a]
+    [vaultA] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("vault"), poolPda.toBuffer(), mintA.toBuffer()],
+      program.programId
+    );
+
+    // Tìm Vault B PDA
+    [vaultB] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("vault"), poolPda.toBuffer(), mintB.toBuffer()],
+      program.programId
+    );
+
+    console.log("Pool PDA:", poolPda.toBase58());
+  });</code></pre>
+
+  <h4 class="lesson-section">5. Bước 3: Test chức năng Initialize (Tạo hồ)</h4>
+  
+  <pre class="lesson-code"><code class="lesson-code-ts">  it("Initializes the Liquidity Pool", async () => {
+    await program.methods
+      .initialize()
+      .accounts({
+        pool: poolPda,
+        mintA: mintA,
+        mintB: mintB,
+        vaultA: vaultA,
+        vaultB: vaultB,
+        user: user.publicKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      })
+      .signers([user]) // User phải ký để trả tiền thuê (rent)
+      .rpc();
+
+    // Verification (Assert)
+    // Fetch dữ liệu từ blockchain về để kiểm tra
+    const poolAccount = await program.account.pool.fetch(poolPda);
+    
+    // Kiểm tra xem pool có lưu đúng địa chỉ mint không
+    assert.ok(poolAccount.mintA.equals(mintA));
+    assert.ok(poolAccount.mintB.equals(mintB));
+  });</code></pre>
+
+  <h4 class="lesson-section">6. Bước 4: Chuẩn bị tiền để Swap (Setup Balances)</h4>
+  
+  <pre class="lesson-code"><code class="lesson-code-ts">  it("Adds Liquidity to Vaults and User", async () => {
+    // 1. Tạo ví Token (ATA) cho User để chứa A và B
+    userTokenA = await getAssociatedTokenAddress(mintA, user.publicKey);
+    userTokenB = await getAssociatedTokenAddress(mintB, user.publicKey);
+
+    // 2. Mint 1000 Token A vào Vault A (Giả lập admin nạp thanh khoản)
+    await mintTo(provider.connection, user, mintA, vaultA, user, 1000_000000); // 1000 * 10^6
+    
+    // 3. Mint 1000 Token B vào Vault B
+    await mintTo(provider.connection, user, mintB, vaultB, user, 1000_000000);
+
+    // 4. Mint 100 Token A vào ví User (Tiền vốn của user)
+    // User chưa có ví ATA thì phải tạo trước (thường frontend làm, ở đây ta dùng helper của spl-token nhưng để đơn giản ta giả sử user tự tạo hoặc dùng lệnh createAssociatedTokenAccount)
+    // Cách nhanh nhất trong test: dùng createAssociatedTokenAccountInstruction hoặc thư viện hỗ trợ.
+    // Ở đây tôi dùng tắt lệnh mintTo nó sẽ fail nếu chưa có account. 
+    // Hãy dùng lệnh này để tạo và mint luôn nếu chưa có:
+    const tx = new anchor.web3.Transaction();
+    // ... (Code tạo ATA hơi dài dòng, nên ta dùng cách manual mintTo vào ATA đã tính)
+    
+    // Cách chuẩn:
+    // Tạo ATA cho User
+    const createUserATx = await anchor.utils.token.getOrCreateAssociatedTokenAccount(
+        provider.connection, user, mintA, user.publicKey
+    );
+    const createUserBTx = await anchor.utils.token.getOrCreateAssociatedTokenAccount(
+        provider.connection, user, mintB, user.publicKey
+    );
+    
+    // Mint cho User 100 Token A
+    await mintTo(provider.connection, user, mintA, createUserATx.address, user, 100_000000);
+  });</code></pre>
+
+  <h4 class="lesson-section">7. Bước 5: Test Swap (Nhân vật chính)</h4>
+  
+  <pre class="lesson-code"><code class="lesson-code-ts">  it("Swaps Token A for Token B", async () => {
+    const amountToSwap = new anchor.BN(100_000000); // 100 token
+
+    // Lấy số dư trước khi swap để so sánh
+    const balanceB_Before = await provider.connection.getTokenAccountBalance(userTokenB);
+
+    await program.methods
+      .swap(amountToSwap)
+      .accounts({
+        pool: poolPda,
+        user: user.publicKey,
+        userSourceToken: userTokenA,      // User bán A
+        userDestinationToken: userTokenB, // User mua B
+        vaultSource: vaultA,              // Lấy từ kho A
+        vaultDestination: vaultB,         // Lấy từ kho B
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([user])
+      .rpc();
+
+    // Assert Logic
+    const balanceB_After = await provider.connection.getTokenAccountBalance(userTokenB);
+    
+    console.log("Balance B Before:", balanceB_Before.value.amount);
+    console.log("Balance B After: ", balanceB_After.value.amount);
+
+    // User phải nhận được token B
+    assert.isTrue(Number(balanceB_After.value.amount) > Number(balanceB_Before.value.amount));
+  });</code></pre>
+
+  <h4 class="lesson-section">8. Cách chạy và Debug</h4>
+  
+  <p class="lesson-text">Mở terminal:</p>
+  <pre class="lesson-code lesson-code-bash">anchor test</pre>
+
+  <p class="lesson-text">Nếu bạn thấy dòng chữ xanh lá cây: <strong>Passing (4)</strong>, nghĩa là bạn đã thành công!<br><br>
+  <strong>Lỗi thường gặp:</strong></p>
+  <ol class="lesson-list">
+    <li><strong>AccountNotInitialized:</strong> Quên tạo ATA cho User trước khi mint.</li>
+    <li><strong>ConstraintOwner:</strong> Truyền sai account vào vault_source hoặc vault_destination. (Ví dụ: truyền Vault A vào chỗ đáng lẽ là Vault B).</li>
+    <li><strong>SignatureVerificationFailed:</strong> Sai seeds ở phần Rust (Bài 25) hoặc sai thứ tự account.</li>
+  </ol>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 26</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Bạn vừa thực hiện một quy trình chuẩn của Blockchain Developer:</p>
+    <ol class="lesson-list">
+      <li><strong>Setup Environment:</strong> Tạo Token, tạo User giả.</li>
+      <li><strong>Execution:</strong> Gọi Smart Contract.</li>
+      <li><strong>Assertion:</strong> Kiểm tra xem Contract có trừ tiền đúng và cộng tiền đủ không.</li>
+    </ol>
+    <p class="lesson-text"><strong>Bài học cốt lõi:</strong><br>
+    Đừng bao giờ tin vào mắt mình ("Code nhìn có vẻ đúng"). Hãy tin vào <strong>anchor test</strong>. Chỉ khi nào test case hiện màu xanh, bạn mới được phép ngủ ngon.</p>
+  </div>
+
+  <p class="lesson-ending">
+    (Sản phẩm đã hoàn thiện, đã được kiểm tra chất lượng. Bước cuối cùng là mang nó ra thế giới. Hẹn gặp lại ở <strong>Bài 27: Deployment & Kết nối Frontend</strong> - Bài học cuối cùng của khóa học!)
+  </p>
+</div>
+
+</body>
+</html>

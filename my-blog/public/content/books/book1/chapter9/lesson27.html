@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 27: Deployment & Kết nối Frontend – Rust cho C# Developer</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Bài 27 - Bài học cuối cùng của hành trình này.<br><br>
+    Nếu đây là một game nhập vai, thì bạn đang đứng trước cửa ải cuối cùng để đánh bại Boss và hoàn thành game.<br><br>
+    Trong C#, khi xong code, bạn chọn Publish -> IIS hoặc Docker -> Azure/AWS.<br><br>
+    Trong Solana, bạn Deploy -> Blockchain (Devnet/Mainnet).<br><br>
+    Tuy nhiên, việc kết nối giữa Frontend (React/JS) và Blockchain thường là nơi phát sinh nhiều lỗi nhất do sự bất đồng bộ về phiên bản (Version mismatch) và cấu hình ví.<br><br>
+    Hãy đi thật chậm bài này. Đây là cây cầu nối code của bạn với thế giới thực.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 4: DỰ ÁN TỐT NGHIỆP</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 9: VÍ CRYPTO MINI & DEX</h2>
+  <h3 class="lesson-title">BÀI 27: DEPLOYMENT & KẾT NỐI FRONTEND</h3>
+
+  <h4 class="lesson-section">1. Chuẩn bị: Chuyển nhà từ Localnet sang Devnet</h4>
+  
+  <p class="lesson-text">Đến giờ, chúng ta toàn chạy trên localnet (mạng nội bộ máy bạn). Không ai thấy code của bạn cả. Giờ ta chuyển sang devnet (mạng thử nghiệm công khai của Solana - giống môi trường Staging/UAT).</p>
+
+  <p class="lesson-text"><strong>Bước 1: Cấu hình CLI sang Devnet</strong><br>
+  Mở terminal:</p>
+  <pre class="lesson-code lesson-code-bash">solana config set --url devnet</pre>
+
+  <p class="lesson-text"><strong>Bước 2: Tạo ví Deployer mới (Khuyên dùng)</strong><br>
+  Tại sao? Vì ví local của bạn có thể chứa key test lung tung. Nên tạo một ví mới sạch sẽ cho Devnet.</p>
+  <pre class="lesson-code lesson-code-bash">solana-keygen new -o devnet-wallet.json</pre>
+
+  <p class="lesson-text">Lưu ý: Nó sẽ in ra 12 từ khóa (Seed phrase). Tuyệt đối không dùng ví này chứa tiền thật (Mainnet).</p>
+
+  <p class="lesson-text"><strong>Bước 3: Nạp tiền (Airdrop)</strong><br>
+  Để deploy code lên mạng, bạn cần trả phí thuê chỗ (Rent).</p>
+  <pre class="lesson-code lesson-code-bash">solana airdrop 2 devnet-wallet.json</pre>
+
+  <p class="lesson-text">⚠️ Cảnh báo lỗi: Devnet Airdrop thường xuyên bị lỗi "Rate limit" hoặc "Faucet dry".<br>
+  * Giải pháp: Nếu lệnh trên thất bại, hãy copy địa chỉ ví (Public Key) và vào trang web Solana Faucet để xin SOL thủ công.</p>
+
+  <h4 class="lesson-section">2. Quy trình Deploy "Chuẩn chỉ" (Tránh lỗi Program ID)</h4>
+  
+  <p class="lesson-text">Đây là lỗi kinh điển nhất mà 90% người mới (và cả người cũ) đều dính.<br>
+  Lỗi: Account used is not a program hoặc Verification failed.<br>
+  Lý do: Khi bạn anchor build lần đầu, Anchor tạo ra một Keypair mới ngẫu nhiên cho Program. Nhưng trong code lib.rs (macro declare_id!) và file Anchor.toml vẫn đang lưu ID cũ hoặc ID mặc định.</p>
+
+  <p class="lesson-text"><strong>Quy trình đồng bộ ID (Làm chính xác từng bước):</strong></p>
+  <ol class="lesson-list">
+    <li>Build lần 1 (để lấy key):<br>
+       <pre class="lesson-code lesson-code-bash">anchor build</pre></li>
+    <li>Lấy Program ID mới sinh ra:<br>
+       Chạy lệnh:<br>
+       <pre class="lesson-code lesson-code-bash">solana address -k target/deploy/rusty_dex-keypair.json</pre>
+       (Thay rusty_dex bằng tên project của bạn).<br>
+       Giả sử nó ra: BuX7...zk9</li>
+    <li>Cập nhật ID vào Code (QUAN TRỌNG):<br>
+       * Mở lib.rs: Sửa declare_id!("BuX7...zk9");<br>
+       * Mở Anchor.toml: Tìm dòng [programs.devnet] (hoặc localnet), sửa rusty_dex = "BuX7...zk9".</li>
+    <li>Build lần 2 (để code khớp với key):<br>
+       <pre class="lesson-code lesson-code-bash">anchor build</pre>
+       Lý do: Lần build này sẽ nhúng cái ID BuX7...zk9 vào trong file binary .so. Nếu không build lại, code trên chuỗi sẽ mang ID khác với địa chỉ deploy -> Lỗi ngay.</li>
+    <li>Deploy:<br>
+       <pre class="lesson-code lesson-code-bash">anchor deploy --provider.cluster devnet --provider.wallet devnet-wallet.json</pre></li>
+  </ol>
+
+  <p class="lesson-text">Nếu thấy dòng chữ: "Deploy success" kèm theo Program Id. Chúc mừng! Code của bạn đã sống trên Internet.</p>
+
+  <h4 class="lesson-section">3. Frontend Integration: Hiểu về IDL</h4>
+  
+  <p class="lesson-text"><strong>Khái niệm:</strong></p>
+  <ul class="lesson-list">
+    <li><strong>C#:</strong> Khi bạn viết API, bạn có Swagger (OpenAPI) để Frontend biết có hàm gì, tham số ra sao.</li>
+    <li><strong>Solana:</strong> Chúng ta có IDL (Interface Description Language).</li>
+  </ul>
+
+  <p class="lesson-text">Khi bạn anchor build, nó sinh ra file target/idl/rusty_dex.json. File JSON này mô tả toàn bộ cấu trúc hàm swap, initialize...<br>
+  Frontend cần file này để biết cách nói chuyện với Blockchain.</p>
+
+  <p class="lesson-text"><strong>Setup Frontend:</strong><br>
+  Tôi sẽ không hướng dẫn setup React từ đầu (quá dài). Hãy giả sử bạn dùng Next.js hoặc Vite React.</p>
+
+  <p class="lesson-text">Cài đặt thư viện cần thiết:</p>
+  <pre class="lesson-code lesson-code-bash">npm install @solana/web3.js @coral-xyz/anchor @solana/wallet-adapter-react @solana/wallet-adapter-react-ui @solana/wallet-adapter-wallets</pre>
+
+  <h4 class="lesson-section">4. Code kết nối Frontend (Step-by-Step)</h4>
+  
+  <p class="lesson-text">Tạo một file utils/program.ts (hoặc tương tự).</p>
+
+  <p class="lesson-text"><strong>Bước 1: Import IDL và Type</strong><br>
+  Copy file target/types/rusty_dex.ts (Anchor tự sinh ra) vào thư mục frontend của bạn.</p>
+
+  <p class="lesson-text"><strong>Bước 2: Viết hàm kết nối</strong></p>
+  <pre class="lesson-code lesson-code-ts">import { AnchorProvider, Program, web3 } from "@coral-xyz/anchor";
+import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
+import idl from "./idl/rusty_dex.json"; // Copy file JSON IDL vào đây
+import { RustyDex } from "./types/rusty_dex"; // Copy file Type vào đây
+
+const PROGRAM_ID = new web3.PublicKey("BuX7...zk9"); // ID bạn vừa deploy
+
+export const useProgram = () => {
+  const { connection } = useConnection();
+  const wallet = useAnchorWallet();
+
+  const getProgram = () => {
+    if (!wallet) return null;
+
+    // 1. Tạo Provider
+    // Provider = Connection (RPC) + Wallet (Người ký)
+    // Giống ConnectionString + UserCredentials trong C#
+    const provider = new AnchorProvider(connection, wallet, {
+      preflightCommitment: "processed",
+    });
+
+    // 2. Tạo Program Object
+    // Đây chính là "Client" để gọi RPC
+    const program = new Program<RustyDex>(
+      idl as any, 
+      provider
+    ); // anchor.workspace.RustyDex không chạy ở frontend, phải dùng new Program()
+
+    return program;
+  };
+
+  return { getProgram };
+};</pre>
+
+  <h4 class="lesson-section">5. Gọi hàm Swap từ UI (React Component)</h4>
+  
+  <p class="lesson-text">Ví dụ trong SwapComponent.tsx:</p>
+  <pre class="lesson-code lesson-code-ts">import { useState } from 'react';
+import { useProgram } from '../utils/program';
+import { web3, BN } from "@coral-xyz/anchor";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
+
+export const SwapComponent = () => {
+  const { getProgram } = useProgram();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSwap = async () => {
+    const program = getProgram();
+    if (!program) return alert("Vui lòng kết nối ví!");
+
+    try {
+      setIsLoading(true);
+
+      // Hardcode ví dụ các địa chỉ (Trong thực tế bạn phải lấy từ config hoặc input)
+      const mintA = new web3.PublicKey("..."); 
+      const mintB = new web3.PublicKey("...");
+      const poolPda = new web3.PublicKey("..."); // Địa chỉ Pool PDA
+      const vaultA = new web3.PublicKey("...");
+      const vaultB = new web3.PublicKey("...");
+
+      // Tìm ví token của người dùng
+      // Lưu ý: wallet.publicKey là ví đang kết nối
+      const userSource = await getAssociatedTokenAddress(mintA, program.provider.publicKey);
+      const userDest = await getAssociatedTokenAddress(mintB, program.provider.publicKey);
+
+      // Gọi Smart Contract
+      // Cú pháp y hệt lúc viết Test (Bài 26)
+      const tx = await program.methods
+        .swap(new BN(1000000)) // Swap 1 token (nếu decimals = 6)
+        .accounts({
+          pool: poolPda,
+          user: program.provider.publicKey, // Anchor tự lấy ví đang connect làm signer
+          userSourceToken: userSource,
+          userDestinationToken: userDest,
+          vaultSource: vaultA,
+          vaultDestination: vaultB,
+          tokenProgram: web3.TOKEN_PROGRAM_ID, // Đừng quên cái này
+        })
+        .rpc(); // Gửi transaction đi
+
+      console.log("Giao dịch thành công! Hash:", tx);
+      alert("Swap thành công!");
+
+    } catch (error) {
+      console.error("Lỗi:", error);
+      alert("Swap thất bại: " + error.toString());
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <button onClick={handleSwap} disabled={isLoading}>
+      {isLoading ? "Swapping..." : "Swap A to B"}
+    </button>
+  );
+};</pre>
+
+  <h4 class="lesson-section">6. Các lỗi thường gặp (Troubleshooting)</h4>
+  
+  <p class="lesson-text">Đây là phần quan trọng nhất để cứu bạn khỏi những đêm mất ngủ.</p>
+  <ol class="lesson-list">
+    <li><strong>Lỗi "Signature verification failed":</strong><br>
+       * Nguyên nhân: Thường do Seeds trong code Frontend (để tìm PDA) không khớp với code Rust. Hoặc bạn truyền sai account (Ví dụ: truyền Vault A vào chỗ Vault B).<br>
+       * Check: Kiểm tra kỹ thứ tự seeds: [b"pool", mintA, mintB] hay [b"pool", mintB, mintA]?</li>
+    <li><strong>Lỗi "0x1 (Insufficient Lamports)":</strong><br>
+       * Nguyên nhân: Ví người dùng hết SOL làm phí gas.<br>
+       * Fix: Airdrop thêm SOL.</li>
+    <li><strong>Lỗi "Account does not exist":</strong><br>
+       * Nguyên nhân: User chưa có Ví Token (ATA) cho Token B.<br>
+       * Fix: Ở Frontend, trước khi swap, phải check xem User có ATA B chưa. Nếu chưa, phải bắn thêm một instruction createAssociatedTokenAccount vào transaction swap (hoặc làm 1 transaction riêng).</li>
+    <li><strong>Version Mismatch (Rất hay gặp):</strong><br>
+       * Nếu bạn dùng Anchor v0.29 nhưng cài @coral-xyz/anchor v0.30 ở frontend -> Có thể lỗi.<br>
+       * Lời khuyên: Hãy cố gắng giữ version của CLI và thư viện JS tương đồng nhau.</li>
+  </ol>
+
+  <h3 class="lesson-summary">TỔNG KẾT KHÓA HỌC: TỪ C# SANG RUST</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text"><strong>Chúc mừng bạn! 🎉🎉🎉</strong><br>
+    Bạn đã đi từ con số 0 về Blockchain, từ một C# Developer quen với class, interface, garbage collector để trở thành một Rustacean viết code quản lý bộ nhớ thủ công và xây dựng ứng dụng phi tập trung.</p>
+    <p class="lesson-text"><strong>Nhìn lại hành trình:</strong></p>
+    <ol class="lesson-list">
+      <li>Phần 1 & 2: Bạn vật lộn với Borrow Checker, Ownership - Những khái niệm khó nhất của Rust.</li>
+      <li>Phần 3: Bạn làm quen với Solana, Account Model.</li>
+      <li>Phần 4: Bạn tự tay xây dựng một Sàn giao dịch (DEX) - Một trong những ứng dụng phức tạp nhất của DeFi.</li>
+    </ol>
+    <p class="lesson-text"><strong>Bước tiếp theo là gì?</strong><br>
+    Quyển sách này chỉ là tấm vé nhập môn. Thế giới Blockchain còn rất rộng lớn:</p>
+    <ul class="lesson-list">
+      <li>NFTs: Metaplex, Candy Machine.</li>
+      <li>Oracles: Chainlink, Pyth (Lấy dữ liệu giá thật từ ngoài đời).</li>
+      <li>Security: Học cách audit code, tấn công Re-entrancy.</li>
+    </ul>
+    <p class="lesson-text">Tôi hy vọng tài liệu này đã giúp bạn vượt qua nỗi sợ hãi ban đầu khi tiếp cận Rust. Hãy đóng gói kiến thức này, viết lại thành sách, chia sẻ cho cộng đồng.<br>
+    <em>"The best way to learn is to teach."</em></p>
+  </div>
+
+  <p class="lesson-ending">
+    (Chúc mừng bạn đã hoàn thành toàn bộ khóa học! 🎉<br>
+    Bạn xứng đáng tự hào về bản thân.<br>
+    Bây giờ, hãy ra ngoài và xây dựng thứ gì đó tuyệt vời bằng Rust và Solana nhé!)
+  </p>
+</div>
+
+</body>
+</html>

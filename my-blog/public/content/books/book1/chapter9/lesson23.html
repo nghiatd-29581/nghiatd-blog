@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 23: Setup Liquidity Pool – Rust cho C# Developer</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Bài 23. Hôm nay, chúng ta sẽ bắt tay vào xây dựng nền móng cho công trình "Sàn Giao Dịch Rusty" (Rusty DEX).<br><br>
+    Một sàn giao dịch muốn hoạt động được thì phải có tiền. Trong thế giới DeFi, nơi chứa tiền gọi là Liquidity Pool (Hồ thanh khoản).<br><br>
+    Nhiệm vụ của bài này: Viết Smart Contract để khởi tạo một cái "Hồ" rỗng, chuẩn bị sẵn hai cái "Két sắt" (Vault) để chờ người dùng nạp Token A và Token B vào.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 4: DỰ ÁN TỐT NGHIỆP</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 9: VÍ CRYPTO MINI & DEX</h2>
+  <h3 class="lesson-title">BÀI 23: SETUP LIQUIDITY POOL - KHỞI TẠO HỒ THANH KHOẢN</h3>
+
+  <h4 class="lesson-section">1. Ẩn dụ: Quầy Đổi Ngoại Tệ (Money Changer)</h4>
+  
+  <p class="lesson-text">Hãy tưởng tượng bạn mở một quầy đổi tiền ở sân bay (Đổi USD lấy VND).</p>
+  
+  <ul class="lesson-list">
+    <li><strong>Pool (Cái quầy):</strong> Là một thực thể pháp lý, có giấy phép kinh doanh. Trong Rust, đây là Account Pool.</li>
+    <li><strong>Vault A (Két sắt USD):</strong> Nơi chứa toàn bộ tờ USD mà quầy đang có.</li>
+    <li><strong>Vault B (Két sắt VND):</strong> Nơi chứa toàn bộ tờ VND mà quầy đang có.</li>
+    <li><strong>Quy tắc bất di bất dịch:</strong> Chỉ có Cái quầy (Liquidity Pool) mới có chìa khóa để mở 2 cái két sắt này. Nhân viên (User) không được tự ý thò tay vào két.</li>
+  </ul>
+
+  <p class="lesson-text">Trong code Solana:</p>
+  <ul class="lesson-list">
+    <li>Cái quầy: Là một Account lưu trữ thông tin cấu hình (Tỷ lệ phí, tổng lượng cung...).</li>
+    <li>Két sắt: Là 2 cái Token Account (như đã học ở bài 21), nhưng chủ sở hữu (Authority) của nó là PDA của Cái quầy (như đã học ở bài 22).</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Bước 1: Thiết kế Schema (Cấu trúc dữ liệu)</h4>
+  
+  <p class="lesson-text">Chúng ta cần lưu những gì vào Blockchain?<br>
+  Mở file lib.rs trong project của bạn.</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">use anchor_lang::prelude::*;
+use anchor_spl::token::{Token, TokenAccount, Mint};
+
+declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"); // Nhớ thay ID thật của bạn
+
+#[program]
+pub mod rusty_dex {
+    use super::*;
+
+    // Hàm khởi tạo hồ thanh khoản
+    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+        let pool = &mut ctx.accounts.pool;
+        
+        // Lưu lại địa chỉ của 2 loại tiền để sau này kiểm tra
+        pool.mint_a = ctx.accounts.mint_a.key();
+        pool.mint_b = ctx.accounts.mint_b.key();
+        
+        // Lưu bump để sau này Program tự ký tên (Sign)
+        pool.bump = *ctx.bumps.get("pool").unwrap(); 
+        
+        msg!("Liquidity Pool đã được tạo cho cặp token: {} - {}", pool.mint_a, pool.mint_b);
+        Ok(())
+    }
+}
+
+// DEFINITION: Cấu trúc dữ liệu của "Cái Quầy"
+#[account]
+pub struct Pool {
+    pub mint_a: Pubkey, // Địa chỉ của đồng tiền A (32 bytes)
+    pub mint_b: Pubkey, // Địa chỉ của đồng tiền B (32 bytes)
+    pub bump: u8,       // Số "Cú huých" để tạo PDA (1 byte)
+}</code></pre>
+
+  <p class="lesson-text"><strong>Tại sao không lưu số dư (Balance) trong struct Pool?</strong><br>
+  Vì số dư thực tế nằm ở TokenAccount (cái két sắt). Khi cần biết số dư, ta sẽ query trực tiếp vào cái két sắt đó, không cần lưu dư thừa ở đây để tránh bị lệch số liệu (Single Source of Truth).</p>
+
+  <h4 class="lesson-section">3. Bước 2: Viết Context Initialize (Phần khó nhất)</h4>
+  
+  <p class="lesson-text">Đây là nơi Anchor tỏa sáng. Thay vì viết 100 dòng code kiểm tra điều kiện if-else, ta dùng Macro #[account(...)].<br>
+  Chúng ta cần tạo 3 Account cùng một lúc:</p>
+  <ol class="lesson-list">
+    <li>Pool Account: Chứa struct Pool ở trên.</li>
+    <li>Vault A: Ví chứa Token A.</li>
+    <li>Vault B: Ví chứa Token B.</li>
+  </ol>
+  <pre class="lesson-code"><code class="lesson-code-rust">#[derive(Accounts)]
+pub struct Initialize<'info> {
+    // 1. POOL ACCOUNT (Cái quầy)
+    // Dùng PDA để địa chỉ quầy phụ thuộc vào 2 loại tiền.
+    // Nếu ai đó tạo pool cặp (USDC, BTC), nó sẽ luôn ra đúng 1 địa chỉ duy nhất.
+    #[account(
+        init,
+        payer = user,
+        space = 8 + 32 + 32 + 1, // Discriminator + Pubkey + Pubkey + u8
+        seeds = [b"pool", mint_a.key().as_ref(), mint_b.key().as_ref()],
+        bump
+    )]
+    pub pool: Account<'info, Pool>,
+
+    // 2. TOKEN A & B (Loại tiền muốn tạo hồ)
+    pub mint_a: Account<'info, Mint>,
+    pub mint_b: Account<'info, Mint>,
+
+    // 3. VAULT A (Két sắt chứa tiền A)
+    #[account(
+        init,
+        payer = user,
+        seeds = [b"vault", pool.key().as_ref(), mint_a.key().as_ref()], // Seed khác để tạo địa chỉ khác
+        bump,
+        token::mint = mint_a,     // Két này chứa tiền A
+        token::authority = pool,  // QUAN TRỌNG: Chủ két là Pool (chứ không phải User)
+    )]
+    pub vault_a: Account<'info, TokenAccount>,
+
+    // 4. VAULT B (Két sắt chứa tiền B)
+    #[account(
+        init,
+        payer = user,
+        seeds = [b"vault", pool.key().as_ref(), mint_b.key().as_ref()],
+        bump,
+        token::mint = mint_b,     // Két này chứa tiền B
+        token::authority = pool,  // QUAN TRỌNG: Chủ két là Pool
+    )]
+    pub vault_b: Account<'info, TokenAccount>,
+
+    // 5. NGƯỜI TRẢ TIỀN (Admin/User tạo hồ)
+    #[account(mut)]
+    pub user: Signer<'info>,
+
+    // 6. CÁC SYSTEM PROGRAM BẮT BUỘC
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>,
+}</code></pre>
+
+  <h4 class="lesson-section">4. Giải thích chi tiết logic "Chủ sở hữu"</h4>
+  
+  <p class="lesson-text">Bạn hãy chú ý dòng này:<br>
+  <code>token::authority = pool</code><br>
+  Đây là mấu chốt của bảo mật DeFi.</p>
+  <ul class="lesson-list">
+    <li>Khi vault_a được tạo ra, trường Owner của nó trên Blockchain sẽ được gán bằng địa chỉ của pool.</li>
+    <li>Vì pool là một PDA, nó không có Private Key.</li>
+    <li>Chỉ có Program của chúng ta (khi cung cấp đúng seeds của pool) mới có thể ký lệnh rút tiền từ vault_a.</li>
+    <li>Kết quả: User nạp tiền vào đây -> Tiền thuộc về Smart Contract -> Không ai lấy cắp được trừ khi Logic Code cho phép (ví dụ: qua hàm Swap).</li>
+  </ul>
+
+  <h4 class="lesson-section">5. So sánh C# Constructor vs Anchor Context</h4>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Khái niệm</th><th>C# Class Constructor</th><th>Solana Anchor Context</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Mục đích</td><td>Khởi tạo object và gán giá trị ban đầu.</td><td>Khởi tạo Account trên blockchain và gán quyền sở hữu.</td></tr>
+        <tr><td>Code</td><td>public Pool(Mint A, Mint B) { ... }</td><td>#[account(init, seeds=..., token::authority=pool)]</td></tr>
+        <tr><td>Dependency Injection</td><td>services.AddSingleton&lt;IVault&gt;(...)</td><td>token_program: Program&lt;'info, Token&gt; (Inject sẵn System Program).</td></tr>
+        <tr><td>Validations</td><td>if (A == null) throw ...</td><td>Anchor tự check: mint_a có phải là Mint thật không? vault_a đã tồn tại chưa?</td></tr>
+        <tr><td>Chi phí</td><td>Tốn RAM Server.</td><td>Tốn SOL của User (payer = user) để trả tiền thuê chỗ (Rent).</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4 class="lesson-section">6. Hướng dẫn Test (Mental Sandbox)</h4>
+  
+  <p class="lesson-text">Để test bài này, bạn cần viết script TypeScript (như bài 21) làm các việc sau:</p>
+  <ol class="lesson-list">
+    <li>Tạo Keypair cho User.</li>
+    <li>Tạo Mint A và Mint B (dùng createMint của thư viện SPL).</li>
+    <li>Gọi hàm initialize của Smart Contract, truyền vào:<br>
+       • mintA: Địa chỉ Mint A vừa tạo.<br>
+       • mintB: Địa chỉ Mint B vừa tạo.<br>
+       • user: Ví của bạn.</li>
+    <li>Kiểm tra kết quả:<br>
+       • Lấy thông tin account pool: Xem nó có lưu đúng mint_a, mint_b không.<br>
+       • Lấy thông tin account vault_a: Xem owner của nó có đúng là địa chỉ của pool không. (Nếu đúng, bạn đã thành công tạo ra một két sắt tự động!).</li>
+  </ol>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 23</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Chúng ta vừa hoàn thành việc "xây cơ sở hạ tầng":</p>
+    <ol class="lesson-list">
+      <li><strong>Đã có Pool Account</strong> để quản lý trạng thái.</li>
+      <li><strong>Đã có 2 Vaults (Két sắt)</strong> được bảo vệ bằng công nghệ PDA. Tiền vào đây là "nội bất xuất, ngoại bất nhập" nếu không có lệnh của Code.</li>
+    </ol>
+    <p class="lesson-text"><strong>Câu hỏi mở:</strong><br>
+    Bây giờ hồ đã có, két đã có, nhưng... chưa có tiền.<br>
+    Làm sao để tính toán tỷ lệ đổi tiền? 1 Token A đổi được bao nhiêu Token B?<br>
+    Chúng ta cần một chút toán học. Đừng lo, không cần tích phân đâu, chỉ là nhân chia thôi, nhưng là nhân chia kiểu Rust.</p>
+  </div>
+
+  <p class="lesson-ending">
+    (Hẹn gặp lại ở <strong>Bài 24: Toán học trong Blockchain & Security</strong>. Nơi chúng ta học cách xử lý số lớn để không làm mất tiền của user dù chỉ 0.000001 xu).
+  </p>
+</div>
+
+</body>
+</html>

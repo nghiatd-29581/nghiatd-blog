@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 20: Cross-Program Invocation (CPI) – Rust cho C# Developer</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Bài 20. Đây là bài học "nâng trình" thực sự.<br><br>
+    Nếu như các bài trước bạn chỉ chơi một mình một cõi (một Program), thì hôm nay chúng ta sẽ học cách làm việc nhóm. Sức mạnh khủng khiếp của DeFi (Tài chính phi tập trung) đến từ tính Composability (Khả năng lắp ghép): Sàn giao dịch gọi sang Token, Token gọi sang Ví, Ví gọi sang Lending... tất cả kết nối với nhau như những khối Lego.<br><br>
+    Cơ chế đó gọi là CPI (Cross-Program Invocation).
+  </p>
+
+  <h1 class="lesson-part">PHẦN 3: CONCURRENCY & BLOCKCHAIN APPLICATION</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 8: ASYNC/AWAIT & SMART CONTRACTS</h2>
+  <h3 class="lesson-title">BÀI 20: CROSS-PROGRAM INVOCATION (CPI) - KHI CONTRACT GỌI CONTRACT</h3>
+
+  <h4 class="lesson-section">1. Ẩn dụ: Tổng Thầu và Thầu Phụ</h4>
+  
+  <p class="lesson-text">Hãy tưởng tượng quy trình xây nhà:</p>
+  
+  <ul class="lesson-list">
+    <li>Bạn (User) thuê Ông Cai (Program A - Master) xây nhà.</li>
+    <li>Ông Cai không tự đổ trần bê tông. Ông ấy gọi điện thuê đội Bê Tông (Program B - Puppet) đến đổ.</li>
+    <li>Để đội Bê Tông làm việc, Ông Cai phải đưa cho họ:<br>
+      1. Địa chỉ công trình (Accounts).<br>
+      2. Giấy phép thi công (Signature/Authority).</li>
+  </ul>
+
+  <p class="lesson-text">Trong C#, việc này giống như gọi một Microservice khác hoặc Dependency Injection.</p>
+
+  <ul class="lesson-list">
+    <li><strong>C#:</strong> _concreteService.PourConcrete(location, amount);</li>
+    <li><strong>Solana:</strong> Bạn phải đóng gói "địa chỉ công trình" và "giấy phép" vào một cái hộp (Context), rồi nhờ Runtime chuyển cái hộp đó sang cho Program B.</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Project Thực hành: Rối và Người Múa Rối (Puppet & Puppet Master)</h4>
+  
+  <p class="lesson-text">Chúng ta sẽ xây dựng hệ thống gồm 2 Smart Contracts trong cùng 1 Workspace:</p>
+  
+  <ol class="lesson-list">
+    <li><strong>Puppet (Con rối):</strong> Một contract đơn giản, chỉ biết lưu một con số.</li>
+    <li><strong>Puppet Master (Người múa rối):</strong> Contract này không lưu gì cả, nó chỉ nhận lệnh từ User và "giật dây" gọi sang Puppet để bắt Puppet lưu số.</li>
+  </ol>
+
+  <p class="lesson-text"><strong>Bước 1: Khởi tạo Workspace mới</strong><br>
+  Ta cần một workspace chứa nhiều program.</p>
+  <pre class="lesson-code lesson-code-bash">anchor init cpi_demo
+cd cpi_demo</pre>
+
+  <p class="lesson-text"><strong>Bước 2: Tạo Program con rối (Puppet)</strong><br>
+  Mặc định anchor init tạo ra 1 program tên cpi_demo. Hãy đổi tên nó hoặc tạo mới. Để đơn giản, ta dùng luôn cái có sẵn làm Puppet, nhưng ta sẽ sửa tên file và nội dung.<br>
+  Sửa file programs/cpi_demo/src/lib.rs. Ta sẽ đổi tên module thành puppet.</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">use anchor_lang::prelude::*;
+
+declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"); // ID tạm, sẽ sửa sau
+
+#[program]
+pub mod puppet {
+    use super::*;
+
+    // Hàm initialize: Tạo data
+    pub fn initialize(_ctx: Context<Initialize>, _authority: Pubkey) -> Result<()> {
+        Ok(())
+    }
+
+    // Hàm set_data: Lưu một con số
+    pub fn set_data(ctx: Context<SetData>, data: u64) -> Result<()> {
+        let puppet_account = &mut ctx.accounts.puppet_account;
+        puppet_account.data = data;
+        msg!("Puppet: Đã cập nhật data thành {}", data);
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct Initialize<'info> {
+    #[account(init, payer = user, space = 8 + 8)]
+    pub puppet_account: Account<'info, Data>,
+    #[account(mut)]
+    pub user: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct SetData<'info> {
+    #[account(mut)]
+    pub puppet_account: Account<'info, Data>, // Account cần sửa
+}
+
+#[account]
+pub struct Data {
+    pub data: u64,
+}</code></pre>
+
+  <p class="lesson-text"><strong>Bước 3: Tạo Program điều khiển (Puppet Master)</strong><br>
+  Bây giờ ta tạo thêm program thứ 2 trong cùng thư mục programs/.</p>
+  <pre class="lesson-code lesson-code-bash">anchor new puppet_master</pre>
+
+  <p class="lesson-text">Anchor sẽ tạo thư mục programs/puppet_master.</p>
+
+  <p class="lesson-text"><strong>Bước 4: Cấu hình Cargo.toml để Program A nhìn thấy Program B</strong><br>
+  Để Master gọi được Puppet, nó cần biết "interface" của Puppet. Trong Rust, ta import crate của Puppet vào Master.<br>
+  Mở file programs/puppet_master/Cargo.toml. Thêm vào phần [dependencies]:</p>
+  <pre class="lesson-code">
+[dependencies]
+anchor-lang = "0.28.0" # Hoặc version bạn đang dùng
+puppet = { path = "../cpi_demo", features = ["cpi"] } 
+# Lưu ý: `features = ["cpi"]` là bắt buộc để Anchor sinh ra client code cho CPI.
+</pre>
+
+  <p class="lesson-text">Lưu ý: path trỏ đến thư mục chứa code của program Puppet (tên folder gốc là cpi_demo nhưng tên crate trong Cargo.toml của nó là gì thì dùng cái đó, thường mặc định là tên folder).</p>
+
+  <p class="lesson-text"><strong>Bước 5: Viết Code cho Puppet Master (programs/puppet_master/src/lib.rs)</strong><br>
+  Đây là phần quan trọng nhất. Hãy chú ý cách dùng CpiContext.</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">use anchor_lang::prelude::*;
+// Import crate của con rối
+use puppet::cpi::accounts::SetData; 
+use puppet::program::Puppet; // Import định nghĩa Program
+
+declare_id!("2ND...ID_CUA_MASTER..."); // ID này sẽ có sau khi build
+
+#[program]
+pub mod puppet_master {
+    use super::*;
+
+    // Hàm pull_strings: Nhận lệnh từ user -> Gọi sang Puppet
+    pub fn pull_strings(ctx: Context<PullStrings>, data: u64) -> Result<()> {
+        
+        // 1. Chuẩn bị Accounts cho chương trình đích (Puppet)
+        // Cấu trúc SetData này được import từ crate 'puppet'
+        let cpi_accounts = SetData {
+            puppet_account: ctx.accounts.puppet_account.to_account_info(), // Chuyển tiếp account
+        };
+
+        // 2. Chuẩn bị Program đích (Địa chỉ của file thực thi Puppet)
+        let cpi_program = ctx.accounts.puppet_program.to_account_info();
+
+        // 3. Tạo Context cho cuộc gọi CPI (Cross-Program Invocation)
+        // CpiContext::new(Program_ID, Accounts)
+        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+
+        // 4. Thực hiện cuộc gọi!
+        // Gọi hàm set_data bên module cpi của puppet
+        puppet::cpi::set_data(cpi_ctx, data)?;
+        
+        msg!("Master: Đã giật dây thành công!");
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct PullStrings<'info> {
+    // Account dữ liệu của con rối (ta mượn để chuyển tiếp)
+    /// CHECK: Ta không check cấu trúc ở đây, Program Puppet sẽ tự check
+    #[account(mut)]
+    pub puppet_account: AccountInfo<'info>, 
+
+    // Địa chỉ của chương trình Puppet (để Runtime biết gọi ai)
+    pub puppet_program: Program<'info, Puppet>, 
+}</code></pre>
+
+  <h4 class="lesson-section">3. Cập nhật ID và Test</h4>
+
+  <p class="lesson-text">Quy trình này hơi lằng nhằng vì ta có 2 Programs.</p>
+  
+  <ol class="lesson-list">
+    <li>Chạy <code>anchor build</code>.</li>
+    <li>Lấy ID của cả 2 program:<br>
+       • <code>solana address -k target/deploy/cpi_demo-keypair.json</code> (Puppet ID)<br>
+       • <code>solana address -k target/deploy/puppet_master-keypair.json</code> (Master ID)</li>
+    <li>Update ID vào:<br>
+       • programs/cpi_demo/src/lib.rs<br>
+       • programs/puppet_master/src/lib.rs<br>
+       • Anchor.toml (Phần [programs.localnet])</li>
+    <li>Chạy <code>anchor build</code> lại lần nữa để ID khớp code.</li>
+  </ol>
+
+  <p class="lesson-text"><strong>Viết Test Script (tests/cpi_demo.ts):</strong></p>
+  <pre class="lesson-code lesson-code-ts">import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+// Import cả 2 loại types
+import { Puppet } from "../target/types/puppet"; 
+import { PuppetMaster } from "../target/types/puppet_master";
+import { assert } from "chai";
+
+describe("cpi_demo", () => {
+  const provider = anchor.AnchorProvider.env();
+  anchor.setProvider(provider);
+
+  // Load cả 2 chương trình
+  const puppetProgram = anchor.workspace.Puppet as Program<Puppet>;
+  const masterProgram = anchor.workspace.PuppetMaster as Program<PuppetMaster>;
+
+  const puppetAccount = anchor.web3.Keypair.generate();
+
+  it("Performs CPI from Master to Puppet", async () => {
+    // 1. Khởi tạo account cho Puppet trước (User gọi trực tiếp Puppet)
+    await puppetProgram.methods
+      .initialize(provider.wallet.publicKey)
+      .accounts({
+        puppetAccount: puppetAccount.publicKey,
+        user: provider.wallet.publicKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([puppetAccount])
+      .rpc();
+
+    // 2. Gọi Master để Master gọi Puppet set_data = 42
+    // Lưu ý: Ta gọi Master, nhưng Master sẽ thay đổi dữ liệu bên trong puppetAccount
+    await masterProgram.methods
+      .pullStrings(new anchor.BN(42))
+      .accounts({
+        puppetAccount: puppetAccount.publicKey,
+        puppetProgram: puppetProgram.programId, // Truyền ID của chương trình con rối
+      })
+      .rpc();
+
+    // 3. Kiểm tra kết quả trong Puppet Account
+    const accountData = await puppetProgram.account.data.fetch(puppetAccount.publicKey);
+    
+    console.log("Data in Puppet: ", accountData.data.toString());
+    assert.ok(accountData.data.eq(new anchor.BN(42)));
+  });
+});</pre>
+
+  <p class="lesson-text">Chạy <code>anchor test</code> và tận hưởng thành quả!</p>
+
+  <h4 class="lesson-section">4. Phân tích: Sự khác biệt với C#</h4>
+  
+  <p class="lesson-text">Đây là điểm C# Dev thường bị "sốc văn hóa":</p>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Đặc điểm</th><th>C# Microservices</th><th>Solana CPI</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Cách gọi</td><td>HttpClient.Post("http://service-b/api/data")</td><td>program_b::cpi::method(ctx, args)</td></tr>
+        <tr><td>Truyền dữ liệu</td><td>Gửi JSON Body.</td><td>Gửi các Account (AccountInfo) mà Program B cần dùng.</td></tr>
+        <tr><td>Trạng thái</td><td>Service B tự kết nối DB của nó.</td><td>Service A phải chuyền cái "Account Database" của B vào cho B. (Pass by Reference/Move).</td></tr>
+        <tr><td>Quyền hạn</td><td>Service A xác thực bằng API Key/JWT.</td><td>Service A dùng CpiContext để chuyển tiếp chữ ký (Signer) của User hoặc tự ký bằng PDA (Program Derived Address).</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="lesson-text"><strong>Tại sao phải CHECK AccountInfo?</strong><br>
+  Trong PuppetMaster, ta khai báo <code>puppet_account: AccountInfo&lt;'info&gt;</code>. Anchor bắt ta thêm comment <code>/// CHECK</code>.<br>
+  Lý do: Master không biết (và không quan tâm) cấu trúc bên trong của Puppet Account. Nó chỉ coi đó là một cục dữ liệu (blob) và chuyền sang cho Puppet. Puppet mới là thằng có trách nhiệm deserialize và kiểm tra tính đúng đắn của account đó.</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 20</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Bạn vừa thực hiện kỹ thuật quan trọng nhất trong lập trình Solana: CPI.<br>
+    Hầu hết các tác vụ quan trọng đều là CPI:</p>
+    <ul class="lesson-list">
+      <li>Chuyển tiền SOL (Gọi System Program).</li>
+      <li>Chuyển Token USDC (Gọi Token Program).</li>
+      <li>Swap trên Uniswap/Jupiter (Gọi Router Program).</li>
+    </ul>
+  </div>
+
+  <div class="lesson-homework">
+    <p><strong>Bài tập về nhà:</strong><br><br>
+    Hiện tại, hàm initialize của Puppet nhận _authority nhưng chưa làm gì.<br><br>
+    1. Hãy sửa struct Data để lưu thêm <code>pub authority: Pubkey</code>.<br>
+    2. Trong hàm set_data của Puppet, hãy thêm kiểm tra: <code>require!(ctx.accounts.puppet_account.authority == ctx.accounts.authority_signer.key(), ErrorCode::Unauthorized)</code>.<br>
+    3. Cập nhật PuppetMaster để truyền thêm authority (là User) vào, để chứng minh User cho phép Master sửa đổi dữ liệu.<br>
+       Gợi ý: Bạn sẽ cần CpiContext::new(..., ...) giữ nguyên, nhưng struct SetData sẽ cần thêm trường authority.</p>
+  </div>
+
+  <p class="lesson-ending">
+    (Chúc mừng bạn đã hoàn thành Chương 8! Bạn đã biết Async, Runtime, Account, và CPI. Phần 4 - phần cuối cùng - sẽ là: <strong>DỰ ÁN TỐT NGHIỆP</strong>. Chúng ta sẽ xây dựng một Token riêng (như Bitcoin/Ethereum) và một sàn giao dịch (DEX) đơn giản để mua bán nó).
+  </p>
+</div>
+
+</body>
+</html>

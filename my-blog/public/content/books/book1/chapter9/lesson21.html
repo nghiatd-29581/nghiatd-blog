@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 21: SPL Token & Minting – Rust cho C# Developer</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn bước vào Phần 4: DỰ ÁN TỐT NGHIỆP. Đây là phần chúng ta sẽ ngừng "học vẹt" cú pháp và bắt đầu "làm thật" một sản phẩm có thể chạy trên mạng lưới Solana.<br><br>
+    Mở đầu là Bài 21. Trước khi xây dựng Sàn giao dịch (DEX), bạn phải có cái để giao dịch. Chúng ta sẽ học cách tự phát hành một đồng tiền mã hóa (Cryptocurrency) của riêng mình.<br><br>
+    Trong hệ sinh thái Solana, mọi đồng tiền (trừ đồng SOL gốc) đều được gọi là SPL Token.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 4: DỰ ÁN TỐT NGHIỆP</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 9: VÍ CRYPTO MINI & DEX</h2>
+  <h3 class="lesson-title">BÀI 21: SPL TOKEN & MINTING (TỰ IN TIỀN CỦA RIÊNG BẠN)</h3>
+
+  <h4 class="lesson-section">1. SPL Token là gì? (So sánh với C# Interface)</h4>
+  
+  <p class="lesson-text">Nếu bạn đến từ thế giới Ethereum, bạn biết đến ERC-20. Để tạo một token trên Ethereum, bạn phải viết một Smart Contract mới và deploy nó.<br><br>
+  Trên Solana, tư duy hoàn toàn khác.</p>
+  
+  <ul class="lesson-list">
+    <li><strong>C# Analogy:</strong> Hãy tưởng tượng SplTokenProgram giống như một Singleton Service (static class) có sẵn của hệ thống.<br>
+      • Nó có một hàm CreateToken(config).<br>
+      • Bạn không deploy code mới. Bạn chỉ gọi hàm đó để đăng ký một "bản ghi" (row) mới vào Database của Solana.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Định nghĩa:</strong> SPL (Solana Program Library) là bộ thư viện chuẩn. SPL Token là tiêu chuẩn kỹ thuật quy định cách một đồng tiền hoạt động (chuyển, nhận, in thêm, đốt bỏ).</p>
+
+  <h4 class="lesson-section">2. Cấu trúc tài khoản: Mint, Wallet và ATA</h4>
+  
+  <p class="lesson-text">Đây là khái niệm dễ gây nhầm lẫn nhất cho người mới. Hãy dùng ẩn dụ "Ngân hàng Nhà nước".</p>
+  
+  <p class="lesson-text">1. <strong>Mint Account (Khuôn đúc tiền):</strong></p>
+  <ul class="lesson-list">
+    <li>Đây là "hồ sơ gốc" của đồng tiền.</li>
+    <li>Nó chứa thông tin: Tổng cung hiện tại (Supply), ai có quyền in thêm tiền (Mint Authority), số chữ số thập phân (Decimals).</li>
+    <li>Ví dụ: Ngân hàng Nhà nước giữ khuôn đúc tiền VNĐ. Khuôn đúc không chứa tiền, nó chỉ định nghĩa VNĐ là gì.</li>
+  </ul>
+
+  <p class="lesson-text">2. <strong>User Wallet (Ví chính - System Account):</strong></p>
+  <ul class="lesson-list">
+    <li>Đây là ví Solana của bạn (chứa đồng SOL để trả phí giao dịch).</li>
+    <li>Ví dụ: Ví da của bạn.</li>
+  </ul>
+
+  <p class="lesson-text">3. <strong>Token Account (Tài khoản chứa Token):</strong></p>
+  <ul class="lesson-list">
+    <li>Ví da (SOL) không thể chứa trực tiếp Token (như USDT, USDC, hay Coin của bạn).</li>
+    <li>Bạn cần mở một "tài khoản phụ" chỉ để chứa loại tiền đó.</li>
+    <li>Ví dụ: Để chứa USD, bạn ra ngân hàng mở tài khoản USD. Để chứa EUR, bạn mở tài khoản EUR.</li>
+  </ul>
+
+  <p class="lesson-text">4. <strong>ATA (Associated Token Account):</strong></p>
+  <ul class="lesson-list">
+    <li>Việc quản lý hàng tá tài khoản phụ rất phiền phức.</li>
+    <li>Solana đẻ ra thuật toán ATA: Một công thức toán học để tìm ra địa chỉ tài khoản phụ dựa trên (Địa chỉ Ví chính + Địa chỉ Mint).</li>
+    <li>Lợi ích: Nếu tôi muốn gửi Token cho bạn, tôi chỉ cần biết địa chỉ Ví chính của bạn. Hệ thống sẽ tự tính ra địa chỉ ATA để gửi tiền vào đúng chỗ.</li>
+  </ul>
+
+  <h4 class="lesson-section">3. Thực hành: Tạo Token bằng CLI (Step-by-Step)</h4>
+  
+  <p class="lesson-text"><strong>Bước 0: Chuẩn bị môi trường</strong><br>
+  Đảm bảo bạn đang ở localhost để không mất tiền thật.</p>
+  <pre class="lesson-code lesson-code-bash">solana config set --url localhost</pre>
+
+  <p class="lesson-text"><strong>Bước 1: Tạo một Token mới (Tạo Mint)</strong></p>
+  <pre class="lesson-code lesson-code-bash">spl-token create-token</pre>
+
+  <p class="lesson-text">* Output: Nó sẽ in ra một địa chỉ, ví dụ: 96G...xyz. Đây là Token ID (Mint Address) của bạn. Hãy lưu lại.<br>
+  * Lúc này: Token đã tồn tại, nhưng tổng cung (Supply) = 0. Bạn chưa có đồng nào cả.</p>
+
+  <p class="lesson-text"><strong>Bước 2: Tạo tài khoản chứa Token (Tạo Token Account)</strong><br>
+  Để giữ tiền, bạn cần tạo kho chứa cho chính mình.</p>
+  <pre class="lesson-code lesson-code-bash">spl-token create-account <ĐỊA_CHỈ_MINT_Ở_TRÊN></pre>
+
+  <p class="lesson-text">* Output: Nó tạo ra một ATA gắn liền với ví của bạn.</p>
+
+  <p class="lesson-text"><strong>Bước 3: In tiền (Minting)</strong><br>
+  Là cha đẻ của đồng tiền này, bạn có quyền in bao nhiêu tùy thích (trừ khi bạn hủy quyền này). Hãy in 1,000 đồng.</p>
+  <pre class="lesson-code lesson-code-bash">spl-token mint <ĐỊA_CHỈ_MINT_Ở_TRÊN> 1000</pre>
+
+  <p class="lesson-text">* Kết quả: Kiểm tra số dư bằng lệnh spl-token accounts. Bạn sẽ thấy mình đang sở hữu 1,000 token.</p>
+
+  <h4 class="lesson-section">4. Đưa vào Code Rust (Anchor)</h4>
+
+  <p class="lesson-text">Bây giờ, hãy xem trong Code Smart Contract (Anchor), chúng ta khai báo các thành phần này như thế nào. Bạn sẽ gặp chúng thường xuyên trong các bài tới.</p>
+  
+  <p class="lesson-text"><strong>Tạo một project mới:</strong></p>
+  <pre class="lesson-code lesson-code-bash">anchor init token_project
+cd token_project</pre>
+
+  <p class="lesson-text">Mở lib.rs, đây là cách chúng ta định nghĩa các cấu trúc trên:</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Mint, Token, TokenAccount}; // Import thư viện SPL
+
+declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+
+#[program]
+pub mod token_project {
+    use super::*;
+
+    pub fn proxy_transfer(ctx: Context<ProxyTransfer>, amount: u64) -> Result<()> {
+        // Logic chuyển tiền sẽ viết ở đây (Bài sau sẽ học CPI)
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct ProxyTransfer<'info> {
+    // 1. Người thực hiện giao dịch (phải ký tên)
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    // 2. Tài khoản chứa tiền nguồn (Từ đâu)
+    #[account(mut)]
+    pub from: Account<'info, TokenAccount>,
+
+    // 3. Tài khoản chứa tiền đích (Đến đâu)
+    #[account(mut)]
+    pub to: Account<'info, TokenAccount>,
+
+    // 4. Chương trình Token của hệ thống (Giống System.Threading)
+    // Bắt buộc phải có để thực hiện các lệnh liên quan đến token
+    pub token_program: Program<'info, Token>,
+}
+
+// Ví dụ về việc tạo Mint mới (Khuôn đúc tiền) ngay trong Code
+#[derive(Accounts)]
+pub struct CreateMint<'info> {
+    #[account(
+        init,
+        payer = payer,
+        mint::decimals = 9, // Số chữ số thập phân (giống 1 SOL = 10^9 lamports)
+        mint::authority = payer, // Ai có quyền in tiền?
+    )]
+    pub mint: Account<'info, Mint>, // Kiểu dữ liệu là Mint
+
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>,
+}</code></pre>
+
+  <p class="lesson-text"><strong>Lưu ý cho C# Dev:</strong></p>
+  <ul class="lesson-list">
+    <li><code>Account&lt;'info, TokenAccount&gt;</code>: Là kiểu dữ liệu đại diện cho một cái ví phụ chứa token. Anchor sẽ tự động kiểm tra xem account truyền vào có đúng format của SPL Token không.</li>
+    <li><code>Account&lt;'info, Mint&gt;</code>: Là kiểu dữ liệu đại diện cho khuôn đúc tiền.</li>
+  </ul>
+
+  <h4 class="lesson-section">5. So sánh: List&lt;Coin&gt; (C#) vs SPL Token (Rust)</h4>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Đặc điểm</th><th>C# (Giả lập trong Game)</th><th>Rust (Solana Blockchain)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Định nghĩa</td><td>class Coin { string Name; int Supply; }</td><td>Mint Account (Lưu trên chuỗi).</td></tr>
+        <tr><td>Sở hữu</td><td>User.Inventory.Add(new Coin("Gold", 100))</td><td>Token Account (ATA) sở hữu bởi User Address.</td></tr>
+        <tr><td>Chuyển tiền</td><td>UserA.Gold -= 10; UserB.Gold += 10;</td><td>Gọi lệnh Transfer của Token Program để trừ số dư ở Account A và cộng vào Account B.</td></tr>
+        <tr><td>Bảo mật</td><td>Code server kiểm soát tất cả.</td><td>Token Program kiểm soát. Chỉ người có Private Key của Account A mới chuyển được tiền đi.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 21</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Bạn đã nắm được những viên gạch đầu tiên của DeFi:</p>
+    <ol class="lesson-list">
+      <li><strong>Mint:</strong> Bản thiết kế của đồng tiền.</li>
+      <li><strong>ATA:</strong> Cái túi để đựng tiền.</li>
+      <li><strong>SPL Token Program:</strong> Cái máy ATM của cả hệ thống Solana quản lý việc chuyển nhận.</li>
+    </ol>
+  </div>
+
+  <div class="lesson-homework">
+    <p><strong>Bài tập về nhà:</strong><br><br>
+    1. Dùng CLI tạo ra một đồng Token tên là "MyCoin".<br>
+    2. Tạo thêm 2 ví phụ (dùng lệnh <code>solana-keygen new -o wallet2.json</code>).<br>
+    3. Chuyển "MyCoin" từ ví chính sang ví phụ vừa tạo.</p>
+  </div>
+
+  <p class="lesson-ending">
+    (Ở bài tiếp theo - Bài 22, chúng ta sẽ trả lời câu hỏi hóc búa: Làm sao Smart Contract (một đoạn code vô tri) có thể nắm giữ và chuyển Token cho người dùng? Đó là lúc PDA (Program Derived Address) xuất hiện).
+  </p>
+</div>
+
+</body>
+</html>
