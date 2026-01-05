@@ -156,6 +156,41 @@
               "id": "lesson20",
               "title": "Bài 20: Cross-Program Invocation (CPI)",
               "htmlPath": "/content/books/book1/chapter9/lesson20.html"
+            },
+            {
+              "id": "lesson21",
+              "title": "Bài 21: SPL TOKEN & MINTING (Tự in tiền của riêng bạn)",
+              "htmlPath": "/content/books/book1/chapter9/lesson21.html"
+            },
+            {
+              "id": "lesson22",
+              "title": "Bài 22: PDA (PROGRAM DERIVED ADDRESS) - Lý thuyết cốt lỗi",
+              "htmlPath": "/content/books/book1/chapter9/lesson22.html"
+            },
+            {
+              "id": "lesson23",
+              "title": "Bài 23: Setup Liquidity Pool",
+              "htmlPath": "/content/books/book1/chapter9/lesson23.html"
+            },
+            {
+              "id": "lesson24",
+              "title": "Bài 24: MATH & SECURITY",
+              "htmlPath": "/content/books/book1/chapter9/lesson24.html"
+            },
+            {
+              "id": "lesson25",
+              "title": "Bài 25: IMPLEMENT SWAP - Thực hiện giao dịch",
+              "htmlPath": "/content/books/book1/chapter9/lesson25.html"
+            },
+            {
+              "id": "lesson26",
+              "title": "Bài 26: UNIT TEST & INTEGRATION TEST",
+              "htmlPath": "/content/books/book1/chapter9/lesson26.html"
+            },
+            {
+              "id": "lesson27",
+              "title": "Bài 27: DEPLOYMENT & Kết nối UI",
+              "htmlPath": "/content/books/book1/chapter9/lesson27.html"
             }
           ]
         }
@@ -163,5 +198,6 @@
     }
   ]
 }
+
 
 
