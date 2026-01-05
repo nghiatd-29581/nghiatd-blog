@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 24: Math & Security – Rust cho C# Developer</title>
+    <style>
+
+        /* Định dạng các biến số (in nghiêng giống toán học) */
+        .math-var {
+            font-style: italic;
+            font-family: "Times New Roman", Times, serif;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .bold-text {
+            font-weight: bold;
+        }
+
+        /* Container cho công thức phân số */
+        .formula-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 30px 0;
+            font-size: 1.5rem;
+        }
+
+        .fraction {
+            display: inline-flex;
+            flex-direction: column;
+            vertical-align: middle;
+            align-items: center;
+            margin-left: 10px;
+        }
+
+        .numerator {
+            border-bottom: 2px solid #e0e0e0;
+            padding: 0 10px 5px 10px;
+        }
+
+        .denominator {
+            padding: 5px 10px 0 10px;
+        }
+
+        .logic-section {
+            margin-top: 20px;
+        }
+        
+        .math-hint {
+            display: flex;
+            align-items: center;
+            font-family: "Times New Roman", Times, serif;
+            font-style: italic;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-top: 10px;
+        }
+
+        /* Định dạng phân số cho gợi ý */
+        .fraction {
+            display: inline-flex;
+            flex-direction: column;
+            vertical-align: middle;
+            align-items: center;
+            margin-left: 8px;
+            font-size: 0.9em;
+        }
+
+        .num { border-bottom: 1.5px solid #e0e0e0; padding: 0 5px; }
+        .den { padding: 0 5px; }
+
+        .label {
+            font-weight: bold;
+        }
+
+        .code-inline {
+            background-color: #626262;
+            color: #dcdcdc;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.9em;
+            border: 1px solid #3d3d3d;
+        }
+    </style>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Bài 24. Đây là bài học phân định ranh giới giữa một lập trình viên "Hello World" và một lập trình viên Blockchain thực thụ.<br><br>
+    Trong lập trình Web truyền thống (Web2), nếu bạn tính sai số dư 0.0001đ, hệ thống có thể làm tròn hoặc bỏ qua.<br><br>
+    Trong Blockchain (Web3), sai số = lỗ hổng bảo mật. Nếu code của bạn cho phép rút tiền khi tính toán bị tràn số (Overflow), hacker có thể biến 0 đồng thành 1 tỷ tỷ đồng chỉ trong một giây.<br><br>
+    Hôm nay, chúng ta sẽ học cách làm toán trên Blockchain sao cho An toàn tuyệt đối.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 4: DỰ ÁN TỐT NGHIỆP</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 9: VÍ CRYPTO MINI & DEX</h2>
+  <h3 class="lesson-title">BÀI 24: MATH & SECURITY - TOÁN HỌC TRONG RUST BLOCKCHAIN</h3>
+
+  <h4 class="lesson-section">1. Vấn đề: Cạm bẫy của số thực (Float)</h4>
+  
+  <ul class="lesson-list">
+    <li><strong>Trong C#:</strong> Khi tính tiền, bạn dùng decimal (độ chính xác cao) hoặc double.<br>
+      • double a = 0.1 + 0.2; // Kết quả có thể là 0.30000000000000004</li>
+    <li><strong>Trong Blockchain:</strong> TUYỆT ĐỐI KHÔNG DÙNG FLOAT/DOUBLE.<br>
+      • Tại sao? Vì các máy tính khác nhau (Intel, AMD, ARM) có thể xử lý số thực hơi khác nhau ở các bit cuối cùng. Blockchain cần Sự đồng thuận (Consensus) - Tất cả 1000 node mạng phải ra kết quả giống hệt nhau từng bit một. Nếu lệch 1 bit, mạng lưới sẽ dừng hoạt động.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Giải pháp:</strong> Dùng số nguyên (Integer) cho tất cả mọi thứ.</p>
+  <ul class="lesson-list">
+    <li>1 Token (có 9 số lẻ) sẽ được lưu là: 1_000_000_000 (đơn vị nhỏ nhất - Lamport).</li>
+    <li>Khi hiển thị lên UI, Frontend sẽ tự chia cho $10^9$ để hiện ra số "1.0".</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Công thức Sàn Giao Dịch (AMM Math)</h4>
+  
+  <p class="lesson-text">Chúng ta sẽ xây dựng cơ chế đổi tiền dựa trên công thức nổi tiếng của Uniswap V2:</p>
+  <div class="lesson-math"><p class="math-var"> X x Y = K</p></div>
+  
+    <p>Trong đó:</p>
+    <ul>
+        <li><span class="math-var">X</span>: Số lượng Token A trong hồ.</li>
+        <li><span class="math-var">Y</span>: Số lượng Token B trong hồ.</li>
+        <li><span class="math-var">K</span>: Hằng số không đổi (Constant Product).</li>
+    </ul>
+
+    <p><span class="bold-text">Kịch bản:</span> User nạp vào <span class="math-var">ΔX</span> (lượng Token A) để lấy ra <span class="math-var">ΔY</span> (lượng Token B).</p>
+
+    <p><span class="bold-text">Công thức tính số tiền User nhận được (<span class="math-var">ΔY</span>):</span></p>
+
+    <div class="formula-wrapper">
+        <span class="math-var">ΔY</span> &nbsp; = &nbsp;
+        <div class="fraction">
+            <div class="numerator">
+                <span class="math-var">Y</span> × <span class="math-var">ΔX</span>
+            </div>
+            <div class="denominator">
+                <span class="math-var">X</span> + <span class="math-var">ΔX</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="logic-section">
+        <p><span class="bold-text">Logic:</span></p>
+        <ol>
+            <li>Hồ đang có <span class="math-var">X</span> và <span class="math-var">Y</span>. Tích số <span class="math-var">K = X · Y</span>.</li>
+            <li>User nạp thêm <span class="math-var">ΔX</span>. Hồ lúc này có <span class="math-var">X<sub>new</sub> = X + ΔX</span>.</li>
+            <li>Để giữ <span class="math-var">K</span> không đổi (<span class="math-var">X<sub>new</sub> · Y<sub>new</sub> = K</span>), lượng Token B còn lại phải giảm đi.</li>
+            <li>Lượng giảm đi chính là số tiền trả cho User.</li>
+        </ol>
+    </div>
+
+  <h4 class="lesson-section">3. Rust Safe Math: Tránh tràn số (Overflow)</h4>
+  
+    
+    <p>Đây là cơn ác mộng của C/C++ ngày xưa và cũng là cái bẫy của Rust nếu không cẩn thận.</p>
+
+    <ul>
+        <li>
+            <strong>Vấn đề:</strong> Biến <span class="highlight-box">u64</span> (Unsigned 64-bit) có giá trị tối đa khoảng 18 tỷ tỷ.
+            <div class="sub-bullet">
+                <p>• Nếu Hồ có 10<sup>10</sup> Token A và 10<sup>10</sup> Token B.</p>
+                <p>• Tích số <span class="math-text">K = 10<sup>10</sup> × 10<sup>10</sup> = 10<sup>20</sup></span>.</p>
+                <p>• <span class="warning-text">Lỗi:</span> 10<sup>20</sup> lớn hơn giới hạn của <span class="highlight-box">u64</span> (1.8 × 10<sup>19</sup>). Phép nhân sẽ gây <strong>Panic (Crash)</strong> hoặc <strong>Overflow (Quay vòng về 0)</strong> tùy chế độ build.</p>
+            </div>
+        </li>
+
+        <li>
+            <strong>Giải pháp của Rust:</strong>
+            <ol>
+                <li><strong>Cast (Ép kiểu) lên <span class="highlight-box">u128</span>:</strong> Trước khi nhân, hãy chuyển sang <span class="highlight-box">u128</span> để đủ chỗ chứa.</li>
+                <li><strong>Checked Math:</strong> Dùng các hàm <span class="highlight-box">checked_mul</span>, <span class="highlight-box">checked_div</span>. Nó trả về <span class="highlight-box">Option</span> (Some/None) thay vì crash chương trình.</li>
+            </ol>
+        </li>
+    </ul>
+
+  <h4 class="lesson-section">4. Thực hành: Viết thư viện Toán cho DEX</h4>
+
+  <p class="lesson-text"><strong>Bước 1: Định nghĩa Lỗi (Custom Errors)</strong><br>
+  Trong lib.rs, thêm vào cuối file:</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">#[error_code]
+pub enum DexError {
+    #[msg("Thanh khoản không đủ để thực hiện giao dịch")]
+    LiquidityNotSufficient, // Hết tiền trong hồ
+    
+    #[msg("Phép tính bị tràn số (Overflow)")]
+    MathOverflow, // Tính ra số quá lớn
+}</code></pre>
+
+  <p class="lesson-text"><strong>Bước 2: Viết hàm tính toán Swap</strong><br>
+  Bạn có thể viết hàm này ngay trong lib.rs (bên ngoài module #[program]) hoặc tạo file utils.rs. Để đơn giản, ta viết cuối file lib.rs.</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">// Hàm tính toán số tiền nhận được
+// Input: 
+//   - amount_in: Số tiền khách nạp vào
+//   - reserve_in: Số tiền đang có trong kho (loại khách nạp)
+//   - reserve_out: Số tiền đang có trong kho (loại khách muốn lấy)
+// Output: Số tiền khách nhận được (u64)
+pub fn calculate_swap_amount(
+    amount_in: u64,
+    reserve_in: u64,
+    reserve_out: u64
+) -> Result<u64> {
+    
+    // 1. Kiểm tra đầu vào
+    if amount_in == 0 || reserve_in == 0 || reserve_out == 0 {
+        return Ok(0);
+    }
+
+    // 2. Ép kiểu lên u128 để tránh tràn số khi nhân
+    let amount_in_u128 = amount_in as u128;
+    let reserve_in_u128 = reserve_in as u128;
+    let reserve_out_u128 = reserve_out as u128;
+
+    // 3. Áp dụng công thức: numerator = amount_in * reserve_out
+    // numerator (tử số) = Delta X * Y
+    let numerator = amount_in_u128
+        .checked_mul(reserve_out_u128)
+        .ok_or(DexError::MathOverflow)?;
+
+    // 4. Áp dụng công thức: denominator = reserve_in + amount_in
+    // denominator (mẫu số) = X + Delta X
+    let denominator = reserve_in_u128
+        .checked_add(amount_in_u128)
+        .ok_or(DexError::MathOverflow)?;
+
+    // 5. Kết quả = Tử / Mẫu
+    let amount_out = numerator
+        .checked_div(denominator)
+        .ok_or(DexError::MathOverflow)?;
+
+    // 6. Ép kiểu trở lại u64 để trả về (vì Token Account chỉ lưu u64)
+    // Nếu kết quả > u64::MAX (hiếm khi xảy ra ở bước chia), báo lỗi
+    let amount_out_u64 = u64::try_from(amount_out)
+        .map_err(|_| DexError::MathOverflow)?;
+
+    Ok(amount_out_u64)
+}</code></pre>
+
+  <h4 class="lesson-section">5. Logic Step-by-Step khi Swap</h4>
+  
+  <p class="lesson-text">Bây giờ ta đã có hàm tính toán. Hãy hình dung quy trình của Bài 25 (bài tiếp theo) để thấy sự liên kết:</p>
+  <ol class="lesson-list">
+    <li>User gọi hàm Swap, gửi 10 Token A.</li>
+    <li>Code đọc dữ liệu:<br>
+       * Vault A đang có 1000 Token A (reserve_in).<br>
+       * Vault B đang có 2000 Token B (reserve_out).</li>
+    <li>Code gọi hàm Toán: calculate_swap_amount(10, 1000, 2000).<br>
+       * Tử số = $10 x 2000 = 20,000.<br>
+       * Mẫu số = $1000 + 10 = 1,010.<br>
+       * Kết quả = $20,000 / 1,010 ≈ 19$ Token B.</li>
+    <li>Kiểm tra:<br>
+       * Nếu Vault B < 19 (Hồ cạn tiền) -> Báo lỗi LiquidityNotSufficient.</li>
+    <li>Thực thi: Chuyển tiền thật (sẽ làm ở bài sau).</li>
+  </ol>
+
+  <h4 class="lesson-section">6. So sánh tư duy lập trình</h4>
+  
+  <ul class="lesson-list">
+    <li><strong>Tư duy C# Dev:</strong> "Tôi dùng try-catch để bắt lỗi chia cho 0 hoặc tràn số."</li>
+    <li><strong>Tư duy Rust/Solana Dev:</strong> "Tôi dùng checked_math để biến mọi phép tính thành Option. Tôi không để chương trình Crash (Panic), tôi muốn nó trả về Result::Err một cách lịch sự để User biết tại sao giao dịch thất bại (đỡ tốn phí Gas vô ích)."</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Tip thực tế:</strong> Trong các dự án DeFi lớn, người ta thường dùng thư viện uint của Rust để hỗ trợ số 256-bit (U256) giống Ethereum để tính toán chính xác hơn nữa, nhưng với người mới, u128 là quá đủ và an toàn.</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 24</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Hôm nay bạn không viết nhiều code chức năng, nhưng bạn đã viết ra đoạn code quan trọng nhất để bảo vệ tiền của dự án.</p>
+    <ol class="lesson-list">
+      <li><strong>Không dùng Float:</strong> Luôn dùng số nguyên (u64, u128).</li>
+      <li><strong>Cast lên u128:</strong> Khi nhân hai số lớn.</li>
+      <li><strong>Checked Math:</strong> Luôn kiểm tra checked_mul, checked_div.</li>
+      <li><strong>Custom Error:</strong> Báo lỗi rõ ràng thay vì im lặng.</li>
+    </ol>
+  </div>
+
+
+<div class="lesson-homework">
+    <div class="title">
+        Bài tập về nhà: Hãy thử viết thêm một hàm <span class="code-inline">check_slippage</span>:
+    </div>
+
+    <ul>
+        <li>
+            <span class="label">Input:</span> 
+            <span class="code-inline">expected_amount</span> (số tiền user mong muốn), 
+            <span class="code-inline">actual_amount</span> (số tính ra), 
+            <span class="code-inline">slippage_tolerance</span> (độ lệch cho phép, ví dụ 1%).
+        </li>
+        <li>
+            <span class="label">Logic:</span> Nếu <span class="code-inline">actual_amount</span> thấp hơn <span class="code-inline">expected_amount</span> quá 1% -> Trả về lỗi <span class="code-inline">SlippageExceeded</span>.
+        </li>
+        <li>
+            <span class="label">Gợi ý:</span>
+            <div class="math-hint">
+                Actual < Expected × 
+                <div class="fraction">
+                    <div class="num">99</div>
+                    <div class="den">100</div>
+                </div>
+            </div>
+        </li>
+    </ul>
+</div>
+
+  <p class="lesson-ending">
+    (Bạn đã sẵn sàng cho màn trình diễn chính chưa? Ở Bài 25, chúng ta sẽ ráp nối mọi thứ: Account, PDA, Math vào hàm Swap để thực hiện giao dịch đầu tiên trên Sàn DEX của bạn!).
+  </p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 22: PDA (Program Derived Address) – Rust cho C# Developer</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Bài 22. Hãy hít thở thật sâu, pha một tách cà phê thật đậm.<br><br>
+    Nếu có một khái niệm nào được gọi là "Chén Thánh" của lập trình Solana, thì đó chính là PDA (Program Derived Address).<br><br>
+    * Hiểu nó: Bạn có thể xây dựng sàn DEX, Lending, Staking, GameFi.<br><br>
+    * Không hiểu nó: Bạn chỉ viết được Hello World.<br><br>
+    Trong C#, bạn quản lý bảo mật bằng Connection String hoặc Private Key giấu trong Server. Trên Blockchain, code là công khai. Vậy làm sao một đoạn code (Smart Contract) có thể giữ tiền tỷ của người dùng mà không bị hacker lấy mất khóa bí mật? Câu trả lời là PDA.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 4: DỰ ÁN TỐT NGHIỆP</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 9: VÍ CRYPTO MINI & DEX</h2>
+  <h3 class="lesson-title">BÀI 22: PDA (PROGRAM DERIVED ADDRESS) - LÝ THUYẾT CỐT LÕI</h3>
+
+  <h4 class="lesson-section">1. Vấn đề: "Két sắt của ai?"</h4>
+  
+  <p class="lesson-text">Hãy tưởng tượng bạn đang xây dựng một Sàn giao dịch (DEX).</p>
+  
+  <p class="lesson-text">1. Alice muốn bán 10 Token A.</p>
+  <p class="lesson-text">2. Alice chuyển 10 Token A vào Sàn.</p>
+  <p class="lesson-text">3. Câu hỏi: Ai là người nắm giữ 10 Token đó?</p>
+  
+  <ul class="lesson-list">
+    <li>Nếu là ví cá nhân của Admin: Admin có thể ôm tiền bỏ trốn. (Không phi tập trung - Cấm kỵ).</li>
+    <li>Nếu là ví của Program: Program là những dòng code, nó không phải con người, nó không có tay để cầm chìa khóa (Private Key).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Nghịch lý:</strong> Ta cần một địa chỉ ví để chứa tiền, nhưng không ai được phép giữ Private Key của ví đó. Chỉ có Logic Code mới được phép mở ví.<br><br>
+  <strong>Giải pháp của Solana:</strong> Tạo ra một loại địa chỉ đặc biệt KHÔNG CÓ Private Key. Đó là PDA.</p>
+
+  <h4 class="lesson-section">2. Ẩn dụ: Con Dấu Công Ty vs. Chữ Ký Giám Đốc</h4>
+  
+  <p class="lesson-text">Để hiểu PDA, hãy so sánh cách xác thực:</p>
+  
+  <ul class="lesson-list">
+    <li><strong>Keypair thường (Ví của User):</strong> Giống Chữ ký tay.<br>
+      • Có một con người cụ thể giữ cây bút (Private Key).<br>
+      • Muốn chuyển tiền, người đó phải ký.<br>
+      • Nằm trên đường cong Elliptic (Ed25519 Curve).</li>
+    <li><strong>PDA (Ví của Program):</strong> Giống Con dấu mộc của công ty.<br>
+      • Không có "cây bút" (Private Key) nào cả. Không ai ký được bằng tay.<br>
+      • Chỉ khi nào tuân thủ đúng quy trình (Code logic chạy đúng), con dấu mới tự động đóng xuống.<br>
+      • Nằm ngoài đường cong Elliptic (Off-curve).</li>
+  </ul>
+
+  <h4 class="lesson-section">3. Công thức chế tạo PDA: Seeds & Bump</h4>
+  
+  <p class="lesson-text">Làm sao tìm được một địa chỉ PDA? Nó giống như việc tìm địa chỉ nhà dựa trên tọa độ.</p>
+  
+  <p class="lesson-text"><strong>Công thức (Concept):</strong></p>
+  
+  <p class="lesson-text">$$PDA = Hash(ProgramID + Seeds + Bump)$$</p>
+
+  <p class="lesson-text">1. <strong>Program ID:</strong> Địa chỉ của Smart Contract (Ông chủ). Chỉ ông chủ này mới điều khiển được PDA.</p>
+  <p class="lesson-text">2. <strong>Seeds (Hạt giống):</strong> Các từ khóa để định danh.</p>
+  <ul class="lesson-list">
+    <li>Ví dụ C#: Dictionary&lt;string, User&gt;. Key là "string".</li>
+    <li>Ví dụ Solana: Bạn muốn tạo ví riêng cho User A, seeds có thể là ["user-wallet", UserA_PublicKey].</li>
+    <li>Điều này giúp tạo ra các địa chỉ mang tính Deterministic (Định hãm): Cứ đưa đúng input thì luôn ra đúng địa chỉ output.</li>
+  </ul>
+
+  <p class="lesson-text">3. <strong>Bump (Cú huých):</strong></p>
+  <ul class="lesson-list">
+    <li>Khi Hash (ProgramID + Seeds), lỡ xui xẻo kết quả nó rơi trúng vào một điểm có Private Key thì sao? (Dù xác suất cực nhỏ).</li>
+    <li>Solana không cho phép điều đó. Vì thế, ta cần một số phụ (u8, từ 255 đếm ngược về 0).</li>
+    <li>Ta thử Hash với Bump = 255. Nếu ra điểm có Private Key -> Thử 254 -> Thử 253... cho đến khi tìm được điểm không có Private Key. Số đó gọi là Canonical Bump.</li>
+  </ul>
+
+  <h4 class="lesson-section">4. Thực hành: Định nghĩa Kho chứa tiền (Vault) bằng Anchor</h4>
+  
+  <p class="lesson-text">Chúng ta sẽ viết code để tạo ra một "Két sắt" (Account) chứa Token mà chỉ Program mới mở được.<br><br>
+  Tình huống: Mỗi User sẽ có một cái Vault riêng để nạp tiền vào sàn.</p>
+
+  <p class="lesson-text">Mở lib.rs (tiếp tục project bài trước hoặc tạo mới):</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">use anchor_lang::prelude::*;
+use anchor_spl::token::{Token, TokenAccount};
+
+declare_id!("..."); // Program ID của bạn
+
+#[program]
+pub mod pda_tutorial {
+    use super::*;
+
+    // Hàm khởi tạo Vault
+    pub fn initialize_vault(_ctx: Context<InitializeVault>) -> Result<()> {
+        msg!("Vault đã được tạo thành công bằng PDA!");
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct InitializeVault<'info> {
+    // Đây là phần QUAN TRỌNG NHẤT
+    #[account(
+        init,
+        payer = user,
+        // Seeds: Bao gồm chuỗi cố định "vault" và Public Key của user
+        // Ý nghĩa: "Đây là cái vault của ông user này"
+        seeds = [b"vault", user.key().as_ref()], 
+        
+        // Bump: Anchor tự tìm số bump phù hợp nhất để lưu vào đây
+        bump, 
+        
+        // Đây là ví Token, nên cần space của TokenAccount
+        token::mint = mint,
+        token::authority = vault_account, // Chính cái PDA này làm chủ sở hữu (Self-owned)
+    )]
+    pub vault_account: Account<'info, TokenAccount>,
+
+    // Loại tiền (Mint) mà vault này sẽ chứa (ví dụ: USDC, BTC...)
+    pub mint: AccountInfo<'info>, 
+
+    #[account(mut)]
+    pub user: Signer<'info>, // Người trả tiền tạo account
+    
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>,
+}</code></pre>
+
+  <p class="lesson-text"><strong>Giải thích Cú pháp Anchor:</strong></p>
+  <ul class="lesson-list">
+    <li><code>seeds = [b"vault", user.key().as_ref()]</code>: Đây là công thức.<br>
+      • b"vault": Một chuỗi byte cố định (giống Prefix).<br>
+      • user.key(): Để đảm bảo mỗi User có một Vault khác nhau (Unique per user).</li>
+    <li><code>bump</code>: Anchor sẽ tự động tính toán bump khi chạy lệnh init và lưu nó vào metadata của Account. Lần sau truy cập, Anchor sẽ tự kiểm tra lại xem bump có khớp không.</li>
+  </ul>
+
+  <h4 class="lesson-section">5. Cơ chế "Ký tên" (Signing) của PDA</h4>
+  
+  <p class="lesson-text">Đây là phần "ma thuật" mà C# Dev cần chú ý.<br>
+  Khi bạn muốn chuyển tiền TỪ cái vault_account này đi nơi khác. Ai sẽ ký?</p>
+
+  <p class="lesson-text">Trong hàm swap (chúng ta sẽ viết ở bài 25), ta dùng <code>CpiContext::new_with_signer</code>.</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">// Code minh họa (chưa cần chạy ngay)
+let seeds = &[
+    b"vault",
+    user_key.as_ref(),
+    &[bump], // Phải có bump để chứng minh đây là PDA xịn
+];
+let signer = &[&seeds[..]];
+
+// Gửi lệnh chuyển tiền kèm theo "chữ ký ảo" (signer)
+token::transfer(
+    CpiContext::new_with_signer(
+        token_program.to_account_info(),
+        transfer_instruction,
+        signer // <-- Đây là lúc Program đóng "Con Dấu Công Ty"
+    ),
+    amount
+)?;</code></pre>
+
+  <p class="lesson-text"><strong>Cơ chế:</strong></p>
+  <ol class="lesson-list">
+    <li>Runtime của Solana nhận được lệnh transfer kèm seeds.</li>
+    <li>Nó kiểm tra: "Có phải Program đang gọi lệnh này chính là Program ID tạo ra PDA từ seeds kia không?"</li>
+    <li>Nếu đúng: Runtime coi như giao dịch đã được ký hợp lệ.</li>
+    <li>Nếu sai (Hacker giả mạo Program): Giao dịch bị từ chối ngay lập tức.</li>
+  </ol>
+
+  <h4 class="lesson-section">6. So sánh: GUID Deterministic (C#) vs PDA (Rust)</h4>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Đặc điểm</th><th>C# Deterministic GUID</th><th>Solana PDA</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Mục đích</td><td>Tạo ID duy nhất dựa trên input (VD: Namespace + Name).</td><td>Tạo Địa chỉ ví duy nhất dựa trên input (ProgramID + Seeds).</td></tr>
+        <tr><td>Cách tạo</td><td>Guid.CreateVersion5(namespace, name)</td><td>Pubkey::find_program_address(&[seeds], &program_id)</td></tr>
+        <tr><td>Khả năng</td><td>Chỉ là một định danh (Identifier).</td><td>Là một Ví thực thụ, có thể chứa tiền và ký giao dịch.</td></tr>
+        <tr><td>Bảo mật</td><td>Không có cơ chế ký tự động.</td><td>Có cơ chế CPI Signing (Program tự ký).</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 22</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Bạn vừa nạp vào đầu kiến thức quan trọng nhất của lập trình Solana:</p>
+    <ol class="lesson-list">
+      <li><strong>PDA là ví không cần chìa khóa,</strong> chỉ cần công thức (Seeds).</li>
+      <li><strong>Seeds giúp ta tìm lại được chính xác</strong> cái ví đó bất kỳ lúc nào (Deterministic).</li>
+      <li><strong>Program có thể dùng Seeds để "ký thay"</strong> cho PDA, giúp Smart Contract có quyền kiểm soát tài sản.</li>
+    </ol>
+  </div>
+
+  <div class="lesson-homework">
+    <p><strong>Bài tập về nhà:</strong><br><br>
+    Hãy thử suy nghĩ về kiến trúc cho Sàn DEX chúng ta sắp làm:<br><br>
+    * Chúng ta cần một PDA để chứa Token A. Seeds nên là gì? (Gợi ý: [b"pool_a"]?)<br><br>
+    * Chúng ta cần một PDA để chứa Token B. Seeds nên là gì?<br><br>
+    * Nếu muốn mỗi cặp Token (A-B) có một hồ riêng, Seeds nên bao gồm những gì? (Gợi ý: [b"pool", mint_a.key(), mint_b.key()]).</p>
+  </div>
+
+  <p class="lesson-ending">
+    (Hãy nghỉ ngơi một chút. Ở Bài 23, chúng ta sẽ dùng kiến thức PDA này để xây dựng Liquidity Pool - Nơi chứa tiền của sàn giao dịch).
+  </p>
+</div>
+
+</body>
+</html>

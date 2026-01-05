@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 25: Implement Swap – Rust cho C# Developer</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đến với Bài 25. Đây chính là "trái tim" của toàn bộ dự án này.<br><br>
+    Nếu Bài 23 là "xây nhà kho", Bài 24 là "học tính toán", thì Bài 25 chính là lúc ta mở cửa đón khách.<br><br>
+    Chúng ta sẽ viết hàm swap: Nhận tiền của User, tính toán tỷ giá, và trả lại loại tiền User muốn.<br><br>
+    Đây là bài học khó nhất về mặt logic tương tác, vì nó kết hợp: Context Validation + Math + CPI with PDA Signer.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 4: DỰ ÁN TỐT NGHIỆP</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 9: VÍ CRYPTO MINI & DEX</h2>
+  <h3 class="lesson-title">BÀI 25: IMPLEMENT SWAP - THỰC HIỆN GIAO DỊCH</h3>
+
+  <h4 class="lesson-section">1. Quy trình của một giao dịch (Swap Flow)</h4>
+  
+  <p class="lesson-text">Hãy hình dung luồng đi của tiền khi User muốn đổi Token A lấy Token B:</p>
+  
+  <p class="lesson-text">1. Bước 1 (User Deposit): User chuyển Token A từ ví mình vào Vault A của sàn.</p>
+  
+  <ul class="lesson-list">
+    <li>Quyền hạn: Cần chữ ký của User.</li>
+  </ul>
+
+  <p class="lesson-text">2. Bước 2 (Calculate): Smart Contract tính toán xem với lượng A đó thì đổi được bao nhiêu B.</p>
+
+  <p class="lesson-text">3. Bước 3 (Pool Withdraw): Sàn chuyển Token B từ Vault B sang ví của User.</p>
+  
+  <ul class="lesson-list">
+    <li>Quyền hạn: Cần chữ ký của Sàn (PDA). User không thể tự lấy tiền ra.</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Bước 1: Định nghĩa Context Swap</h4>
+  
+  <p class="lesson-text">Chúng ta cần khai báo tất cả các tài khoản tham gia vào vụ "trao đổi" này.<br>
+  Mở file lib.rs.<br>
+  Tư duy bảo mật: Đừng bao giờ tin tưởng User. Hãy dùng constraint (ràng buộc) để đảm bảo User không tráo Token giả hoặc Vault giả vào.</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">#[derive(Accounts)]
+pub struct Swap<'info> {
+    // 1. CÁI QUẦY (POOL)
+    // Cần mut (mutable) vì mình không sửa data trong Pool struct, 
+    // nhưng mình cần đọc thông tin mint_a, mint_b từ nó để check.
+    // (Thực tế nếu Pool có lưu tổng volume thì cần mut để update).
+    pub pool: Account<'info, Pool>,
+
+    // 2. NGƯỜI DÙNG (USER)
+    // Cần chữ ký để trừ tiền của họ
+    #[account(mut)]
+    pub user: Signer<'info>,
+
+    // 3. VÍ TOKEN CỦA USER (NGUỒN & ĐÍCH)
+    // Ví dụ: User bán A (source) -> Nhận B (destination)
+    #[account(mut)]
+    pub user_source_token: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub user_destination_token: Account<'info, TokenAccount>,
+
+    // 4. KÉT SẮT CỦA SÀN (VAULTS)
+    // Đây là nơi nhận tiền vào và nhả tiền ra
+    #[account(
+        mut,
+        // Kiểm tra: Két này phải chứa đúng loại tiền source
+        constraint = vault_source.mint == user_source_token.mint,
+        // Kiểm tra: Chủ của két phải là Pool (để Pool có quyền ký)
+        constraint = vault_source.owner == pool.key()
+    )]
+    pub vault_source: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        constraint = vault_destination.mint == user_destination_token.mint,
+        constraint = vault_destination.owner == pool.key()
+    )]
+    pub vault_destination: Account<'info, TokenAccount>,
+
+    // 5. CHƯƠNG TRÌNH TOKEN (SYSTEM)
+    pub token_program: Program<'info, Token>,
+}</code></pre>
+
+  <p class="lesson-text">Lưu ý: Ở đây tôi dùng tên chung là source và destination thay vì vault_a/vault_b. Điều này giúp hàm Swap linh hoạt: User có thể đổi A lấy B hoặc B lấy A đều dùng chung struct này được.</p>
+
+  <h4 class="lesson-section">3. Bước 2: Viết hàm swap - Logic chính</h4>
+  
+  <p class="lesson-text">Quay lại module #[program] và viết hàm swap.<br>
+  Chúng ta sẽ sử dụng lại hàm calculate_swap_amount đã viết ở Bài 24 (giả sử bạn để nó ở cuối file hoặc trong module helper).</p>
+  <pre class="lesson-code"><code class="lesson-code-rust">#[program]
+pub mod rusty_dex {
+    use super::*;
+
+    // ... các hàm initialize cũ ...
+
+    pub fn swap(ctx: Context<Swap>, amount_in: u64) -> Result<()> {
+        // BƯỚC 1: TÍNH TOÁN (MATH)
+        // Lấy số dư hiện tại trong 2 két sắt
+        let reserve_in = ctx.accounts.vault_source.amount;
+        let reserve_out = ctx.accounts.vault_destination.amount;
+
+        // Gọi hàm toán học (Bài 24)
+        // amount_out là số tiền User sẽ nhận được
+        let amount_out = calculate_swap_amount(amount_in, reserve_in, reserve_out)?;
+
+        msg!("Swap Request: Input {} -> Output {}", amount_in, amount_out);
+
+        // BƯỚC 2: USER CHUYỂN TIỀN VÀO (TRANSFER IN)
+        // Từ: User Source -> Đến: Vault Source
+        // Người ký: User (ctx.accounts.user)
+        let cpi_accounts_in = anchor_spl::token::Transfer {
+            from: ctx.accounts.user_source_token.to_account_info(),
+            to: ctx.accounts.vault_source.to_account_info(),
+            authority: ctx.accounts.user.to_account_info(),
+        };
+        
+        let cpi_ctx_in = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            cpi_accounts_in
+        );
+        
+        anchor_spl::token::transfer(cpi_ctx_in, amount_in)?;
+        msg!("User deposited {} tokens", amount_in);
+
+        // BƯỚC 3: SÀN TRẢ TIỀN RA (TRANSFER OUT)
+        // Từ: Vault Destination -> Đến: User Destination
+        // Người ký: Pool PDA (Vì Pool là owner của Vault)
+        
+        // 3a. Chuẩn bị Seeds để ký
+        // Pool PDA được tạo từ: [b"pool", mint_a, mint_b, bump]
+        // Chúng ta cần tái tạo lại đúng thứ tự đó.
+        let mint_a = ctx.accounts.pool.mint_a;
+        let mint_b = ctx.accounts.pool.mint_b;
+        let bump = ctx.accounts.pool.bump;
+
+        let seeds = &[
+            b"pool",
+            mint_a.as_ref(),
+            mint_b.as_ref(),
+            &[bump], // Bump cuối cùng
+        ];
+        
+        let signer_seeds = &[&seeds[..]]; // Ép kiểu thành slice of slices
+
+        // 3b. Chuẩn bị Context
+        let cpi_accounts_out = anchor_spl::token::Transfer {
+            from: ctx.accounts.vault_destination.to_account_info(), // Rút từ két đích
+            to: ctx.accounts.user_destination_token.to_account_info(), // Chuyển cho User
+            authority: ctx.accounts.pool.to_account_info(), // Pool ký tên
+        };
+
+        // Dùng new_with_signer để kèm theo chữ ký ảo
+        let cpi_ctx_out = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            cpi_accounts_out,
+            signer_seeds // <--- QUAN TRỌNG NHẤT
+        );
+
+        // 3c. Thực hiện chuyển tiền
+        anchor_spl::token::transfer(cpi_ctx_out, amount_out)?;
+        msg!("Pool sent {} tokens to User", amount_out);
+
+        Ok(())
+    }
+}</code></pre>
+
+  <h4 class="lesson-section">4. Giải phẫu chi tiết: signer_seeds</h4>
+  
+  <p class="lesson-text">Đây là đoạn code khó hiểu nhất với C# Developer.</p>
+  
+  <ul class="lesson-list">
+    <li><strong>C#:</strong> SignTransaction(privateKey) -> Rất trực quan.</li>
+    <li><strong>Rust (PDA):</strong><br>
+      * Bạn không có Private Key.<br>
+      * Bạn phải chứng minh với Solana System rằng: "Này, tao chính là thằng Program đã tạo ra cái Pool PDA này. Tao đang chạy code đúng logic đây. Hãy dùng seeds này để tạo chữ ký cho tao."<br>
+      * Cấu trúc &[&[u8]]:<br>
+        * Lớp trong [u8]: Là mảng bytes của từng thành phần (chuỗi "pool", public key mint_a...).<br>
+        * Lớp giữa &[...]: Là tập hợp các thành phần tạo nên 1 PDA (Seeds hoàn chỉnh).<br>
+        * Lớp ngoài cùng &[...]: Vì một transaction có thể có nhiều PDA ký tên cùng lúc, nên nó cần một mảng chứa các Seeds.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Mẹo debug:</strong> Nếu chạy bị lỗi Signature verification failed, 99% là do thứ tự hạt giống (Seeds) trong mảng này KHÔNG KHỚP với thứ tự lúc bạn khai báo #[account(init, seeds=...)] ở Bài 23. Hãy kiểm tra kỹ từng byte!</p>
+
+  <h4 class="lesson-section">5. So sánh: Transaction Atomicity (Tính nguyên tử)</h4>
+  
+  <p class="lesson-text">Một câu hỏi hay: "Lỡ bước 2 (User nạp) thành công, nhưng bước 3 (Sàn trả) bị lỗi thì sao? User có mất tiền không?"</p>
+  
+  <ul class="lesson-list">
+    <li><strong>C# (SQL):</strong> Bạn phải mở using (var transaction = db.Database.BeginTransaction()) và gọi transaction.Commit(). Nếu quên, dữ liệu có thể bị sai lệch (Inconsistent).</li>
+    <li><strong>Solana:</strong> Mặc định là Atomic.<br>
+      * Một hàm swap được coi là một Transaction.<br>
+      * Nếu dòng code cuối cùng bị lỗi (Panic/Error), TOÀN BỘ thay đổi từ dòng đầu tiên sẽ bị Rollback (hoàn tác).<br>
+      * Tiền của User sẽ tự động quay về ví User như chưa hề có cuộc chia ly.<br>
+      * Bạn không cần viết code rollback hay try-catch phức tạp.</li>
+  </ul>
+
+  <h4 class="lesson-section">6. Tổng hợp Code hoàn chỉnh cho lib.rs</h4>
+  
+  <p class="lesson-text">Để bạn dễ copy và hình dung, đây là cấu trúc file lib.rs đến thời điểm hiện tại:</p>
+  
+  <p class="lesson-text">1. declare_id & imports.</p>
+  <p class="lesson-text">2. #[program] mod rusty_dex:</p>
+  <ul class="lesson-list">
+    <li>* fn initialize(...) (Bài 23).</li>
+    <li>* fn swap(...) (Bài 25 - vừa viết).</li>
+  </ul>
+  <p class="lesson-text">3. #[derive(Accounts)] struct Initialize (Bài 23).</p>
+  <p class="lesson-text">4. #[derive(Accounts)] struct Swap (Bài 25 - vừa viết).</p>
+  <p class="lesson-text">5. #[account] struct Pool (Bài 23).</p>
+  <p class="lesson-text">6. fn calculate_swap_amount(...) (Bài 24).</p>
+  <p class="lesson-text">7. #[error_code] enum DexError (Bài 24).</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 25</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Chúc mừng bạn! Bạn vừa hoàn thành Logic cốt lõi của một sàn giao dịch phi tập trung.<br>
+    Những gì bạn vừa làm:</p>
+    <ol class="lesson-list">
+      <li>1. Nhận request Swap từ User.</li>
+      <li>2. Tính toán giá trị công bằng (Fair Price) bằng thuật toán AMM.</li>
+      <li>3. Thực hiện "tay không bắt giặc": Dùng PDA Signer để mở két sắt của Smart Contract mà không cần lưu trữ Private Key nào cả.</li>
+    </ol>
+  </div>
+
+  <div class="lesson-homework">
+    <p><strong>Bài tập về nhà:</strong><br><br>
+    Hãy đọc kỹ lại đoạn code tạo signer_seeds. Thử đặt câu hỏi: Nếu tôi đổi thứ tự mint_a và mint_b trong seeds thì chuyện gì xảy ra? (Gợi ý: Runtime sẽ tạo ra một chữ ký sai -> Transaction fail).</p>
+  </div>
+
+  <p class="lesson-ending">
+    (Chúng ta đã có Súng (Code). Bây giờ cần Bia tập bắn. Hẹn gặp lại ở Bài 26: Unit Test & Integration Test. Chúng ta sẽ viết kịch bản giả lập Alice và Bob giao dịch với nhau để xem code chạy thế nào).
+  </p>
+</div>
+
+</body>
+</html>
