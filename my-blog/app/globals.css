@@ -178,3 +178,13 @@ body {
   .lesson-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin: 40px 0; }
   .lesson-item { background: #f0fdf4; padding: 25px; border-radius: 16px; border: 4px solid #22c55e; text-align: center; font-size: 1.1em; }
   .lesson-strong { font-weight: bold; color: #166534; font-size: 1.2em; }
+  .lesson-math {
+      font-size: 1.3em;
+      text-align: center;
+      margin: 40px 0;
+      padding: 20px;
+      background: #fffbeb;
+      border-radius: 12px;
+      border-left: 6px solid #f59e0b;
+    }
+
