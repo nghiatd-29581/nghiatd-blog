@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 4: Back-of-the-Envelope Estimation – Trần's Blog</title>
+  <style>
+
+    .card {
+      border-radius: 2px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px 8px;
+    }
+
+    th {
+      color: #000000;
+      font-weight: 600;
+      border-bottom: 1px solid #333;
+    }
+
+    tr:not(:last-child) td {
+      border-bottom: 1px solid #000000;
+    }
+
+    .note {
+      margin-top: 20px;
+      color: #000000;
+    }
+
+    ul {
+      margin-top: 8px;
+      padding-left: 20px;
+    }
+
+    code {
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.95em;
+    }
+
+    sup {
+      font-size: 0.75em;
+      vertical-align: super;
+    }
+
+    .highlight {
+      color: #2aadea;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào các anh em! Có một tình huống kinh điển thế này: Sếp bước vào phòng và hỏi: "Ê, team mình sắp làm cái tính năng đăng ảnh giống Instagram, chú tính xem cần bao nhiêu server, bao nhiêu ổ cứng?"<br>
+    Nếu bạn trả lời: "Dạ, để em code xong rồi chạy thử mới biết" -> Bạn là Junior.<br>
+    Nếu bạn trả lời: "Chắc cần khoảng chục con server xịn xịn anh ạ" -> Bạn là Senior.<br>
+    Nhưng nếu bạn rút cái bút, vơ đại một tờ hóa đơn tiền điện (hoặc vỏ bao thuốc) và tính loạch xoạch: "Với 10 triệu người dùng, mỗi ngày 1 triệu ảnh, chúng ta cần khoảng 3.6 TB storage mỗi tháng và băng thông tầm 500 Mbps" -> Chúc mừng, bạn đã có phong thái của một Architect.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 1: NHẬP MÔN SYSTEM DESIGN</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 1: TƯ DUY KIẾN TRÚC SƯ</h2>
+  <h3 class="lesson-title">BÀI 4: BACK-OF-THE-ENVELOPE ESTIMATION – PHÉP THUẬT TÍNH NHẨM CỦA KIẾN TRÚC SƯ</h3>
+
+  <h4 class="lesson-section">1. Tại sao phải ước tính? Đâu phải làm kế toán!</h4>
+
+  <p class="lesson-text">Ước tính thô (Back-of-the-envelope) không cần chính xác 100%. Mục tiêu là để loại bỏ những phương án bất khả thi.</p>
+
+  <p class="lesson-text">Nếu bạn tính ra rằng hệ thống cần 1000 TB RAM để chạy Cache, bạn sẽ biết ngay là mình không nên dùng Redis cho toàn bộ dữ liệu đó mà phải tìm phương án khác. Ước tính giúp bạn chọn đúng công cụ trước khi đặt dòng code đầu tiên.</p>
+
+  <h4 class="lesson-section">2. Những con số "gối đầu giường" (Latency Numbers Every Programmer Should Know)</h4>
+
+  <p class="lesson-text">Để tính được cái lớn, bạn phải biết cái nhỏ. Đây là bảng dữ liệu huyền thoại từ Jeff Dean (Google). Để dễ hình dung, mình sẽ quy đổi thời gian máy tính sang thời gian của con người (nếu 1 chu kỳ CPU là 1 giây).</p>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Thao tác</th><th>Thời gian thực tế</th><th>Thời gian "người" (tương đối)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>L1 cache reference</td><td>0.5 ns</td><td>0.5 giây (Một cái chớp mắt)</td></tr>
+        <tr><td>Branch mispredict</td><td>5 ns</td><td>5 giây</td></tr>
+        <tr><td>L2 cache reference</td><td>7 ns</td><td>7 giây</td></tr>
+        <tr><td>Main memory reference (RAM)</td><td>100 ns</td><td>100 giây (Gần 2 phút)</td></tr>
+        <tr><td>Đọc 1MB tuần tự từ RAM</td><td>250,000 ns</td><td>2.9 ngày</td></tr>
+        <tr><td>Gửi gói tin từ Cali đến Hà Nội</td><td>150,000,000 ns</td><td>4.7 năm</td></tr>
+        <tr><td>Đọc 1MB tuần tự từ SSD</td><td>1,000,000 ns</td><td>11.5 ngày</td></tr>
+        <tr><td>Đọc 1MB tuần tự từ HDD</td><td>20,000,000 ns</td><td>7.7 tháng</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="lesson-text"><strong>Bài học rút ra:</strong> RAM nhanh hơn SSD 10-100 lần, và SSD nhanh hơn HDD cả chục lần. Nhưng tất cả đều "hít khói" so với Cache của CPU. Khi thiết kế hệ thống High-performance, hãy cố gắng giữ dữ liệu ở gần CPU nhất có thể.</p>
+
+  <h4 class="lesson-section">3. Công thức "Thần thánh" để tính QPS và Storage</h4>
+
+  <p class="lesson-text">Khi làm System Design, hãy nhớ quy tắc làm tròn: 1 ngày có khoảng 100,000 giây (thực tế là 86,400 giây, nhưng làm tròn 100k cho nó dễ tính nhẩm, Architect mà, sai số 15% là bình thường!).</p>
+
+  <p class="lesson-text"><strong>3.1. Tính QPS (Queries Per Second)</strong></p>
+  <p class="lesson-text">Giả sử hệ thống có 10 triệu người dùng hoạt động hàng ngày (DAU). Mỗi người dùng thực hiện trung bình 10 request mỗi ngày.</p>
+  <ul class="lesson-list">
+    <li>Tổng request/ngày: 10M x 10 = 100 triệu request/ngày.</li>
+    <li>QPS trung bình: 100,000,000 / 100,000 = 1,000  QPS.</li>
+    <li>Peak QPS (Lúc cao điểm): Thường gấp 2 đến 5 lần trung bình. $1,000 x 2 = 2,000 QPS.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>3.2. Tính Storage (Dung lượng lưu trữ)</strong></p>
+  <p class="lesson-text">Tiếp tục ví dụ trên, giả sử 10% người dùng đăng 1 tấm ảnh mỗi ngày, mỗi ảnh nặng 200 KB.</p>
+  <ul class="lesson-list">
+    <li>Số ảnh mỗi ngày: 10M x 10% = 1 triệu ảnh.</li>
+    <li>Dung lượng mỗi ngày: 1M x 200 KB = 200 GB.</li>
+    <li>Dung lượng 1 năm: 200 GB x 365 ≈ 73 TB</li>
+    <li>Tính thêm Backup & Replication: Thường chúng ta lưu 3 bản để tránh mất dữ liệu -> 73 TB x 3 ≈ 219 TB.</li>
+  </ul>
+
+  <h4 class="lesson-section">4. Băng thông (Bandwidth) – Đừng để nghẽn cổ chai</h4>
+
+  <p class="lesson-text">Băng thông là lượng dữ liệu chạy qua "đường ống" mạng.</p>
+  <ul class="lesson-list">
+    <li>Băng thông vào (Ingress): 1M ảnh x 200 KB / 100,000  giây ≈ 2 MB/s = 16 Mbps.</li>
+    <li>Băng thông ra (Egress): Nếu một ảnh được xem 10 lần bởi những người khác -> 16 Mbps x 10 = 160 Mbps.</li>
+  </ul>
+
+  <p class="lesson-text">Nhìn vào con số này, bạn sẽ biết mình cần thuê đường truyền bao nhiêu hoặc dùng CDN để giảm tải Egress cho server gốc.</p>
+
+  <h4 class="lesson-section">5. Mẹo nhỏ để tính nhẩm không bị "lú"</h4>
+
+<h1>
+    Lập trình viên hay bị nhầm giữa bit (<code>b</code>) và Byte (<code>B</code>),
+    giữa lũy thừa 2 và lũy thừa 10. Hãy dùng bảng "quy đổi nhanh" này:
+  </h1>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Đại lượng</th>
+          <th>Viết tắt</th>
+          <th>Giá trị (Approx)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Thousand</td>
+          <td>Kilo (K)</td>
+          <td>10<sup>3</sup></td>
+        </tr>
+        <tr>
+          <td>Million</td>
+          <td>Mega (M)</td>
+          <td>10<sup>6</sup></td>
+        </tr>
+        <tr>
+          <td>Billion</td>
+          <td>Giga (G)</td>
+          <td>10<sup>9</sup></td>
+        </tr>
+        <tr>
+          <td>Trillion</td>
+          <td>Tera (T)</td>
+          <td>10<sup>12</sup></td>
+        </tr>
+        <tr>
+          <td>Quadrillion</td>
+          <td>Peta (P)</td>
+          <td>10<sup>15</sup></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="note">
+      <p><strong>Mẹo của các "Pro":</strong> <span class="highlight">2<sup>10</sup></span> xấp xỉ 1 nghìn (1,000).</p>
+      <ul>
+        <li>
+          <span class="highlight">2<sup>20</sup></span> xấp xỉ 1 triệu (1,000,000).
+        </li>
+        <li>
+          Muốn tính storage cho <span class="highlight">1 tỷ record</span>,
+          mỗi record <span class="highlight">1KB</span>?<br />
+          <code>10<sup>9</sup> × 10<sup>3</sup> = 10<sup>12</sup> = 1TB</code>. Xong!
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 4</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Việc ước tính giúp bạn trả lời được những câu hỏi hóc búa:</p>
+    <ol class="lesson-list">
+      <li>Hệ thống này có cần dùng Cache không? (Nếu QPS quá cao -> Cần).</li>
+      <li>Dùng Database gì? (Nếu dữ liệu lên đến hàng Petabyte -> Cần phân tán).</li>
+      <li>Cần bao nhiêu tiền để duy trì? (Cái này sếp thích nhất).</li>
+    </ol>
+    <p class="lesson-text"><strong>Nguồn tham khảo:</strong> Để luyện tập thêm, các bạn hãy đọc chương "Back-of-the-envelope estimation" trong cuốn System Design Interview của Alex Xu. Đây là "kinh thánh" cho phần này.</p>
+  </div>
+
+  <p class="lesson-ending">
+    Kết thúc Chương 1: NHẬP MÔN & TƯ DUY KIẾN TRÚC SƯ<br><br>
+    Chúng ta đã xong phần "khởi động" về tư duy. Bạn đã biết mình cần phải suy nghĩ như thế nào, tiến hóa ra sao và tính toán sơ bộ thế nào.<br>
+    Bạn đã sẵn sàng để bước sang Chương 2: CORE METRICS & TRADE-OFF chưa? Chúng ta sẽ mổ xẻ sâu hơn về Latency, Availability và cái định lý CAP mà ai cũng nhắc nhưng ít người hiểu đúng!<br>
+    Câu hỏi nhỏ: Nếu bạn thiết kế một app nhắn tin như Telegram cho 100 triệu người dùng, mỗi tin nhắn dài 100 kí tự, bạn tính thử xem một ngày hệ thống cần lưu bao nhiêu GB dữ liệu? Comment kết quả bên dưới nhé!<br>
+    Bài viết này đã đủ "đô" chưa bạn? Nếu bạn ưng ý, mình sẽ lên sóng tiếp Chương 2 - Bài 1: Hiểu đúng về Latency & Throughput.
+  </p>
+</div>
+
+</body>
+</html>

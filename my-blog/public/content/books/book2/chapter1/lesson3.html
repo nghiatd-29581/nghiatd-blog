@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 3: Evolutionary Architecture – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn quay trở lại với series "System Design Master". Ở bài trước, chúng ta đã thống nhất với nhau rằng đừng mang đại bác đi bắn chim sẻ. Hôm nay, chúng ta sẽ đi sâu vào việc: Làm thế nào để bộ não của một Senior Dev "tiến hóa" thành một Architect?<br><br>
+    Nếu bạn vẫn đang tự hào vì đoạn code của mình chạy nhanh như chớp trên máy cục bộ (Localhost), thì xin chia buồn, bạn vẫn đang ở "tầng hạ giới". Trong System Design, chúng ta không chỉ quan tâm code chạy đúng, chúng ta quan tâm đến việc nó chết như thế nào.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 1: NHẬP MÔN SYSTEM DESIGN</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 1: TƯ DUY KIẾN TRÚC SƯ</h2>
+  <h3 class="lesson-title">BÀI 3: EVOLUTIONARY ARCHITECTURE – ĐỪNG XÂY BIỆT THỰ KHI MỚI CHỈ CÓ... MỘT NGƯỜI Ở</h3>
+
+  <h4 class="lesson-section">1. Kiến trúc tiến hóa là gì? (Và tại sao nó không phải là "làm ẩu"?)</h4>
+
+  <p class="lesson-text">Theo định nghĩa trong cuốn sách nổi tiếng Building Evolutionary Architectures (Neal Ford, Rebecca Parsons & Pat Kua):</p>
+
+  <p class="lesson-text">"Kiến trúc tiến hóa hỗ trợ sự thay đổi có hướng dẫn, không ngừng nghỉ trên nhiều khía cạnh."</p>
+
+  <p class="lesson-text">Nói một cách dễ hiểu: Bạn không cần phải đoán trước tương lai. Thay vào đó, bạn xây dựng một hệ thống mà khi tương lai ập đến, bạn có thể thay đổi nó mà không cần phải đập đi xây lại từ đầu.</p>
+
+  <p class="lesson-text">Nó giống như việc bạn mua một căn nhà có khả năng chồng thêm tầng khi có con, thay vì xây ngay một cái lâu đài 10 tầng rồi bỏ trống 9 tầng cho nhện giăng tơ (và tốn tiền thuê người quét dọn).</p>
+
+  <h4 class="lesson-section">2. Lộ trình tiến hóa: Từ "Nồi lẩu" đến "Chuỗi nhà hàng"</h4>
+
+  <p class="lesson-text">Đừng bao giờ nhảy ngay vào Microservices nếu bạn chưa trải qua nỗi đau của Monolith. Hãy nhìn lộ trình tiến hóa chuẩn chỉnh dưới đây:</p>
+
+  <p class="lesson-text"><strong>Giai đoạn 1: The Majestic Monolith (Khối thống nhất vĩ đại)</strong></p>
+  <p class="lesson-text">Lúc mới bắt đầu, tốc độ là tất cả. Mọi thứ nằm chung một Repo, chung một Database, chung một Deployment unit.</p>
+  <ul class="lesson-list">
+    <li>Ưu điểm: Cực nhanh, dễ debug, dễ deploy. Gọi hàm giữa các module nhanh như chớp.</li>
+    <li>Nhược điểm: Khi team đông lên, người này dẫm chân người kia. Một lỗi nhỏ ở module "Gửi Mail" có thể làm sập luôn module "Thanh toán".</li>
+  </ul>
+  <p class="lesson-text"><strong>Lời khuyên:</strong> Hãy bắt đầu ở đây. Như David Heinemeier Hansson (cha đẻ Ruby on Rails) từng nói: "Đừng chia nhỏ cho đến khi bạn thực sự thấy đau vì sự to lớn của nó."</p>
+
+  <p class="lesson-text"><strong>Giai đoạn 2: Modular Monolith (Nồi lẩu có vách ngăn)</strong></p>
+  <p class="lesson-text">Đây là "điểm ngọt" (Sweet spot) mà nhiều công ty bỏ qua. Bạn vẫn dùng một Repo, một Database, nhưng trong Codebase, các module được tách biệt cực kỳ nghiêm ngặt.</p>
+  <ul class="lesson-list">
+    <li>Quy tắc: Module A không được chọc trực tiếp vào Table của Module B. Mọi giao tiếp phải qua Interface công khai.</li>
+    <li>Lợi ích: Bạn có sự ngăn nắp của Microservices nhưng không phải chịu sự phức tạp của hạ tầng (Network, Latency, Distributed Transactions).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Giai đoạn 3: Microservices (Chia để trị)</strong></p>
+  <p class="lesson-text">Khi hệ thống quá lớn, một DB không chịu nổi nhiệt, hoặc team lên đến hàng trăm người, đó là lúc tách rời hoàn toàn.</p>
+  <ul class="lesson-list">
+    <li>Hệ quả: Mỗi service một DB riêng, giao tiếp qua HTTP hoặc Message Queue.</li>
+    <li>Cái giá: Bạn sẽ phải đối mặt với "Thế giới phân tán" – nơi mà $1 + 1$ đôi khi không bằng $2$ vì lỗi mạng.</li>
+  </ul>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Đặc điểm</th><th>Monolith</th><th>Modular Monolith</th><th>Microservices</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Độ phức tạp</td><td>Thấp</td><td>Trung bình</td><td>Rất cao</td></tr>
+        <tr><td>Tốc độ Deploy</td><td>Nhanh (lúc đầu)</td><td>Trung bình</td><td>Chậm (nhưng độc lập)</td></tr>
+        <tr><td>Chi phí Infra</td><td>Rẻ</td><td>Rẻ</td><td>Đắt (Rất nhiều tiền Cloud)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4 class="lesson-section">3. Nghệ thuật trì hoãn: Đừng quyết định khi chưa đủ dữ liệu</h4>
+
+  <p class="lesson-text">Trong System Design, sự trì hoãn (Procrastination) không phải là lười, mà là một chiến thuật.</p>
+
+  <p class="lesson-text">Các kiến trúc sư hàng đầu thường áp dụng nguyên tắc The Last Responsible Moment (LRM) – Thời điểm cuối cùng có thể đưa ra quyết định mà không gây thiệt hại.</p>
+
+  <ul class="lesson-list">
+    <li>Đừng vội chọn Database: Lúc đầu bạn chưa biết dữ liệu sẽ "phình" theo hướng nào (quan hệ hay phi quan hệ). Hãy dùng một Interface lưu trữ đơn giản. Khi có khoảng 100k record, bạn chọn SQL hay NoSQL vẫn chưa muộn.</li>
+    <li>Đừng vội dùng Kafka: Nếu chỉ có vài nghìn message một ngày, một cái bảng trong PostgreSQL cũng làm tốt vai trò "hàng đợi". Khi nào bảng đó bị lock liên tục, hãy gọi tên Kafka.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Trích dẫn từ Uncle Bob (Robert C. Martin):</strong> "Một kiến trúc tốt là kiến trúc cho phép bạn trì hoãn các quyết định quan trọng về hạ tầng càng lâu càng tốt."</p>
+
+  <h4 class="lesson-section">4. Fitness Functions – Thước đo sự tiến hóa</h4>
+
+  <p class="lesson-text">Làm sao bạn biết hệ thống của mình đang tiến hóa "đúng hướng" hay đang biến thành một đống rác? Bạn cần Fitness Functions.</p>
+
+  <p class="lesson-text">Đây là các bài kiểm tra tự động để đảm bảo kiến trúc không bị xuống cấp. Ví dụ:</p>
+  <ul class="lesson-list">
+    <li>Metric về sự phụ thuộc: Một Unit Test sẽ thất bại nếu Module "Thanh toán" bỗng nhiên Import Module "Giao diện".</li>
+    <li>Metric về hiệu năng: Hệ thống phải đạt Latency < 200ms với 95% số request (P95). Nếu vượt quá, báo động đỏ!</li>
+    <li>Metric về tính sẵn sàng: Uptime > 99.9%.</li>
+  </ul>
+
+  <h4 class="lesson-section">5. Ví dụ dễ hiểu: Chuyện xây cái chợ</h4>
+
+  <ul class="lesson-list">
+    <li>Ngày 1: Bạn dựng một cái sạp nhỏ bán rau (Monolith). Bạn tự lấy hàng, tự bán, tự thu tiền. Mọi thứ trong tầm kiểm soát.</li>
+    <li>Ngày 30: Khách đông, bạn thuê thêm người bán thịt. Bạn ngăn cái sạp làm đôi (Modular Monolith). Bạn vẫn quản lý chung một cái két sắt (Database).</li>
+    <li>Ngày 365: Bạn mở rộng thành một trung tâm thương mại. Mỗi gian hàng có kho riêng, nhân viên riêng, máy tính tiền riêng (Microservices). Lúc này bạn cần một ban quản lý (API Gateway) và hệ thống loa thông báo (Message Queue) để các gian hàng phối hợp với nhau.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Sai lầm chết người:</strong> Ngay ngày đầu tiên bán rau đã đi thuê ban quản lý, lắp hệ thống loa và xây 100 cái kho riêng biệt. Kết quả: Phá sản trước khi bán được bó rau đầu tiên!</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 3</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Hãy nhớ: Architecture is a journey, not a destination.</p>
+    <ol class="lesson-list">
+      <li>Bắt đầu đơn giản (Keep It Simple, Stupid - KISS).</li>
+      <li>Thiết kế các ranh giới (Boundaries) thật tốt để sau này dễ tách.</li>
+      <li>Chỉ nâng cấp kiến trúc khi "nỗi đau" về vận hành lớn hơn công sức bỏ ra để thay đổi.</li>
+    </ol>
+    <p class="lesson-text"><strong>Bài học thực chiến cho bạn:</strong> Cuối năm nay, thay vì vẽ một sơ đồ Microservices hoành tráng cho năm sau, hãy thử rà soát lại Codebase hiện tại xem có Module nào đang "chọc" nhầm sang chỗ khác không. Dọn dẹp nó chính là bước đầu tiên của sự tiến hóa đấy!</p>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Chúng ta sẽ bước vào thế giới của những con số: Back-of-the-envelope estimation. Làm sao để biết hệ thống của bạn cần 1 Server hay 100 Server chỉ bằng vài phép tính nhẩm trên vỏ bao thuốc lá?<br><br>
+    Bạn đã từng thấy dự án nào "chết yểu" vì chọn Microservices quá sớm chưa? Hãy chia sẻ câu chuyện "đau thương" của bạn nhé!
+  </p>
+</div>
+
+</body>
+</html>
