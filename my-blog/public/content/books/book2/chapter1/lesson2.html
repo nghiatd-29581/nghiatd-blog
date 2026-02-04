@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 2: Tư duy kiến trúc sư – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn quay trở lại với series "System Design Master". Ở bài trước, chúng ta đã thống nhất với nhau rằng đừng mang đại bác đi bắn chim sẻ. Hôm nay, chúng ta sẽ đi sâu vào việc: Làm thế nào để bộ não của một Senior Dev "tiến hóa" thành một Architect?<br><br>
+    Nếu bạn vẫn đang tự hào vì đoạn code của mình chạy nhanh như chớp trên máy cục bộ (Localhost), thì xin chia buồn, bạn vẫn đang ở "tầng hạ giới". Trong System Design, chúng ta không chỉ quan tâm code chạy đúng, chúng ta quan tâm đến việc nó chết như thế nào.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 1: NHẬP MÔN SYSTEM DESIGN</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 1: TƯ DUY KIẾN TRÚC SƯ</h2>
+  <h3 class="lesson-title">BÀI 2: TƯ DUY KIẾN TRÚC SƯ – KHI "CODE CHẠY" CHỈ LÀ BÀI TOÁN MẦM NON</h3>
+
+  <h4 class="lesson-section">1. Cuộc dịch chuyển vĩ đại: Từ "Code chạy" sang "Hệ thống sống sót"</h4>
+
+  <p class="lesson-text">Hãy tưởng tượng bạn là một đầu bếp.</p>
+
+  <ul class="lesson-list">
+    <li><strong>Coder:</strong> Tập trung vào việc nấu một đĩa bò bít tết thật ngon (Code một tính năng). Nếu khách chê mặn, bạn nêm thêm tí đường là xong.</li>
+    <li><strong>Architect:</strong> Tập trung vào việc vận hành cả một chuỗi nhà hàng 5 sao. Chuyện gì xảy ra nếu 1000 khách ập vào cùng lúc? Chuyện gì xảy ra nếu xe giao thịt bò bị hỏng lốp giữa đường? Chuyện gì xảy ra nếu đầu bếp chính lăn đùng ra ốm?</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Bảng so sánh "Hệ điều hành não bộ"</strong></p>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Đặc điểm</th><th>Tư duy Coder (Feature-Driven)</th><th>Tư duy Architect (System-Driven)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Ưu tiên hàng đầu</td><td>"Tính năng này có chạy đúng spec không?"</td><td>"Tính năng này có làm sập các tính năng khác không?"</td></tr>
+        <tr><td>Khi gặp lỗi</td><td>Fix bug ngay lập tức để code chạy lại.</td><td>Tìm nguyên nhân gốc rễ và thiết kế để lỗi này không bao giờ gây sập toàn bộ (Fault Tolerance).</td></tr>
+        <tr><td>Công cụ</td><td>Framework, Thư viện, Syntax.</td><td>Trade-offs, Bottlenecks, Redundancy.</td></tr>
+        <tr><td>Tầm nhìn</td><td>Ngắn hạn (Xong Sprint này là ổn).</td><td>Dài hạn (Hệ thống 3 năm tới sẽ ra sao?)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="lesson-text"><strong>Châm ngôn của Architect:</strong> "Hệ thống hoàn hảo không phải là hệ thống không bao giờ lỗi, mà là hệ thống biết lỗi một cách duyên dáng (Fail Gracefully)."</p>
+
+  <p class="lesson-text"><strong>Ví dụ:</strong> Nếu dịch vụ gợi ý sản phẩm của Shopee bị sập, người dùng vẫn phải thanh toán được đơn hàng. Đó chính là sự "sống sót".</p>
+
+  <h4 class="lesson-section">2. Định luật Conway (Conway’s Law): "Gương soi" của tổ chức</h4>
+
+  <p class="lesson-text">Đây là phần "tâm linh" nhưng cực kỳ khoa học trong ngành phần mềm. Năm 1967, Melvin Conway đã đưa ra một nhận định mà sau này trở thành nền tảng của mọi kiến trúc hệ thống:</p>
+
+  <p class="lesson-text">"Các tổ chức thiết kế hệ thống... bị giới hạn trong việc tạo ra các thiết kế vốn là bản sao của cấu trúc giao tiếp của chính tổ chức đó."</p>
+
+  <p class="lesson-text"><strong>Nói rõ hơn tý thì sao?</strong></p>
+  <ul class="lesson-list">
+    <li>Nếu công ty bạn có 4 team riêng biệt: UI Team, Backend Team, Database Team và DevOps Team. Khả năng cao là bạn sẽ tạo ra một hệ thống 4 tầng (4-tier architecture) rời rạc.</li>
+    <li>Nếu bạn chia công ty thành 3 nhóm sản phẩm độc lập (Ví dụ: Team Thanh toán, Team Tìm kiếm, Team Giỏ hàng), thì tự khắc hệ thống của bạn sẽ hình thành 3 Microservices tương ứng.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Tại sao Architect phải quan tâm đến điều này?</strong></p>
+  <ul class="lesson-list">
+    <li>Bởi vì bạn không thể xây dựng một kiến trúc Microservices linh hoạt nếu cấu trúc công ty bạn vẫn vận hành theo kiểu "quan liêu", mọi thứ phải thông qua một ông sếp duy nhất.</li>
+    <li>Hệ lụy: Nếu cấu trúc team chồng chéo, code sẽ bị "spaghetti" dù bạn có dùng công nghệ xịn đến đâu.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Inverse Conway Maneuver (Nghiệm pháp ngược Conway):</strong> Các kiến trúc sư giỏi thường đề xuất thay đổi cách chia team để đạt được kiến trúc phần mềm mong muốn. Bạn muốn Microservices? Hãy chia nhỏ team ra trước đã!</p>
+
+  <h4 class="lesson-section">3. Cognitive Load – Đừng bắt bộ não làm việc quá tải</h4>
+
+  <p class="lesson-text">Một sai lầm của các bạn mới làm kiến trúc là tạo ra những sơ đồ "nhền nhện" nhìn rất hoành tráng nhưng không ai hiểu gì.</p>
+
+  <p class="lesson-text">Kiến trúc sư giỏi luôn ám ảnh bởi Cognitive Load (Tải nhận thức). Một hệ thống quá phức tạp khiến một dev bình thường mất 6 tháng mới làm quen được là một kiến trúc thất bại.</p>
+
+  <ul class="lesson-list">
+    <li><strong>Nguyên tắc "7 ± 2":</strong> Bộ não con người chỉ có thể giữ khoảng 5 đến 9 thực thể trong trí nhớ ngắn hạn. Nếu một service của bạn có tới 50 phụ thuộc (dependencies), bạn đang giết chết team của mình.</li>
+  </ul>
+
+  <h4 class="lesson-section">4. Bài học thực tế: Chuyện về "Nút bấm hủy diệt"</h4>
+
+  <p class="lesson-text">Có một câu chuyện kinh điển về một hệ thống Fintech. Coder thiết kế một API chuyển tiền cực nhanh. Nhưng Architect nhìn vào và hỏi: "Nếu người dùng bấm nút Chuyển tiền 10 lần liên tục vì mạng lag thì sao?"</p>
+
+  <ul class="lesson-list">
+    <li><strong>Coder:</strong> "Thì em check ở UI, disable cái nút đó đi là xong." (Sai lầm!)</li>
+    <li><strong>Architect:</strong> "Không, mạng lag thì UI chả có tác dụng gì. Chúng ta cần thiết kế Idempotency (Tính lũy đẳng) ở Backend. Dù bấm 100 lần, tiền cũng chỉ được trừ 1 lần duy nhất."</li>
+  </ul>
+
+  <p class="lesson-text">Nguồn trích dẫn: Khái niệm này được nhắc lại rất kỹ trong cuốn Building Microservices của Sam Newman. Ông nhấn mạnh rằng kiến trúc sư phải là người "vẽ ranh giới" giữa các thành phần chứ không phải đi sâu vào từng dòng code.</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT CHƯƠNG 1 - BÀI 2</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Trở thành một System Design Master không phải là học thuộc 100 loại Database. Đó là việc bạn học cách:</p>
+    <ol class="lesson-list">
+      <li>1. Chấp nhận sự hỗn loạn: Mọi thứ đều có thể hỏng.</li>
+      <li>2. Nhìn vào cấu trúc team: Hiểu tại sao code mình lại "tệ" như vậy (Check lại Conway’s Law nhé).</li>
+      <li>3. Luôn hỏi về Trade-off: "Nếu tôi chọn cái này, tôi sẽ mất cái gì?"</li>
+    </ol>
+    <p class="lesson-text"><strong>Lời nhắn nhủ của tác giả:</strong> Đừng buồn nếu hôm nay bạn nhận ra mình vẫn là "thợ xây". Ai cũng bắt đầu từ đó cả. Điều quan trọng là từ hôm nay, khi nhìn vào một dòng code, hãy tự hỏi: "Nếu nó sập, thế giới có sụp đổ không?"</p>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Chúng ta sẽ nói về Evolutionary Architecture – Tại sao bạn không nên xây dựng một hệ thống hoàn hảo ngay từ đầu, và lộ trình từ Monolith lên Microservices như thế nào cho "êm"?<br><br>
+    Bạn có thấy cấu trúc team hiện tại của bạn đang giống hệt cái kiến trúc phần mềm bạn đang làm không? Hãy bình luận bên dưới nhé!<br><br>
+    Bạn thấy nội dung này đã đủ "dài" và "sâu" chưa? Nếu ok, mình sẽ chuẩn bị tiếp cho Bài 3: Evolutionary Architecture nhé!
+  </p>
+</div>
+
+</body>
+</html>

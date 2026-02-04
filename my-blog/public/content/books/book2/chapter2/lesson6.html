@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 6: Scalability, Availability & Reliability – Trần's Blog</title>
+  <style>
+    .formula {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .italic {
+      font-style: italic;
+      margin-right: 12px;
+    }
+
+    .equals {
+      margin: 0 14px;
+    }
+
+    /* Fraction style */
+    .fraction {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.2;
+    }
+
+    .numerator {
+      padding: 0 14px 6px;
+      border-bottom: 2px solid #1e1e1e;
+    }
+
+    .denominator {
+      padding: 6px 14px 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào các anh em! Có một câu nói vui trong ngành: "Lập trình viên bình thường lo code chạy đúng. Senior lo code chạy nhanh. Còn Architect lo code... không bao giờ chết".<br><br>
+    Hôm nay chúng ta sẽ bàn về 3 khái niệm mà sếp rất thích hỏi, nhưng dev thường trả lời rất "lươn lẹo". Đó là: Mở rộng (Scalability), Sẵn sàng (Availability) và Tin cậy (Reliability).
+  </p>
+
+  <h1 class="lesson-part">PHẦN 2: CORE METRICS & TRADE-OFF</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 2: CÁC CHỈ SỐ CỐT LÕI</h2>
+  <h3 class="lesson-title">BÀI 6: SCALABILITY, AVAILABILITY & RELIABILITY – BỘ BA "SIÊU ĐẲNG" TRONG THẾ GIỚI PHÂN TÁN</h3>
+
+  <h4 class="lesson-section">1. Scalability (Khả năng mở rộng): Khi "con cưng" bỗng dưng vụt sáng</h4>
+
+  <p class="lesson-text">Scalability là khả năng hệ thống xử lý lượng công việc tăng lên bằng cách thêm tài nguyên. Đừng nhầm nó với hiệu năng (Performance). Performance là "chạy nhanh", còn Scalability là "nhiều người dùng vẫn chạy ổn".</p>
+
+  <p class="lesson-text">Có hai cách để bạn "nâng cấp cơ bắp" cho hệ thống:</p>
+
+  <p class="lesson-text"><strong>1.1. Vertical Scaling (Scaling Up): "Vung tiền" mua siêu máy tính</strong></p>
+  <p class="lesson-text">Nghĩa là bạn mua thêm RAM, thêm CPU cho con server hiện tại.</p>
+  <ul class="lesson-list">
+    <li>Khi nào nên dùng? Khi bạn đang ở giai đoạn Startup, cần tốc độ ra mắt (Time-to-market) nhanh. Nó cực kỳ đơn giản vì bạn không phải sửa code, chỉ cần quẹt thẻ tín dụng mua server xịn hơn.</li>
+    <li>Cái giá phải trả:<br>
+      * Hard Limit: Máy tính mạnh nhất thế giới cũng có giới hạn. Bạn không thể nhét 1000TB RAM vào một con server duy nhất (ít nhất là hiện tại).<br>
+      * Single Point of Failure (SPOF): Nếu con "siêu server" này lăn đùng ra chết, toàn bộ hệ thống của bạn sẽ đi theo nó.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>1.2. Horizontal Scaling (Scaling Out): "Lấy thịt đè người"</strong></p>
+  <p class="lesson-text">Thay vì mua một con server 1 tỷ, bạn mua 10 con server 100 triệu.</p>
+  <ul class="lesson-list">
+    <li>Ưu điểm: Khả năng mở rộng gần như vô hạn. Một con chết? Chẳng sao, 9 con kia vẫn chạy.</li>
+    <li>Nhược điểm: Code của bạn phải "thông minh" hơn. Bạn cần Load Balancer, cần xử lý dữ liệu phân tán, và đặc biệt là phải giải quyết bài toán "trạng thái" (Stateless).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Ví dụ dễ hiểu:</strong></p>
+  <ul class="lesson-list">
+    <li>Vertical: Bạn thuê một siêu đầu bếp nấu nhanh gấp 10 lần người thường. (Ông ấy ốm là nhà hàng đóng cửa).</li>
+    <li>Horizontal: Bạn thuê 10 đầu bếp bình thường. (Một người ốm, 9 người kia vẫn chiên cơm đều tay).</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Reliability vs. Availability: Anh rất tốt nhưng em rất tiếc</h4>
+
+  <p class="lesson-text">Nhiều người dùng hai từ này thay thế cho nhau, nhưng chúng khác nhau hoàn toàn:</p>
+  <ul class="lesson-list">
+    <li><strong>Reliability (Độ tin cậy):</strong> Hệ thống có thực hiện đúng chức năng không? (Ví dụ: Bạn bấm chuyển 1 triệu, nó phải trừ đúng 1 triệu, không được trừ 2 triệu hay... cộng thêm tiền).</li>
+    <li><strong>Availability (Tính sẵn sàng):</strong> Hệ thống có đang chạy để phục vụ không? (Ví dụ: Server có "sống" để bạn bấm nút chuyển tiền không?).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Sự thật phũ phàng:</strong> Một hệ thống có thể cực kỳ Sẵn sàng (Availability 100%) nhưng lại không hề Tin cậy (Reliability 0%). Ví dụ: Trang web lúc nào cũng vào được, nhưng cứ bấm thanh toán là... báo lỗi server hoặc trừ nhầm tiền.</p>
+
+  <h4 class="lesson-section">3. Đo lường "Tính sẵn sàng": Sức mạnh của những số 9</h4>
+
+  <p class="lesson-text">Trong các bản hợp đồng dịch vụ (SLA), bạn sẽ thấy người ta cam kết độ sẵn sàng bằng "các số 9". Hãy cùng xem bảng "Downtime" thần thánh này để thấy mỗi số 9 đáng giá bao nhiêu tiền:</p>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Độ sẵn sàng (%)</th><th>Tên gọi</th><th>Thời gian "chết" tối đa mỗi năm</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>99%</td><td>"Two Nines"</td><td>3.65 ngày</td></tr>
+        <tr><td>99.9%</td><td>"Three Nines"</td><td>8.77 giờ</td></tr>
+        <tr><td>99.99%</td><td>"Four Nines"</td><td>52.6 phút</td></tr>
+        <tr><td>99.999%</td><td>"Five Nines"</td><td>5.26 phút</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="lesson-text"><strong>Công thức tính tính sẵn sàng:</strong></p>
+  <div class="formula">
+    <span class="italic">Availability</span>
+    <span class="equals">=</span>
+
+    <span class="fraction">
+      <span class="numerator">MTBF</span>
+      <span class="denominator">MTBF + MTTR</span>
+    </span>
+  </div>
+
+  <ul class="lesson-list">
+    <li>MTBF (Mean Time Between Failures): Thời gian trung bình giữa các lần gặp sự cố.</li>
+    <li>MTTR (Mean Time To Repair): Thời gian trung bình để sửa chữa xong sự cố.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Lời khuyên:</strong> Đừng bao giờ hứa với sếp mức 100%. Đến Google hay AWS cũng chỉ dám mơ về "Five Nines" (99.999%). Để đạt được thêm một số 9, chi phí hạ tầng có thể tăng gấp 10 lần!</p>
+
+  <h4 class="lesson-section">4. Downtime Cost: Khi mỗi giây là một đống tiền</h4>
+
+  <p class="lesson-text">Tại sao chúng ta phải ám ảnh với sự sẵn sàng? Vì Downtime = Mất tiền + Mất uy tín.</p>
+
+  <p class="lesson-text">Hãy tính thử: Nếu bạn vận hành một trang Thương mại điện tử doanh thu 1 tỷ USD/năm.</p>
+  <ul class="lesson-list">
+    <li>Mỗi giờ hệ thống sập, bạn mất: $1,000,000,000 / 8,760  giờ = $114,155 (Khoảng 2.8 tỷ VNĐ).</li>
+    <li>Nếu sập vào ngày Black Friday? Con số đó có thể gấp 100 lần.</li>
+  </ul>
+
+  <p class="lesson-text">Đó là chưa kể chi phí "vô hình": Khách hàng bực mình sang dùng app đối thủ, thương hiệu bị bôi xấu trên mạng xã hội. Theo báo cáo của Gartner, chi phí trung bình cho mỗi phút downtime của doanh nghiệp là khoảng $5,600.</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 6</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Để trở thành một Master về System Design, bạn cần nằm lòng:</p>
+    <ol class="lesson-list">
+      <li>Scale Up trước, Scale Out sau: Nếu dữ liệu còn nhỏ, đừng tự làm khó mình bằng Microservices. Cứ mua server mạnh hơn đi cho thong thả.</li>
+      <li>Thiết kế cho sự thất bại (Design for Failure): Hãy luôn giả định là server sẽ chết, DB sẽ sập. Khi đó, hệ thống của bạn sẽ tự động "hồi sinh" như thế nào?</li>
+      <li>Biết điểm dừng của "Số 9": Hãy chọn mức độ sẵn sàng phù hợp với túi tiền. Đừng cố xây hệ thống 99.999% cho một ứng dụng... nhắc việc cá nhân.</li>
+    </ol>
+    <p class="lesson-text"><strong>Nguồn trích dẫn:</strong></p>
+    <ul class="lesson-list">
+      <li>Designing Data-Intensive Applications - Martin Kleppmann (Chương 1).</li>
+      <li>Site Reliability Engineering (SRE) Book - Google.</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Chúng ta sẽ bước vào một trong những chủ đề gây tranh cãi nhất mọi thời đại: CAP Theorem & PACELC. Tại sao bạn không bao giờ có được cả "Thế giới" trong tay?<br><br>
+    Câu hỏi dành cho bạn: Công ty bạn hiện tại đang cam kết bao nhiêu "số 9"? Và bạn đã bao giờ phải thức trắng đêm vì một "Single Point of Failure" chưa? Hãy chia sẻ nỗi đau đó ở dưới nhé!<br><br>
+    Bạn thấy bài viết này thế nào? Đã đủ sâu sắc để làm bài blog "đinh" cho chương 2 chưa? Nếu bạn thấy hài lòng, mình sẽ tiếp tục soạn Bài 7: Định lý CAP & PACELC.
+  </p>
+</div>
+
+</body>
+</html>

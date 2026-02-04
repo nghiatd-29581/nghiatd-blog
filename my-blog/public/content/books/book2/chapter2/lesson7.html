@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 7: Định lý CAP & PACELC – Trần's Blog</title>
+    <style>
+    .formula {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+    </style>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào bạn! Tôi rất hiểu. Để trở thành một "Master", chúng ta không thể chỉ cưỡi ngựa xem hoa. Bài viết này sẽ là một "deep-dive" thực sự vào linh hồn của thiết kế hệ thống phân tán. Chúng ta sẽ không chỉ lướt qua định nghĩa, mà sẽ mổ xẻ tại sao những định lý này lại khiến các kỹ sư hàng đầu phải "vò đầu bứt tai" mỗi khi đặt bút thiết kế.<br><br>
+    Hãy pha một ấm trà thật đậm, bài này sẽ rất dài và đầy ắp "nội công" đấy!
+  </p>
+
+  <h1 class="lesson-part">PHẦN 2: CORE METRICS & TRADE-OFF</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 2: CÁC CHỈ SỐ CỐT LÕI</h2>
+  <h3 class="lesson-title">BÀI 7: ĐỊNH LÝ CAP & PACELC – KHI BẠN KHÔNG THỂ THAM LAM CÓ ĐƯỢC TẤT CẢ</h3>
+
+  <h4 class="lesson-section">1. Định lý CAP: Tam giác "tình tay ba" nghiệt ngã</h4>
+
+  <p class="lesson-text">Được đưa ra bởi Eric Brewer vào năm 2000, định lý CAP là nền tảng mà mọi lập trình viên phân tán đều phải thuộc nằm lòng. Nó phát biểu rằng trong một hệ thống dữ liệu phân tán, bạn chỉ có thể đảm bảo 2 trong 3 yếu tố sau tại cùng một thời điểm:</p>
+
+  <p class="lesson-text"><strong>1.1. C - Consistency (Tính nhất quán)</strong></p>
+  <p class="lesson-text">Mọi node trong hệ thống đều nhìn thấy cùng một dữ liệu tại cùng một thời điểm. Nếu bạn ghi dữ liệu vào Node A, thì ngay lập tức khi đọc ở Node B, bạn phải thấy dữ liệu mới nhất đó.</p>
+  <ul class="lesson-list">
+    <li>Nghĩa là: "Thà trả về lỗi còn hơn trả về dữ liệu cũ".</li>
+  </ul>
+
+  <p class="lesson-text"><strong>1.2. A - Availability (Tính sẵn sàng)</strong></p>
+  <p class="lesson-text">Mọi request gửi đến hệ thống đều nhận được phản hồi (thành công hoặc thất bại), miễn là node đó còn sống. Hệ thống không được phép "treo" hay im lặng.</p>
+  <ul class="lesson-list">
+    <li>Nghĩa là: "Thà trả về dữ liệu cũ còn hơn không trả lời gì cả".</li>
+  </ul>
+
+  <p class="lesson-text"><strong>1.3. P - Partition Tolerance (Khả năng chịu sự chia cắt)</strong></p>
+  <p class="lesson-text">Hệ thống vẫn tiếp tục hoạt động ngay cả khi đường truyền giữa các node bị đứt đoạn (mạng lag, đứt cáp quang, rớt switch...).</p>
+
+  <h4 class="lesson-section">2. Sự thật phũ phàng: P không phải là một lựa chọn!</h4>
+
+  <p class="lesson-text">Đây là chỗ mà nhiều bạn mới học hay nhầm lẫn. Các bạn thường hỏi: "Vậy em chọn CA (Consistency + Availability) được không?"</p>
+
+  <p class="lesson-text">Câu trả lời là: KHÔNG (trong hệ thống phân tán).</p>
+
+  <p class="lesson-text">Trong một mạng lưới thực tế, việc "chia cắt mạng" (Network Partition) là điều chắc chắn sẽ xảy ra. Cáp quang có thể bị cá mập cắn, Router có thể bị cháy. Nếu bạn chọn CA, nghĩa là bạn giả định mạng lưới của bạn vĩnh viễn không bao giờ hỏng.</p>
+
+  <ul class="lesson-list">
+    <li>Nếu mạng hỏng (P xảy ra), hệ thống CA sẽ ngay lập tức sụp đổ vì nó không biết xử lý sao khi các node không thấy nhau.</li>
+  </ul>
+
+  <p class="lesson-text">Vì vậy, trong thế giới phân tán, lựa chọn thực tế duy nhất là:</p>
+  <ol class="lesson-list">
+    <li>CP (Consistency + Partition Tolerance): Khi mạng lỗi, hệ thống sẽ ngừng phục vụ (hy sinh Availability) để đảm bảo dữ liệu ở các node không bị sai lệch. (Thường dùng trong Ngân hàng, Hệ thống bầu cử).</li>
+    <li>AP (Availability + Partition Tolerance): Khi mạng lỗi, các node vẫn trả lời người dùng (hy sinh Consistency). Dữ liệu có thể tạm thời bị cũ hoặc sai lệch, nhưng hệ thống vẫn "sống". (Thường dùng trong Facebook Feed, Youtube Comment).</li>
+  </ol>
+
+  <h4 class="lesson-section">3. Bước nhảy vọt lên PACELC: Khi mạng "bình thường" thì sao?</h4>
+
+  <p class="lesson-text">Định lý CAP chỉ nói về chuyện gì xảy ra khi mạng bị lỗi (P). Nhưng may mắn thay, 99% thời gian mạng của chúng ta chạy ổn định. Vậy trong 99% thời gian đó, chúng ta phải đánh đổi cái gì?</p>
+
+  <p class="lesson-text">Đó là lúc định lý PACELC (đưa ra bởi Daniel Abadi năm 2012) xuất hiện để bổ sung cho CAP.</p>
+
+  <p class="lesson-text"><strong>Cách đọc PACELC:</strong></p>
+  <ul class="lesson-list">
+    <li>P (Nếu có Partition), chọn giữa A (Availability) và C (Consistency).</li>
+    <li>E (Else - Nếu mạng bình thường), chọn giữa L (Latency) và C (Consistency).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>3.1. Tại sao lại đánh đổi Latency (L) và Consistency (C)?</strong></p>
+  <p class="lesson-text">Ngay cả khi mạng chạy mượt mà, nếu bạn muốn Tính nhất quán tuyệt đối (C), bạn phải bắt Node A đợi Node B xác nhận đã lưu dữ liệu xong thì mới phản hồi cho người dùng.</p>
+  <ul class="lesson-list">
+    <li>Kết quả: Người dùng phải đợi lâu hơn (Latency cao).</li>
+  </ul>
+
+  <p class="lesson-text">Nếu bạn muốn Tốc độ cực nhanh (L), Node A cứ ghi xong là trả lời người dùng ngay, rồi từ từ đồng bộ sang Node B sau.</p>
+  <ul class="lesson-list">
+    <li>Kết quả: Người dùng nhận phản hồi ngay lập tức nhưng có thể đọc phải dữ liệu cũ trên Node B (Consistency thấp).</li>
+  </ul>
+
+  <h4 class="lesson-section">4. Phân tích thực chiến: Các đại gia chọn gì?</h4>
+
+  <p class="lesson-text">Hãy cùng xem các hệ thống nổi tiếng thế giới "chọn độc" như thế nào:</p>
+
+  <p class="lesson-text"><strong>4.1. Hệ thống Ngân hàng (Thường chọn PC/EC)</strong></p>
+  <p class="lesson-text">Họ ưu tiên tính đúng đắn lên hàng đầu.</p>
+  <ul class="lesson-list">
+    <li>Nếu mạng lỗi (P): Ngừng giao dịch (C). Thà khách hàng không rút được tiền còn hơn là rút 1 triệu mà tài khoản chỉ trừ 500k.</li>
+    <li>Nếu mạng ổn (E): Chấp nhận giao dịch chậm một chút (L) để đảm bảo mọi bản sao dữ liệu đều khớp nhau (C).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>4.2. Facebook/TikTok Feed (Thường chọn PA/EL)</strong></p>
+  <p class="lesson-text">Họ ưu tiên trải nghiệm người dùng.</p>
+  <ul class="lesson-list">
+    <li>Nếu mạng lỗi (P): Vẫn cho bạn xem Feed (A). Có thể bạn thấy bài đăng từ 5 phút trước thay vì bài mới nhất, chẳng ai chết cả.</li>
+    <li>Nếu mạng ổn (E): Phải hiện Feed cực nhanh (L). Bạn sẽ không muốn đợi 3 giây chỉ để hệ thống đảm bảo tất cả các server trên thế giới đều đã nhận được cái "Like" của bạn.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>4.3. Amazon Shopping Cart (Trường hợp kinh điển)</strong></p>
+  <p class="lesson-text">Amazon từng nhận ra rằng: Mỗi 100ms trễ (Latency) khiến doanh thu của họ giảm 1%. Do đó, họ chọn PA/EL.</p>
+  <ul class="lesson-list">
+    <li>Giỏ hàng của Amazon ưu tiên Availability cực cao. Thà khách hàng thấy món đồ cũ trong giỏ còn hơn là không thể bấm nút "Add to Cart". Họ dùng cơ chế Eventual Consistency (Nhất quán cuối cùng) để hợp nhất dữ liệu sau.</li>
+  </ul>
+
+  <h4 class="lesson-section">5. Công thức Quorum: Công cụ để tùy biến sự đánh đổi</h4>
+
+  <p class="lesson-text">Để thực hiện các đánh đổi này trong code, các kiến trúc sư thường dùng hệ thống Quorum (Đa số phiếu). Giả sử bạn có $N$ node lưu trữ dữ liệu:</p>
+  <ul class="lesson-list">
+    <li><strong>W:</strong> Số node tối thiểu phải xác nhận ghi thành công.</li>
+    <li><strong>R:</strong> Số node tối thiểu phải phản hồi khi đọc.</li>
+  </ul>
+
+  <p class="lesson-text">Để đảm bảo tính nhất quán mạnh (Strong Consistency), bạn cần tuân thủ công thức:</p>
+  <div class="formula"><p class="lesson-text"><strong>N + R > W</strong></p></div>
+  
+
+  <ul class="lesson-list">
+    <li>Ví dụ: Có 3 node (N=3), bạn yêu cầu ghi vào 2 node (W=2) và đọc từ 2 node (R=2). Vì 2+2 > 3, chắc chắn bạn sẽ đọc được dữ liệu mới nhất. Nhưng cái giá là bạn phải đợi ít nhất 2 node phản hồi (tăng Latency).</li>
+  </ul>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 7</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">System Design không phải là tìm ra giải pháp "Tốt nhất", mà là tìm ra sự "Đánh đổi phù hợp nhất".</p>
+    <ol class="lesson-list">
+      <li><strong>CAP:</strong> Nhắc bạn rằng mạng luôn có thể lỗi, hãy chuẩn bị phương án đối phó (Chọn CP hay AP).</li>
+      <li><strong>PACELC:</strong> Nhắc bạn rằng tốc độ (Latency) cũng là một cái giá phải trả cho tính đúng đắn của dữ liệu.</li>
+      <li><strong>Không có bữa ăn nào miễn phí:</strong> Bạn muốn dữ liệu vừa đúng, vừa nhanh, vừa không bao giờ sập? Điều đó chỉ tồn tại trong mơ (hoặc trong các bài quảng cáo của những vendor bán Database chưa có tâm).</li>
+    </ol>
+    <p class="lesson-text"><strong>Nguồn trích dẫn kiến thức:</strong></p>
+    <ul class="lesson-list">
+      <li>Brewer's CAP Theorem - Eric Brewer (UC Berkeley).</li>
+      <li>Consistency Tradeoffs in Modern Distributed Database System Design - Daniel Abadi (Yale University).</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài viết tới: COST: Metric của người làm chủ, hẹn bài bài tiếp nhé!<br><br>
+  </p>
+</div>
+
+</body>
+</html>

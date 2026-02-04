@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 8: COST – Metric của người làm chủ – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đã trở lại với "vũ trụ" System Design! Chúng ta đã bàn về tốc độ (Latency), sự bền bỉ (Availability) và những sự đánh đổi mang tính triết học (CAP/PACELC). Nhưng có một thực tế phũ phàng: Mọi dòng code bạn viết, mọi server bạn bật lên đều... tốn tiền.<br><br>
+    Hôm nay, chúng ta sẽ nói về cái "Metric" mà các sếp, các nhà đầu tư và bộ phận kế toán yêu thích nhất, nhưng lập trình viên lại thường hay ngó lơ: CHI PHÍ (COST). Hãy chuẩn bị tinh thần, bài này sẽ giúp bạn từ một "thợ code" trở thành một "người làm chủ" (Owner) thực thụ.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 2: CORE METRICS & TRADE-OFF</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 2: CÁC CHỈ SỐ CỐT LÕI</h2>
+  <h3 class="lesson-title">BÀI 8: COST – METRIC CỦA NGƯỜI LÀM CHỦ: KHI VÍ TIỀN CŨNG LÀ MỘT THÔNG SỐ KỸ THUẬT</h3>
+
+  <h4 class="lesson-section">1. Tam giác "Sắt" của System Design: Performance vs. Availability vs. Wallet</h4>
+
+  <p class="lesson-text">Hãy tưởng tượng bạn đang đi mua một chiếc xe hơi.</p>
+
+  <ul class="lesson-list">
+    <li>Bạn muốn nó nhanh như Ferrari (Performance).</li>
+    <li>Bạn muốn nó không bao giờ hỏng, hoặc hỏng là có xe khác thay ngay (Availability).</li>
+    <li>Và bạn muốn nó rẻ như xe đạp (Cost).</li>
+  </ul>
+
+  <p class="lesson-text">Trong thực tế, bạn chỉ được chọn tối đa hai.</p>
+
+  <p class="lesson-text"><strong>Sự đánh đổi Performance vs. Cost</strong></p>
+  <p class="lesson-text">Để giảm Latency từ 200ms xuống 20ms, bạn có thể cần dùng toàn bộ ổ cứng NVMe xịn nhất, RAM khủng để làm Cache, hoặc đặt Server ở khắp mọi nơi trên thế giới.</p>
+  <ul class="lesson-list">
+    <li>Hậu quả: Tốc độ tăng 10 lần, nhưng hóa đơn có thể tăng 100 lần.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Sự đánh đổi Availability vs. Cost</strong></p>
+  <p class="lesson-text">Để hệ thống đạt mức 99.999% (chỉ chết 5 phút/năm), bạn không thể chỉ có một Server. Bạn cần ít nhất là bộ đôi (Redundancy) chạy song song ở hai vùng địa lý khác nhau.</p>
+  <ul class="lesson-list">
+    <li>Hậu quả: Bạn đang trả tiền cho những tài nguyên "ngồi chơi xơi nước" 99% thời gian chỉ để đợi lúc cái Server chính bị sập.</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Chi phí của Redundancy (Dư thừa) và Multi-region</h4>
+
+  <p class="lesson-text">Đây là phần "đau ví" nhất. Hãy cùng phân tích tại sao việc đòi hỏi "hệ thống không bao giờ chết" lại đắt đỏ đến thế.</p>
+
+  <p class="lesson-text"><strong>2.1. Multi-AZ (Multi-Availability Zone)</strong></p>
+  <p class="lesson-text">Bạn đặt Server ở Zone A và Zone B trong cùng một thành phố. Nếu Zone A mất điện, Zone B gánh.</p>
+  <ul class="lesson-list">
+    <li>Chi phí: Thường là x2. Bạn cần 2 bộ Load Balancer, 2 bộ Database Replication, 2 cụm Web Server.</li>
+    <li>Chi phí ẩn: Phí truyền tải dữ liệu giữa các Zone (Data Transfer In/Out) - thứ mà Amazon hay Google thu rất âm thầm nhưng cực kỳ tốn kém.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>2.2. Multi-region (Đa vùng địa lý)</strong></p>
+  <p class="lesson-text">Bạn đặt một cụm ở Singapore, một cụm ở Mỹ. Đây là "đỉnh cao" của sự sẵn sàng (High Availability).</p>
+  <ul class="lesson-list">
+    <li>Chi phí: Thường là x3 hoặc x4. Tại sao? Vì ngoài việc nhân đôi hạ tầng, bạn còn phải tốn tiền cho các dịch vụ điều phối Global (như Route53, Global Accelerator) và đội ngũ vận hành phải trực 24/7 ở nhiều múi giờ khác nhau.</li>
+    <li>Ví dụ thực tế: Một hệ thống lưu trữ ảnh đơn giản tốn $1,000/tháng nếu chạy một vùng. Nhưng nếu muốn "bất tử" qua Multi-region, con số có thể vọt lên $3,500/tháng chỉ để đồng bộ dữ liệu liên tục qua đại dương.</li>
+  </ul>
+
+  <h4 class="lesson-section">3. Những "Sát thủ thầm lặng" làm thủng túi tiền của bạn</h4>
+
+  <p class="lesson-text">Lập trình viên thường chỉ nhìn vào giá của CPU/RAM, nhưng thực tế hóa đơn Cloud bị "đội" lên bởi những thứ sau:</p>
+
+  <ol class="lesson-list">
+    <li>Egress Cost (Phí dữ liệu ra): Cloud Provider thường cho bạn nạp dữ liệu vào miễn phí (Ingress), nhưng khi bạn gửi dữ liệu ra ngoài (cho người dùng hoặc sang Region khác), họ sẽ thu phí. Nếu bạn làm app Streaming video, tiền băng thông có thể cao gấp 5 lần tiền Server.</li>
+    <li>Managed Services Premium: Dùng RDS (Database được quản lý sẵn) sướng hơn tự cài MySQL trên EC2, nhưng cái giá thường đắt hơn 30-50%. Đó là phí trả cho sự "rảnh tay" của bạn.</li>
+    <li>Zombie Resources: Những ổ cứng (EBS) không dùng nhưng vẫn gắn, những con Elastic IP bị bỏ quên, hay những bản Snapshot lưu từ đời "Tống".</li>
+  </ol>
+
+  <h4 class="lesson-section">4. Công thức "Làm chủ" chi phí: TCO và ROI</h4>
+
+  <p class="lesson-text">Một Architect giỏi sẽ tính toán TCO (Total Cost of Ownership). Không chỉ là tiền Server, mà còn là:</p>
+  <div class="formula"><strong>TCO = Infrastructure Cost + Development Cost + Operational Cost</strong></div>
+  
+
+  <ul class="lesson-list">
+    <li>Nếu bạn chọn một công nghệ cực mới và khó, tiền Server có thể rẻ nhưng bạn phải trả lương cực cao cho chuyên gia để vận hành nó -> TCO vẫn cao.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Chiến lược tối ưu hóa:</strong></p>
+  <ul class="lesson-list">
+    <li>Spot Instances: Dùng các Server "thừa" của Cloud với giá rẻ hơn 70-90%, đổi lại họ có thể thu hồi bất cứ lúc nào. (Cực hợp cho xử lý dữ liệu hàng loạt).</li>
+    <li>Tiered Storage: Dữ liệu mới dùng thì để ở SSD xịn (Hot), dữ liệu cũ 1 năm thì đẩy xuống S3 Glacier (Cold) với giá rẻ như cho.</li>
+  </ul>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 8</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">System Design không phải là cuộc đua xem ai dùng nhiều công nghệ xịn nhất, mà là cuộc đua xem ai tối ưu hóa giá trị trên mỗi đồng xu tốt nhất.</p>
+    <ol class="lesson-list">
+      <li>Availability không phải là miễn phí: Hãy hỏi khách hàng xem họ có thực sự cần 99.99% không, hay 99% là đủ rồi?</li>
+      <li>Dữ liệu là vàng, nhưng truyền tải dữ liệu là kim cương: Hãy thiết kế sao cho dữ liệu di chuyển ít nhất có thể giữa các vùng địa lý.</li>
+      <li>Học cách đọc hóa đơn Cloud: Đó là kỹ năng quan trọng ngang ngửa với việc đọc Log hệ thống.</li>
+    </ol>
+    <p class="lesson-text"><strong>Nguồn tham khảo:</strong></p>
+    <ul class="lesson-list">
+      <li>AWS Well-Architected Framework - Cost Optimization Pillar.</li>
+      <li>Cloud FinOps - J.R. Storment và Mike Fuller.</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài học tiếp theo: Sau khi đã biết cách cân đối giữa "Sức mạnh" và "Ví tiền", chúng ta sẽ bước sang một chủ đề cực kỳ thực tế để vận hành tất cả những thứ này: Bài 9: SRE Fundamentals. Chúng ta sẽ học về SLI, SLO, SLA – những bản "cam kết sinh tử" giữa kỹ sư và doanh nghiệp.<br><br>
+    Câu hỏi cho bạn: Đã bao giờ bạn vô tình "đốt" tiền của công ty vì quên tắt một con Server khủng hay cấu hình sai một cái script chưa? Hãy chia sẻ để anh em cùng rút kinh nghiệm (và cùng cười) nhé!<br><br>
+    Bạn thấy nội dung về "Tiền bạc" này thế nào? Đã đủ chi tiết và thực tế chưa? Nếu bạn thấy ổn, hãy cho mình biết để chúng ta chuyển sang Bài 9: SRE Fundamentals (SLI/SLO/SLA) nhé!
+  </p>
+</div>
+
+</body>
+</html>

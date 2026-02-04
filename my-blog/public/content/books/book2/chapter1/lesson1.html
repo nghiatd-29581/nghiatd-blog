@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 1: System Design không chỉ là phỏng vấn – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào các anh em "đồng code"! Những ngày cuối năm, khi các bản release đã bị "đóng băng" (Code Freeze), thay vì ngồi lướt Facebook xem ai khoe thưởng Tết, chúng ta hãy cùng ngồi lại để bàn về một thứ "quyền năng" hơn: System Design.<br><br>
+    Nhiều người nghĩ System Design chỉ là một môn "học gạo" để vượt qua 45 phút phỏng vấn tại các Big Tech. Nhưng thực tế, nếu coi Code là các viên gạch, thì System Design chính là bản thiết kế của cả một tòa nhà. Xây nhầm một viên gạch bạn có thể sửa, nhưng đặt móng nhầm chỗ thì... chúc bạn may mắn lần sau!
+  </p>
+
+  <h1 class="lesson-part">PHẦN 1: NHẬP MÔN SYSTEM DESIGN</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 1: TƯ DUY KIẾN TRÚC SƯ</h2>
+  <h3 class="lesson-title">BÀI 1: SYSTEM DESIGN KHÔNG CHỈ LÀ PHỎNG VẤN</h3>
+  <h4 class="lesson-subtitle">(Hay chuyện: Đừng mang súng đại bác đi bắn chim sẻ)</h4>
+
+  <h4 class="lesson-section">1. Interview (Lý thuyết) vs. Production (Thực tế): Khoảng cách giữa "Whiteboard" và "Real World"</h4>
+
+  <p class="lesson-text">Trong phòng phỏng vấn, mọi thứ đều màu hồng. Nhưng khi hệ thống chạy thực tế, "màu hồng" đó thường biến thành "màu đỏ" trên các công cụ giám sát (Monitoring).</p>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Đặc điểm</th><th>Trong phòng phỏng vấn (Interview)</th><th>Ngoài đời thực (Production)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Dữ liệu</td><td>Thường là các con số tròn trịa (10M người dùng, 1 tỷ record).</td><td>Dữ liệu "bẩn", lệch (skewed), và tăng trưởng không báo trước.</td></tr>
+        <tr><td>Ngân sách</td><td>"Tiền không thành vấn đề", cứ dùng cluster lớn nhất!</td><td>"Sao hóa đơn AWS tháng này cao thế em?" - Sếp hỏi.</td></tr>
+        <tr><td>Thời gian</td><td>Bạn có 45 phút để thiết kế cả một hệ thống như YouTube.</td><td>Bạn mất 45 phút chỉ để... cãi nhau về cách đặt tên biến trong một Pull Request.</td></tr>
+        <tr><td>Sự cố</td><td>Mọi thứ chạy hoàn hảo trên bảng trắng.</td><td>Mọi thứ hỏng vào lúc 2 giờ sáng ngày mùng 1 Tết.</td></tr>
+        <tr><td>Maintenance</td><td>Xong bài phỏng vấn là hết nợ.</td><td>Bạn phải sống với cái "đống" mình thiết kế trong 3-5 năm tới.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="lesson-text"><strong>Bài học rút ra:</strong> Phỏng vấn là để chứng minh bạn biết, còn thực tế là để chứng minh bạn sống sót được với những quyết định của mình.</p>
+
+  <h4 class="lesson-section">2. Những "Con Quái Vật" trong thiết kế hệ thống (Anti-patterns)</h4>
+
+  <p class="lesson-text">Lập trình viên chúng ta thường rất thông minh, và đôi khi... sự thông minh đó chính là cái bẫy.</p>
+
+  <p class="lesson-text"><strong>🛑 Over-engineering: Dùng bazooka để giết một con ruồi</strong></p>
+  <p class="lesson-text">Bạn đang xây dựng một ứng dụng quản lý việc nhà cho gia đình 4 người dùng?</p>
+  <ul class="lesson-list">
+    <li>Thiết kế bình thường: Một con VPS cỏ, một cái DB (PostgreSQL) là xong.</li>
+    <li>Over-engineer: "Em nghĩ mình nên dùng Microservices, mỗi chức năng một service riêng, giao tiếp qua Kafka, lưu trữ bằng Cassandra để đảm bảo khả năng mở rộng lên... vài tỷ người dùng, và tất nhiên phải chạy trên Kubernetes cluster đa vùng (Multi-region)!"</li>
+  </ul>
+  <p class="lesson-text">Hậu quả: Hệ thống chưa kịp có người dùng thì team đã kiệt sức vì vận hành quá phức tạp. Theo Martin Kleppmann trong cuốn Designing Data-Intensive Applications: "Sự phức tạp là kẻ thù lớn nhất của phần mềm."</p>
+
+  <p class="lesson-text"><strong>🛑 Resume-Driven Development (RDD): Kẻ hủy diệt thầm lặng</strong></p>
+  <p class="lesson-text">Đây là hội chứng "viết CV bằng công nghệ của công ty". Bạn chọn một công nghệ không phải vì nó tốt nhất cho bài toán, mà vì bạn muốn ghi nó vào hồ sơ để nhảy việc sau này.</p>
+  <ul class="lesson-list">
+    <li>Ví dụ: Dự án chỉ cần lưu vài cái cấu hình đơn giản, nhưng bạn nhất quyết đòi dùng Neo4j (Graph Database) chỉ vì "em thấy nó đang hot và em muốn học".</li>
+  </ul>
+  <p class="lesson-text"><strong>Lời khuyên từ "người đi trước":</strong> Công nghệ chỉ là công cụ. Một kiến trúc sư giỏi là người biết dùng một cái kìm để vặn được mọi loại ốc, chứ không phải người sở hữu một bộ đồ nghề triệu đô nhưng không biết vặn cái gì.</p>
+
+  <h4 class="lesson-section">3. Tại sao bạn cần thay đổi tư duy ngay bây giờ?</h4>
+
+  <p class="lesson-text">Thiết kế hệ thống không phải là chọn công nghệ nào "ngầu" nhất, mà là chọn sự đánh đổi (Trade-off) phù hợp nhất.</p>
+  <ul class="lesson-list">
+    <li>Bạn muốn dữ liệu luôn đúng (Consistency)? Bạn phải hy sinh tốc độ (Latency).</li>
+    <li>Bạn muốn hệ thống không bao giờ sập (Availability)? Bạn phải tốn thêm rất nhiều tiền (Cost).</li>
+  </ul>
+
+  <p class="lesson-text">Trong các bài tiếp theo, chúng ta sẽ không học cách thuộc lòng các mô hình. Chúng ta sẽ học cách tư duy như một kiến trúc sư: Luôn đặt câu hỏi "Tại sao?" trước khi chọn bất kỳ linh kiện nào cho bộ máy của mình.</p>
+  <p class="lesson-text">Bài viết tới chúng ta sẽ bàn về một chủ đề "hack não" hơn nhưng cực kỳ thú vị: Tư duy kiến trúc sư và Định luật Conway – Tại sao sếp bạn lại có ảnh hưởng đến kiến trúc hệ thống hơn cả bạn?</p>
+  <p class="lesson-ending">
+    Đó chỉ là vài lời nói đầu để chào nhau, còn rất nhiều điều thú vị đang chờ chúng ta khám phá trong hành trình trở thành một System Designer thực thụ. Hẹn gặp lại các bạn trong bài tiếp theo!
+  </p>
+</div>
+</body>
+</html>
