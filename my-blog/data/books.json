@@ -192,12 +192,278 @@
               "title": "Bài 27: DEPLOYMENT & Kết nối UI",
               "htmlPath": "/content/books/book1/chapter9/lesson27.html"
             }
+            
+          ]
+        }
+      ]
+    },
+    {
+      "lang":"System Design",
+      "id": "book2",
+      "title": "Hành trình trở thành System Designer",
+      "chapters": [
+        {
+          "id": "chapter1",
+          "title": "Chương 1: Nhập Môn & Tư duy Kiến trúc sư",
+          "lessons": [
+            {
+              "id": "lesson1",
+              "title": "Bài 1: System Design không chỉ là phỏng vấn",
+              "htmlPath": "/content/books/book2/chapter1/lesson1.html"
+            },
+            {
+              "id": "lesson2",
+              "title": "Bài 2: Tư duy kiến trúc sư (The Architect Mindset)",
+              "htmlPath": "/content/books/book2/chapter1/lesson2.html"
+            },
+            { 
+              "id": "lesson3",
+              "title": "Bài 3: Evolutionary Architecture (Kiến trúc tiến hóa)",
+              "htmlPath": "/content/books/book2/chapter1/lesson3.html"
+            },
+            { 
+              "id": "lesson4",
+              "title": "Bài 4: Back-of-the-envelope estimation",
+              "htmlPath": "/content/books/book2/chapter1/lesson4.html"
+            }
+          ]
+        },
+        {
+          "id": "chapter2",
+          "title": "Chương 2: CORE metrics & Sự đánh đổi (TRADE-OFFS)",
+          "lessons": [
+            {
+              "id": "lesson5",
+              "title": "Bài 5: Latency & Throughput",
+              "htmlPath": "/content/books/book2/chapter2/lesson5.html"
+            },
+            {
+              "id": "lesson6",
+              "title": "Bài 6: Scalability – Availability – Reliability",
+              "htmlPath": "/content/books/book2/chapter2/lesson6.html"
+            },
+            { 
+              "id": "lesson7",
+              "title": "Bài 7: CAP & PACELC Theorem",
+              "htmlPath": "/content/books/book2/chapter2/lesson7.html"
+            },
+            { 
+              "id": "lesson8",
+              "title": "Bài 8: COST: Metric của người làm chủ",
+              "htmlPath": "/content/books/book2/chapter2/lesson8.html"
+            },
+            { 
+              "id": "lesson9",
+              "title": "Bài 9: SRE Fundamentals",
+              "htmlPath": "/content/books/book2/chapter2/lesson9.html"
+            }
+          ]
+        },
+        {
+          "id": "chapter3",
+          "title": "Chương 3: Storage – Trái tim của hệ thống",
+          "lessons": [
+            {
+              "id": "lesson10",
+              "title": "Bài 10: Thế giới Database (SQL & NoSQL)",
+              "htmlPath": "/content/books/book2/chapter3/lesson10.html"
+            },
+            {
+              "id": "lesson11",
+              "title": "Bài 11: NewSQL & Distributed SQL",
+              "htmlPath": "/content/books/book2/chapter3/lesson11.html"
+            },
+            { 
+              "id": "lesson12",
+              "title": "Bài 12: Scaling Database",
+              "htmlPath": "/content/books/book2/chapter3/lesson12.html"
+            },
+            { 
+              "id": "lesson13",
+              "title": "Bài 13: Indexing & Optimization",
+              "htmlPath": "/content/books/book2/chapter3/lesson13.html"
+            },
+            { 
+              "id": "lesson14",
+              "title": "Bài 14: Consistency & Data Modeling",
+              "htmlPath": "/content/books/book2/chapter3/lesson14.html"
+            },
+            { 
+              "id": "lesson15",
+              "title": "Bài 15: Data Lifecycle & Compliance",
+              "htmlPath": "/content/books/book2/chapter3/lesson15.html"
+            }
+          ]
+        },
+        {
+          "id": "chapter4",
+          "title": "Chương 4: Infrastructure & Cloud-Native",
+          "lessons": [
+            {
+              "id": "lesson16",
+              "title": "Bài 16: Load Balancing",
+              "htmlPath": "/content/books/book2/chapter4/lesson16.html"
+            },
+            {
+              "id": "lesson17",
+              "title": "Bài 17: Caching Strategy",
+              "htmlPath": "/content/books/book2/chapter4/lesson17.html"
+            },
+            { 
+              "id": "lesson18",
+              "title": "Bài 18: CDN & Edge Computing",
+              "htmlPath": "/content/books/book2/chapter4/lesson18.html"
+            },
+            { 
+              "id": "lesson19",
+              "title": "Bài 19: Message Queue & Event Streaming",
+              "htmlPath": "/content/books/book2/chapter4/lesson19.html"
+            },
+            { 
+              "id": "lesson20",
+              "title": "Bài 20: Cloud-Native & Kubernetes",
+              "htmlPath": "/content/books/book2/chapter4/lesson20.html"
+            }
+          ]
+        },
+        {
+          "id": "chapter5",
+          "title": "Chương 5: Communication & Security",
+          "lessons": [
+            {
+              "id": "lesson21",
+              "title": "Bài 21: Communication Protocols",
+              "htmlPath": "/content/books/book2/chapter5/lesson21.html"
+            },
+            {
+              "id": "lesson22",
+              "title": "Bài 22: Distributed Transactions",
+              "htmlPath": "/content/books/book2/chapter5/lesson22.html"
+            },
+            { 
+              "id": "lesson23",
+              "title": "Bài 23: API Gateway & Security",
+              "htmlPath": "/content/books/book2/chapter5/lesson23.html"
+            },
+            { 
+              "id": "lesson24",
+              "title": "Bài 24: Idempotency (Tính lũy đẳng)",
+              "htmlPath": "/content/books/book2/chapter5/lesson24.html"
+            }
+          ]
+        },
+        {
+          "id": "chapter6",
+          "title": "Chương 6: Resilience & Observability (Hệ thống 'BẤT TỬ')",
+          "lessons": [
+            {
+              "id": "lesson25",
+              "title": "Bài 25: Resilience Patterns",
+              "htmlPath": "/content/books/book2/chapter6/lesson25.html"
+            },
+            {
+              "id": "lesson26",
+              "title": "Bài 26: High Availability (HA)",
+              "htmlPath": "/content/books/book2/chapter6/lesson26.html"
+            },
+            {
+              "id": "lesson27",
+              "title": "Bài 27: Observability (Không chỉ là Monitoring)",
+              "htmlPath": "/content/books/book2/chapter6/lesson27.html"
+            },
+            { 
+              "id": "lesson28",
+              "title": "Bài 28: Chaos Engineering",
+              "htmlPath": "/content/books/book2/chapter6/lesson28.html"
+            }
+          ]
+        },
+        {
+          "id": "chapter7",
+          "title": "Chương 7: Framework giải bài toán SYSTEM DESIGN",
+          "lessons": [
+            {
+              "id": "lesson29",
+              "title": "Bài 29: Clarify Requirements (Hỏi đúng câu hỏi).",
+              "htmlPath": "/content/books/book2/chapter7/lesson29.html"
+            },
+            {
+              "id": "lesson30",
+              "title": "Bài 30: Capacity Estimation (Con số biết nói).",
+              "htmlPath": "/content/books/book2/chapter7/lesson30.html"
+            },
+            {
+              "id": "lesson31",
+              "title": "Bài 31: High-level Design (Vẽ bức tranh lớn).",
+              "htmlPath": "/content/books/book2/chapter7/lesson31.html"
+            },
+            {
+              "id": "lesson32",
+              "title": "Bài 32: Deep-dive (Khoan sâu vào nút thắt cổ chai).",
+              "htmlPath": "/content/books/book2/chapter7/lesson32.html"
+            },
+            {
+              "id": "lesson33",
+              "title": "Bài 33: Trade-offs & Alternatives (Tại sao không dùng cái khác?).",
+              "htmlPath": "/content/books/book2/chapter7/lesson33.html"
+            },
+            { 
+              "id": "lesson34",
+              "title": "Bài 34:Checklist - những 'từ khóa' giúp ghi điểm tuyệt đối.",
+              "htmlPath": "/content/books/book2/chapter7/lesson34.html"
+            }
+          ]
+        },
+        {
+          "id": "chapter8",
+          "title": "Chương 8: Case study thực chiến (END-TO-END)",
+          "lessons": [
+            {
+              "id": "lesson35",
+              "title": "Bài 35: Social Network (X/Twitter):** Bài toán Fan-out và Hot partitions.",
+              "htmlPath": "/content/books/book2/chapter8/lesson35.html"
+            },
+            {
+              "id": "lesson36",
+              "title": "Bài 36: Chat System (WhatsApp/Slack):** Real-time & Presence status.",
+              "htmlPath": "/content/books/book2/chapter8/lesson36.html"
+            },
+            {
+              "id": "lesson37",
+              "title": "Bài 37: Payment System:** **Reconciliation (Đối soát)**, Consistency & Idempotency.",
+              "htmlPath": "/content/books/book2/chapter8/lesson37.html"
+            },
+            {
+              "id": "lesson38",
+              "title": "Bài 38: Web Crawler / Search Engine:** Kiến trúc lưu trữ khổng lồ và Indexing",
+              "htmlPath": "/content/books/book2/chapter8/lesson38.html"
+            }
+          ]
+        },
+        {
+          "id": "chapter9",
+          "title": "Chương 9: Tổng kết & Con đường phát triển",
+          "lessons": [
+            {
+              "id": "lesson39",
+              "title": "Bài 39: Career Path",
+              "htmlPath": "/content/books/book2/chapter9/lesson39.html"
+            },
+            {
+              "id": "lesson40",
+              "title": "Bài 40: Tài liệu tinh hoa",
+              "htmlPath": "/content/books/book2/chapter9/lesson40.html"
+            },
+            {
+              "id": "lesson41",
+              "title": "Bài 41: Lời kết",
+              "htmlPath": "/content/books/book2/chapter9/lesson41.html"
+            }
           ]
         }
       ]
     }
   ]
 }
-
 
 
