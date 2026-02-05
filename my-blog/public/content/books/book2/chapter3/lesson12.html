@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 12: Scaling Database – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào bạn! Chúng ta đã biết chọn "loại tim" (Database) nào cho hệ thống ở bài trước. Nhưng có một thực tế phũ phàng: Trái tim ấy không thể cứ phình to mãi mãi. Dữ liệu giống như đồ đạc trong nhà, nếu bạn không có kế hoạch dọn dẹp, phân loại hoặc bỏ bớt, sớm muộn gì bạn cũng sẽ không còn chỗ để thở (và ví tiền của bạn cũng sẽ "cạn kiệt" vì chi phí lưu trữ).<br><br>
+    Hôm nay, chúng ta sẽ bàn về Hậu cần (Logistics) của dữ liệu: Làm sao để lưu trữ thông minh và làm sao để xóa dữ liệu mà không bị... cảnh sát hỏi thăm (Compliance). Hãy thắt dây an toàn, bài này sẽ rất "đắt giá" theo cả nghĩa đen lẫn nghĩa bóng!
+  </p>
+
+  <h1 class="lesson-part">PHẦN 3: STORAGE & DATA MODELING</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 3: THẾ GIỚI DATABASE</h2>
+  <h3 class="lesson-title">BÀI 12: SCALING DATABASE – NGHỆ THUẬT "PHÂN THÂN" VÀ "CHIA ĐỂ TRỊ"</h3>
+
+  <h4 class="lesson-section">PHẦN 1: REPLICATION (SAO CHÉP DỮ LIỆU) – ĐỂ KHÔNG BAO GIỜ CÔ ĐƠN</h4>
+
+  <p class="lesson-text">Khi hệ thống lớn lên, chỉ một con Database duy nhất giống như một trái tim duy nhất – nó có thể chết bất cứ lúc nào. Replication là kỹ thuật tạo ra nhiều bản sao dữ liệu để:</p>
+  <ul class="lesson-list">
+    <li>Tăng tính sẵn sàng (Availability): Nếu server chính chết, server phụ lên thay ngay lập tức.</li>
+    <li>Phân tải đọc (Read Scaling): Hàng triệu người cùng đọc dữ liệu mà không làm Leader quá tải.</li>
+    <li>Chuẩn bị cho Disaster Recovery: Nếu trung tâm dữ liệu chính bị cháy, bạn vẫn còn bản sao ở nơi khác.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>1. Leader-Follower (Master-Slave) Replication</strong></p>
+  <p class="lesson-text">Đây là mô hình phổ biến nhất (MySQL, PostgreSQL, MongoDB đều dùng mặc định).</p>
+  <ul class="lesson-list">
+    <li><strong>Leader (Master):</strong> Nhận tất cả các lệnh ghi (INSERT, UPDATE, DELETE). Đây là "ông trùm" duy nhất được phép thay đổi dữ liệu.</li>
+    <li><strong>Followers (Slaves/Replicas):</strong> Nhận bản sao dữ liệu từ Leader và chỉ phục vụ đọc (SELECT).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Sự đánh đổi đau đầu (Sync vs. Async):</strong></p>
+  <ul class="lesson-list">
+    <li><strong>Synchronous (Đồng bộ):</strong> Leader chờ Follower xác nhận "Em đã lưu xong" rồi mới báo thành công cho User. -> An toàn tuyệt đối (không mất dữ liệu) nhưng Chậm. Nếu Follower chết, Leader cũng bị treo.</li>
+    <li><strong>Asynchronous (Bất đồng bộ):</strong> Leader ghi xong là báo thành công ngay, việc gửi sang Follower tính sau. -> Nhanh khủng khiếp nhưng rủi ro. Nếu Leader chết trước khi kịp gửi dữ liệu, dữ liệu đó mất vĩnh viễn.</li>
+    <li><strong>Semi-Sync (Thực tế hay dùng):</strong> Chỉ cần 1 Follower xác nhận là được, các Follower còn lại kệ nó. -> Cân bằng tốt giữa tốc độ và an toàn.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Ví dụ thực tế:</strong> Facebook dùng Leader-Follower cho MySQL. Khi bạn like một bài viết, request ghi vào Leader. Hàng triệu người đọc bài viết đó sẽ được phục vụ từ hàng nghìn Follower rải khắp thế giới.</p>
+
+  <p class="lesson-text"><strong>1.2. Multi-Leader (Multi-Master) Replication</strong></p>
+  <p class="lesson-text">Nhiều node đều có quyền ghi. Đây là mô hình "cấp cao" hơn, thường dùng trong hệ thống toàn cầu (Multi-datacenter).</p>
+
+  <p class="lesson-text"><strong>Ưu điểm:</strong></p>
+  <ul class="lesson-list">
+    <li>Giảm độ trễ ghi ở nhiều khu vực địa lý (User ở Việt Nam ghi vào node Singapore, User ở Mỹ ghi vào node Virginia).</li>
+    <li>Tăng khả năng chịu lỗi (không còn Leader duy nhất).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Nhược điểm lớn – Xung đột ghi (Write Conflict):</strong></p>
+  <ul class="lesson-list">
+    <li>User A (ở Mỹ) sửa tiêu đề bài viết thành "Hello".</li>
+    <li>User B (ở VN) sửa tiêu đề bài viết thành "Xin Chào".</li>
+    <li>Hai lệnh này xảy ra cùng lúc. Khi hai Leader đồng bộ, cái nào đúng?</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Các cách giải quyết xung đột:</strong></p>
+  <ul class="lesson-list">
+    <li>Last Write Wins (LWW): Ai ghi sau (theo timestamp) thì thắng. (Dễ mất dữ liệu – kiểu "người sau nói gì cũng đúng").</li>
+    <li>Conflict-free Replicated Data Types (CRDTs): Một cấu trúc dữ liệu toán học phức tạp để tự động gộp (merge) dữ liệu mà không mất thông tin (Ví dụ: Google Docs, Trello, Redis CRDT).</li>
+    <li>Application-level Conflict Resolution: Để ứng dụng tự giải quyết (ví dụ: hỏi lại người dùng "Bạn muốn giữ phiên bản nào?").</li>
+  </ul>
+
+  <p class="lesson-text"><strong>1.3. Leaderless (Dynamo-style): Dân chủ tuyệt đối</strong></p>
+  <p class="lesson-text">Được Amazon Dynamo (không phải DynamoDB) khởi xướng. Không có ai là sếp cả.</p>
+
+  <ul class="lesson-list">
+    <li>Cơ chế: User gửi request ghi đến cả 3 node (Replication Factor = 3). Chỉ cần 2 node trả lời OK là coi như thành công (Write Quorum = 2).</li>
+    <li>Đọc: Gửi request đến 3 node, lấy phiên bản mới nhất (Read Quorum = 2).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Ưu điểm:</strong></p>
+  <ul class="lesson-list">
+    <li>Không có Single Point of Failure. Tất cả node đều bình đẳng.</li>
+    <li>Availability cực cao (chỉ cần đa số node sống là hệ thống vẫn hoạt động).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Nhược điểm:</strong></p>
+  <ul class="lesson-list">
+    <li>Cần cơ chế giải quyết xung đột phức tạp (CRDT hoặc LWW).</li>
+    <li>Đọc có thể thấy dữ liệu cũ (Eventual Consistency).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Ứng dụng thực tế:</strong> Cassandra, Riak, DynamoDB (tùy chọn). Dành cho các hệ thống cần uptime 100% (Availability over Consistency).</p>
+
+  <h4 class="lesson-section">PHẦN 2: SHARDING & PARTITIONING – NGHỆ THUẬT "CHIA ĐỂ TRỊ"</h4>
+
+  <p class="lesson-text">Replication chỉ giúp bạn đọc nhanh hơn (Read scaling). Nhưng nếu Database của bạn nặng tới 10TB và mỗi ngày ghi thêm 100GB thì sao? Không một ổ cứng nào chứa nổi, và Leader sẽ bị quá tải khi Ghi.</p>
+
+  <p class="lesson-text">Đó là lúc ta phải xé nhỏ Database ra. Kỹ thuật này gọi là Sharding (Horizontal Partitioning).</p>
+
+  <p class="lesson-text"><strong>Các chiến lược Sharding phổ biến:</strong></p>
+
+  <ul class="lesson-list">
+    <li><strong>Range-based Sharding</strong>: Chia theo khoảng (ví dụ: User ID từ 1-1 triệu → Shard 1, 1 triệu+1 đến 2 triệu → Shard 2...).</li>
+      <ul class="lesson-list">
+        <li>Ưu điểm: Quét dữ liệu theo khoảng rất nhanh (Ví dụ: Lấy user đăng ký trong tháng 1).</li>
+        <li>Nhược điểm chết người: Hotspot (Điểm nóng). Nếu ID được tạo theo thời gian, thì toàn bộ user mới (đang hoạt động nhiều) sẽ dồn hết vào Shard cuối cùng (Shard 4). Shard 4 sẽ "bốc cháy" trong khi Shard 1, 2, 3 ngồi chơi. -> Hệ thống chết.</li>
+      </ul>
+
+    <li><strong>Hash-based Sharding</strong>: Dùng hàm hash(UserID) % Số shard.</li>
+      <ul class="lesson-list">
+        <li>Ưu điểm: Phân bố đều, không còn Hotspot.</li>
+        <li>Nhược điểm: Mất khả năng query theo khoảng (Range Query). Bạn không thể tìm "User từ A đến Z" mà không hỏi tất cả các Shard.</li>
+      </ul>
+
+    <li><strong>Consistent Hashing</strong>: Kỹ thuật thông minh nhất hiện nay (dùng trong Cassandra, DynamoDB).</li>
+      <ul class="lesson-list">
+        <li>Khi thêm/bớt shard, chỉ di chuyển rất ít dữ liệu (không gây downtime lớn).</li>
+        <li>Virtual Nodes: Mỗi server vật lý được băm thành nhiều điểm ảo trên vòng tròn → Cân bằng tải hoàn hảo.</li>
+      </ul>
+  </ul>
+
+  <p class="lesson-text"><strong>Rebalancing dữ liệu không gây downtime</strong></p>
+  <p class="lesson-text">Đây là phần khó nhất và quan trọng nhất của Sharding.</p>
+
+  <p class="lesson-text">Nếu bạn dùng Hash % N (N là số shard), khi thêm shard mới (N tăng), hầu hết dữ liệu sẽ phải di chuyển → Downtime lớn hoặc chậm kinh khủng.</p>
+
+  <p class="lesson-text"><strong>Giải pháp cứu thế: Consistent Hashing + Virtual Nodes</strong></p>
+  <ul class="lesson-list">
+    <li>Hình dung một vòng tròn 0 → 2³²-1.</li>
+    <li>Đặt Server lên vòng: Băm IP → vị trí trên vòng.</li>
+    <li>Đặt Key lên vòng: Băm Key → vị trí trên vòng.</li>
+    <li>Quy tắc: Đi theo chiều kim đồng hồ, gặp Server đầu tiên thì thuộc về Server đó.</li>
+    <li>Khi thêm Server mới: Chỉ di chuyển dữ liệu trong khoảng từ Server cũ đến Server mới (khoảng 1/N dữ liệu).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Ví dụ thực tế: Instagram Snowflake ID cho Sharding</strong></p>
+  <p class="lesson-text">Instagram không dùng Auto-increment ID (vì mỗi shard sinh ID trùng nhau: 1, 2, 3...).</p>
+
+  <p class="lesson-text">Họ tạo Snowflake ID (64-bit integer):</p>
+  <ul class="lesson-list">
+    <li>41 bits: Timestamp (thời gian mili-giây).</li>
+    <li>13 bits: Shard ID (mã shard).</li>
+    <li>10 bits: Sequence number (số tự tăng cục bộ).</li>
+  </ul>
+
+  <p class="lesson-text">→ Khi nhìn vào ID của bức ảnh, Instagram biết ngay nó nằm ở Shard nào (ID >> 23). Không cần bảng Map khổng lồ để tra cứu. Đây là đỉnh cao của thiết kế dữ liệu cho Sharding.</p>
+
+  <h4 class="lesson-section">PHẦN 3: NHỮNG VẤN ĐỀ THỰC TẾ "HẠI NÃO" KHI SHARDING</h4>
+
+  <ul class="lesson-list">
+    <li><strong>Cross-shard Join:</strong> Không thể JOIN giữa 2 shard khác nhau → Phải thiết kế lại schema (denormalization) hoặc dùng công cụ như Vitess, ProxySQL.</li>
+    <li><strong>Hot Shard:</strong> Một shard chứa quá nhiều dữ liệu nóng (ví dụ: tất cả user nổi tiếng nằm cùng shard) → Cần Resharding khẩn cấp.</li>
+    <li><strong>Distributed Transaction:</strong> Nếu cần giao dịch ACID xuyên nhiều shard, bạn phải dùng 2PC (Two-Phase Commit) – rất chậm và dễ deadlock.</li>
+  </ul>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 12</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Scaling Database là một cuộc chơi tốn kém cả về tiền bạc lẫn chất xám.</p>
+    <ol class="lesson-list">
+      <li>Dùng Replication để cứu mạng hệ thống (HA) và tăng tốc đọc.</li>
+      <li>Dùng Sharding khi dữ liệu quá lớn không thể chứa trong một máy.</li>
+      <li>Tránh xa Hash % N: Hãy học và áp dụng Consistent Hashing ngay từ đầu.</li>
+      <li>Unique ID: Đừng dùng ID tự tăng (1, 2, 3...) trong hệ thống phân tán. Hãy nghiên cứu Twitter Snowflake hoặc UUID.</li>
+    </ol>
+    <p class="lesson-text"><strong>Nguồn tham khảo "gối đầu giường":</strong></p>
+    <ul class="lesson-list">
+      <li>Designing Data-Intensive Applications (Chapter 5: Replication & Chapter 6: Partitioning) - Martin Kleppmann. (Cuốn này là kinh thánh, đọc đi đọc lại 10 lần nhé!).</li>
+      <li>Dynamo: Amazon’s Highly Available Key-value Store (The research paper that started the NoSQL revolution).</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Chúng ta sẽ nói về Indexing & Optimization – Linh hồn của hiệu năng.<br>
+    Câu hỏi bài tập về nhà: Giả sử bạn dùng Consistent Hashing với 3 node A, B, C. Nếu Node B bị cháy ổ cứng và mất toàn bộ dữ liệu, chuyện gì sẽ xảy ra với các request đọc dữ liệu thuộc về Node B? Hệ thống sẽ trả về lỗi hay trả về cái gì? (Gợi ý: Liên quan đến khái niệm Replication Factor trong vòng tròn băm). Hãy suy nghĩ nhé!<br><br>
+    Bạn thấy bài viết về Scaling Database này đã đủ sâu, dài và thực chiến chưa? Nếu bạn thấy ổn, hãy cho mình biết để chúng ta tiếp tục nhé!
+  </p>
+</div>
+
+</body>
+</html>

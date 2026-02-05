@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 10: Thế giới Database (SQL & NoSQL) – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đã cùng tôi bước qua "cánh cửa" của Chương 3: STORAGE. Nếu Chương 1 và 2 là về tư duy và các chỉ số đo lường (linh hồn), thì Chương 3 chính là về Trái tim.<br><br>
+    Tại sao lại gọi Storage là trái tim? Vì code có thể viết lại, server có thể khởi động lại, nhưng nếu dữ liệu (Data) mất đi hoặc bị hỏng, hệ thống của bạn coi như "ngừng đập". Chọn sai Database cũng giống như việc bạn cố gắng lắp quả tim của một chú chuột vào cơ thể một con voi vậy – sớm muộn gì nó cũng sẽ kiệt sức mà chết.<br><br>
+    Hôm nay, chúng ta sẽ không chỉ nói về SQL vs NoSQL một cách sáo rỗng. Chúng ta sẽ mổ xẻ từng "chủng tộc" Database để xem chúng sinh ra để giải quyết nỗi đau nào.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 3: STORAGE & DATA MODELING</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 3: THẾ GIỚI DATABASE</h2>
+  <h3 class="lesson-title">BÀI 10: THẾ GIỚI DATABASE (SQL & NOSQL) – ĐỪNG CHỌN THEO PHONG TRÀO, HÃY CHỌN THEO "USE-CASE"</h3>
+
+  <h4 class="lesson-section">1. Relational Database (SQL) – "Lão làng" với kỷ luật thép</h4>
+
+  <p class="lesson-text">Relational Database (Cơ sở dữ liệu quan hệ) như PostgreSQL, MySQL, SQL Server đã tồn tại hơn 40 năm. Tại sao chúng vẫn là "ông vua"? Vì chúng dựa trên một triết lý cực kỳ vững chắc: Cấu trúc (Schema) và Quan hệ (Relationship).</p>
+
+  <p class="lesson-text"><strong>Đặc điểm cốt lõi:</strong></p>
+  <ul class="lesson-list">
+    <li>ACID Compliance: Đây là "chứng chỉ" bảo chứng cho sự tin cậy. $Atomicity, Consistency, Isolation, Durability$. Nếu bạn đang làm hệ thống Ngân hàng, bạn phải dùng SQL. Không có chuyện trừ tiền tài khoản A mà cộng tiền tài khoản B lại bị lỗi "nửa chừng" được.</li>
+    <li>Structured Data: Mọi thứ phải rõ ràng. Tên là chuỗi, Tuổi là số. Bạn không thể nhét một con voi vào một cái hộp đựng mèo.</li>
+    <li>JOINs: Khả năng kết nối các bảng lại với nhau cực mạnh.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Use-case tốt nhất:</strong></p>
+  <ul class="lesson-list">
+    <li>Các hệ thống yêu cầu tính nhất quán (Consistency) cực cao: Fintech, ERP, Thương mại điện tử (phần thanh toán).</li>
+    <li>Dữ liệu có cấu trúc phức tạp và nhiều mối liên kết.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Góc hài hước:</strong> SQL giống như một ông bố nghiêm khắc. Ông ấy bắt bạn phải dọn phòng ngăn nắp (Schema), mọi thứ phải đúng vị trí. Tuy hơi gò bó, nhưng khi bạn cần tìm cái chìa khóa, bạn luôn biết chính xác nó ở đâu.</p>
+
+  <h4 class="lesson-section">2. NoSQL: Những "Kẻ nổi loạn" đầy tự do</h4>
+
+  <p class="lesson-text">Khi kỷ nguyên Big Data ập đến, SQL bắt đầu bộc lộ điểm yếu: Rất khó để mở rộng theo chiều ngang (Horizontal Scaling). Đó là lúc NoSQL (Not Only SQL) ra đời để giải phóng sức mạnh.</p>
+
+  <p class="lesson-text">Chúng ta chia NoSQL thành 4 "gia tộc" chính:</p>
+
+  <p class="lesson-text"><strong>2.1. Document Database (Bản ghi dưới dạng văn bản)</strong></p>
+  <p class="lesson-text">Đại diện: MongoDB, CouchDB.</p>
+  <ul class="lesson-list">
+    <li>Cơ chế: Dữ liệu được lưu dưới dạng JSON hoặc BSON.</li>
+    <li>Ưu điểm: Cực kỳ linh hoạt. Hôm nay bạn muốn lưu "Tên, Tuổi", ngày mai bạn muốn thêm "Sở thích, Danh sách người yêu cũ", bạn cứ thế mà đẩy lên, không cần ALTER TABLE gây khóa database hàng tiếng đồng hồ.</li>
+    <li>Use-case: Catalog sản phẩm (nơi mỗi loại sản phẩm có thuộc tính khác nhau), CMS, Blog, User Profile.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>2.2. Key-Value Database (Chìa khóa & Giá trị)</strong></p>
+  <p class="lesson-text">Đại diện: Redis, Memcached, DynamoDB (phần cốt lõi).</p>
+  <ul class="lesson-list">
+    <li>Cơ chế: Giống như một cái từ điển khổng lồ. Bạn đưa "Key", nó trả về "Value".</li>
+    <li>Ưu điểm: TỐC ĐỘ. Vì nó cực kỳ đơn giản (thường lưu trên RAM), nên nó có thể xử lý hàng triệu request/giây với latency chỉ tính bằng micro-giây.</li>
+    <li>Use-case: Caching (lưu tạm dữ liệu), Session Management (lưu phiên đăng nhập), Leaderboard trong game.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>2.3. Wide-column Database (Cột rộng)</strong></p>
+  <p class="lesson-text">Đại diện: Cassandra, ScyllaDB, HBase.</p>
+  <ul class="lesson-list">
+    <li>Cơ chế: Dữ liệu được lưu theo cột thay vì theo dòng. Nó được thiết kế để phân tán trên hàng ngàn server.</li>
+    <li>Nỗi đau nó giải quyết: Khả năng ghi (Write) kinh hoàng. Nếu bạn có hàng tỷ dòng log đổ về mỗi giây, SQL sẽ "ngỏm" ngay lập tức, nhưng Cassandra thì coi đó là chuyện nhỏ.</li>
+    <li>Câu chuyện thực tế: Discord đã từng dùng MongoDB cho tin nhắn, nhưng khi lượng tin nhắn lên đến hàng tỷ, họ đã phải chuyển sang Cassandra (và sau đó là ScyllaDB) để chịu tải.</li>
+    <li>Use-case: Big Data, Time-series data, Nhật ký hoạt động (Log), Hệ thống theo dõi (Monitoring).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>2.4. Graph Database (Đồ thị)</strong></p>
+  <p class="lesson-text">Đại diện: Neo4j, ArangoDB.</p>
+  <ul class="lesson-list">
+    <li>Cơ chế: Lưu trữ dữ liệu dưới dạng các Node (đỉnh) và Edge (cạnh). Mối quan hệ giữa dữ liệu được coi trọng ngang hàng với chính dữ liệu đó.</li>
+    <li>Tại sao không dùng SQL? Nếu bạn muốn tìm "Bạn của bạn của bạn của người yêu cũ" trong SQL, bạn sẽ phải dùng hàng chục câu lệnh JOIN chồng chéo khiến performance tụt dốc không phanh. Trong Graph DB, đó chỉ là một cú "duyệt" (Traverse) cực nhanh.</li>
+    <li>Use-case: Mạng xã hội (Facebook, LinkedIn), Hệ thống gợi ý (Recommendation Engines), Phát hiện gian lận (Fraud Detection).</li>
+  </ul>
+
+  <h4 class="lesson-section">3. Bảng so sánh "Chọn mặt gửi vàng"</h4>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Loại DB</th><th>Thế mạnh</th><th>Điểm yếu</th><th>"Vibe" của nó</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Relational (SQL)</td><td>Nhất quán, Chặt chẽ, Query phức tạp tốt.</td><td>Khó Scale ngang, Schema cứng nhắc.</td><td>"Ông cụ non" kỷ luật.</td></tr>
+        <tr><td>Document</td><td>Linh hoạt, Code nhanh, Dễ scale.</td><td>Không có JOIN mạnh, dễ dư thừa dữ liệu.</td><td>"Nghệ sĩ" tự do.</td></tr>
+        <tr><td>Key-Value</td><td>Nhanh như chớp, Đơn giản.</td><td>Query dữ liệu theo điều kiện rất khó.</td><td>"Vận động viên" điền kinh.</td></tr>
+        <tr><td>Wide-column</td><td>Scale khổng lồ, Ghi dữ liệu cực nhanh.</td><td>Rất khó thiết kế Schema ban đầu.</td><td>"Gã khổng lồ" lực lưỡng.</td></tr>
+        <tr><td>Graph</td><td>Xử lý quan hệ chằng chịt cực tốt.</td><td>Không phù hợp cho dữ liệu phẳng thông thường.</td><td>"Thánh" ngoại giao.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4 class="lesson-section">4. Lời khuyên của Kiến trúc sư: Polyglot Persistence</h4>
+
+  <p class="lesson-text">Thời đại dùng một loại Database cho toàn bộ hệ thống đã qua rồi. Một Architect giỏi sẽ áp dụng tư duy Polyglot Persistence: Dùng đúng loại database cho từng thành phần của hệ thống.</p>
+
+  <ul class="lesson-list">
+    <li>Dữ liệu thanh toán? Đưa vào PostgreSQL.</li>
+    <li>Lưu Session đăng nhập? Đẩy vào Redis.</li>
+    <li>Lưu lịch sử tin nhắn của hàng triệu user? Dùng Cassandra.</li>
+    <li>Hệ thống gợi ý kết bạn? Dùng Neo4j.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Nguồn trích dẫn kiến thức:</strong></p>
+  <ul class="lesson-list">
+    <li>Designing Data-Intensive Applications (Chapter 2: Data Models and Query Languages) - Martin Kleppmann.</li>
+    <li>Seven Databases in Seven Weeks - Luc Perkins, Eric Redmond, and Jim Wilson.</li>
+  </ul>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 10</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Chọn Database không phải là chọn cái nào "mạnh" nhất, mà là chọn cái nào "phù hợp" nhất với cấu trúc dữ liệu và bài toán scale của bạn. Đừng biến mình thành nô lệ của công nghệ, hãy biến công nghệ thành nô lệ cho mục đích kinh doanh.</p>
+  </div>
+
+  <p class="lesson-ending">
+    Bạn đã từng mắc sai lầm "đau đớn" nào khi chọn Database chưa? Hay có dự án nào bạn phải "vật lộn" với hàng chục câu lệnh JOIN trong SQL mà ước gì mình đã dùng Graph DB không? Hãy chia sẻ bên dưới nhé!<br><br>
+    Bài tiếp theo: Chúng ta sẽ bước sang một vùng đất mới, nơi giao thoa giữa sự nhất quán của SQL và khả năng mở rộng của NoSQL. Chào mừng bạn đến với bài 11: NewSQL & Distributed SQL. Chúng ta sẽ tìm hiểu về những "siêu chiến binh" như CockroachDB và Google Spanner!<br><br>
+    Bạn thấy nội dung "Heart of the system" này đã đủ sâu và chi tiết chưa? Nếu bạn thấy ổn, hãy cho mình biết để chúng ta chuẩn bị cho bài tiếp theo về các hệ quản trị cơ sở dữ liệu phân tán thế hệ mới nhé!
+  </p>
+</div>
+
+</body>
+</html>
