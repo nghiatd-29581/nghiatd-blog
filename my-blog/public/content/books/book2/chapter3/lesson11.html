@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 11: NewSQL & Distributed SQL – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào bạn! Chào mừng bạn đã cùng tôi bước qua "cánh cửa" của Chương 3: STORAGE. Nếu Chương 1 và 2 là về tư duy và các chỉ số đo lường (linh hồn), thì Chương 3 chính là về Trái tim.<br><br>
+    Tại sao lại gọi Storage là trái tim? Vì code có thể viết lại, server có thể khởi động lại, nhưng nếu dữ liệu (Data) mất đi hoặc bị hỏng, hệ thống của bạn coi như "ngừng đập". Chọn sai Database cũng giống như việc bạn cố gắng lắp quả tim của một chú chuột vào cơ thể một con voi vậy – sớm muộn gì nó cũng sẽ kiệt sức mà chết.<br><br>
+    Hôm nay, chúng ta sẽ không chỉ nói về SQL vs NoSQL một cách sáo rỗng. Chúng ta sẽ mổ xẻ từng "chủng tộc" Database để xem chúng sinh ra để giải quyết nỗi đau nào.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 3: STORAGE & DATA MODELING</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 3: THẾ GIỚI DATABASE</h2>
+  <h3 class="lesson-title">BÀI 11: NEWSQL & DISTRIBUTED SQL – KHI "ÔNG LÃO" SQL HỌC CÁCH PHÂN THÂN</h3>
+
+  <h4 class="lesson-section">1. Google Spanner: "Kẻ hủy diệt" với đồng hồ nguyên tử</h4>
+
+  <p class="lesson-text">Mọi chuyện bắt đầu từ Google. Họ quá mệt mỏi với việc quản lý các cụm MySQL khổng lồ. Năm 2012, họ công bố Whitepaper về Spanner – hệ thống Database phân tán quy mô toàn cầu đầu tiên.</p>
+
+  <p class="lesson-text"><strong>Sức mạnh của TrueTime</strong></p>
+  <p class="lesson-text">Điều làm nên sự khác biệt của Spanner so với phần còn lại của thế giới chính là TrueTime.</p>
+
+  <p class="lesson-text">Để đảm bảo tính nhất quán trên toàn cầu (Global Consistency), các máy tính cần phải biết "bây giờ là mấy giờ" một cách cực kỳ chính xác. Nhưng trong mạng máy tính, đồng hồ luôn có sai số.</p>
+
+  <p class="lesson-text">Google đã làm một việc "điên rồ": Họ lắp đặt đồng hồ nguyên tử (Atomic Clocks) và GPS receivers vào mọi trung tâm dữ liệu của mình.</p>
+
+  <ul class="lesson-list">
+    <li>TrueTime API trả về một khoảng thời gian $[earliest, latest]$ mà Google chắc chắn thời gian thực nằm trong đó.</li>
+    <li>Spanner dựa vào đây để gán Timestamp cho các giao dịch, đảm bảo thứ tự trước - sau dù các node nằm cách nhau nửa vòng Trái Đất.</li>
+  </ul>
+
+  <h4 class="lesson-section">2. CockroachDB: "Con gián" bất tử trong hệ thống phân tán</h4>
+
+  <p class="lesson-text">Nếu Spanner là một dịch vụ độc quyền của Google Cloud, thì CockroachDB là phiên bản "open-source" (với giấy phép riêng) mang tư duy đó đến với mọi người.</p>
+
+  <p class="lesson-text">Cái tên "Cockroach" (Con gián) không phải đặt cho vui. Mục tiêu của nó là: Dù bạn có cầm búa đập một trung tâm dữ liệu, hệ thống vẫn không chết.</p>
+
+  <p class="lesson-text"><strong>Cơ chế Raft Consensus</strong></p>
+  <ul class="lesson-list">
+    <li>Dữ liệu được chia thành các Ranges (khoảng 64MB).</li>
+    <li>Mỗi Range được nhân bản (Replicated) sang ít nhất 3 máy.</li>
+    <li>Để ghi dữ liệu thành công, chỉ cần đa số (2 trên 3 máy) đồng ý.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Ví dụ dễ hiểu:</strong> Hãy tưởng tượng một nhóm 3 người bạn đi ăn. Nếu 2 người đồng ý ăn Phở, người thứ 3 dù có đang đi vệ sinh (Node sập) thì cả nhóm vẫn đi ăn Phở. Khi người thứ 3 quay lại, họ sẽ được cập nhật là "Chúng ta đã ăn Phở rồi nhé!".</p>
+
+  <h4 class="lesson-section">3. YugabyteDB: PostgreSQL trên "Steroids"</h4>
+
+  <p class="lesson-text">Nếu bạn là fan cuồng của PostgreSQL và không muốn từ bỏ hệ sinh thái phong phú của nó, YugabyteDB chính là "chân ái".</p>
+
+  <p class="lesson-text">YugabyteDB thực hiện một cách tiếp cận thông minh:</p>
+  <ul class="lesson-list">
+    <li>Tầng trên (Query Layer): Họ sử dụng lại chính xác code của PostgreSQL. Nghĩa là mọi tính năng như Stored Procedures, Triggers đều chạy hoàn hảo.</li>
+    <li>Tầng dưới (Storage Layer): Một hệ thống phân tán dựa trên kiến trúc Log-structured Merge-tree (LSM) tương tự như Cassandra nhưng có tính nhất quán ACID.</li>
+  </ul>
+
+  <p class="lesson-text">YugabyteDB thường nhanh hơn CockroachDB trong các bài benchmark về Latency nhờ cách tối ưu hóa tầng lưu trữ, nhưng CockroachDB lại thường được đánh giá cao hơn về sự ổn định và dễ vận hành.</p>
+
+  <h4 class="lesson-section">4. Tại sao chúng ta cần Distributed SQL trong kỷ nguyên toàn cầu?</h4>
+
+  <p class="lesson-text">Hãy tưởng tượng bạn đang xây dựng một ứng dụng Fintech toàn cầu.</p>
+  <ul class="lesson-list">
+    <li>Data Residency: Người dùng ở Đức muốn dữ liệu của họ phải nằm ở server tại Đức (theo luật GDPR).</li>
+    <li>Low Latency: Người dùng ở Việt Nam không muốn đợi 500ms để request bay sang Mỹ rồi bay về chỉ để xem số dư tài khoản.</li>
+  </ul>
+
+  <p class="lesson-text">Với Distributed SQL, bạn có thể cấu hình:</p>
+  <ul class="lesson-list">
+    <li>Node ở Việt Nam ưu tiên giữ dữ liệu của người Việt.</li>
+    <li>Nhưng nếu toàn bộ cụm server Việt Nam bị "cá mập cắn cáp", dữ liệu vẫn an toàn ở các node khác và hệ thống vẫn hoạt động.</li>
+  </ul>
+
+  <h4 class="lesson-section">5. Sự đánh đổi: Vật lý không biết nói dối</h4>
+
+  <p class="lesson-text">Đừng để những lời quảng cáo mê hoặc, Distributed SQL không phải là "viên đạn bạc". Bạn vẫn phải đối mặt với Định luật PACELC (mà chúng ta đã học ở Bài 7).</p>
+
+  <ul class="lesson-list">
+    <li>Latency vs Consistency: Dù bạn có dùng thuật toán gì, ánh sáng cũng chỉ bay được một quãng đường nhất định trong 1ms. Việc đồng bộ dữ liệu giữa Mỹ và Singapore để đảm bảo tính nhất quán (Strong Consistency) chắc chắn sẽ chậm hơn việc chỉ ghi vào một máy duy nhất.</li>
+    <li>Complexity: Vận hành một cụm CockroachDB 10 node khó hơn gấp vạn lần việc quản lý một con MySQL đơn lẻ.</li>
+  </ul>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Đặc điểm</th><th>SQL truyền thống (MySQL/Postgres)</th><th>Distributed SQL (Cockroach/Yugabyte)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Scaling</td><td>Vertical (Up)</td><td>Horizontal (Out)</td></tr>
+        <tr><td>Giao dịch (Transaction)</td><td>Đơn giản, cực nhanh</td><td>Phức tạp, Latency cao hơn do Network</td></tr>
+        <tr><td>Chịu lỗi (Fault Tolerance)</td><td>Cần High Availability (HA) setup phức tạp</td><td>Có sẵn trong "máu", tự động phục hồi</td></tr>
+        <tr><td>Chi phí hạ tầng</td><td>Rẻ (lúc đầu)</td><td>Đắt (cần tối thiểu 3 node)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 11</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">NewSQL/Distributed SQL là bước tiến vĩ đại giúp các lập trình viên giải tỏa nỗi lo về "mở rộng" mà vẫn giữ được sự an tâm về "dữ liệu đúng".</p>
+    <ol class="lesson-list">
+      <li>Google Spanner: Đỉnh cao công nghệ, cần đồng hồ nguyên tử.</li>
+      <li>CockroachDB: Bất tử, dễ dùng trên mọi nền tảng Cloud.</li>
+      <li>YugabyteDB: "Người tình" hoàn hảo cho những ai yêu PostgreSQL.</li>
+    </ol>
+    <p class="lesson-text"><strong>Nguồn tham khảo chuyên sâu:</strong></p>
+    <ul class="lesson-list">
+      <li>Spanner: Google’s Globally-Distributed Database (Whitepaper 2012).</li>
+      <li>In Search of an Understandable Consensus Algorithm (Raft Paper) - Diego Ongaro and John Ousterhout.</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài học thực chiến: Nếu công ty bạn đang có kế hoạch mở rộng ra đa quốc gia hoặc lượng ghi (Write) vào Database đang làm nghẽn cổ chai hệ thống MySQL hiện tại, đừng vội chia nhỏ DB bằng tay. Hãy thử dựng một cụm CockroachDB local và cảm nhận sự "phân thân" của nó.<br><br>
+    Bài tiếp theo: Chúng ta đã biết chọn Database gì rồi, nhưng làm sao để "kéo giãn" nó ra khi lượng người dùng tăng đột biến? Chào mừng bạn đến với bài 12: Scaling Database. Chúng ta sẽ mổ xẻ về Replication, Sharding và những kỹ thuật "chia để trị" dữ liệu cực kỳ hại não nhưng cũng rất thú vị!<br><br>
+    Câu hỏi cho các bạn: Theo bạn, việc lắp đồng hồ nguyên tử của Google là "khoe cơ bắp" hay là một giải pháp tối ưu về kinh tế hơn so với việc dùng thuật toán phần mềm? Bình luận bên dưới nhé!<br><br>
+    Bạn thấy nội dung "Siêu chiến binh" này thế nào? Đã đủ sâu để bạn tự tin đi chém gió với các Senior chưa? Nếu đã sẵn sàng cho bài tiếp theo về Scaling Database, hãy cho tôi biết nhé!
+  </p>
+</div>
+
+</body>
+</html>

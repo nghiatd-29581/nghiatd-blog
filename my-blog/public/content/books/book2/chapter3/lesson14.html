@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 14: Consistency & Data Modeling – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào bạn! Chúng ta vừa đi qua "mạch máu" Indexing để giúp hệ thống chạy nhanh như chớp. Nhưng chạy nhanh mà chạy sai thì còn nguy hiểm hơn. Hãy tưởng tượng bạn rút tiền ở ATM, máy báo thành công, bạn cầm tiền về nhưng số dư tài khoản... vẫn y nguyên. Tuyệt vời cho bạn, nhưng là thảm họa cho ngân hàng!<br><br>
+    Hôm nay, chúng ta sẽ bước vào một trong những chủ đề "xoắn não" nhất của dân làm hệ thống: Làm sao để dữ liệu luôn đúng (Consistency) và Làm sao để thiết kế dữ liệu không bị "nghẽn cổ chai" (Modeling). Bài viết này sẽ cực kỳ chi tiết, đi sâu vào từng ngóc ngách của sự đánh đổi.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 3: STORAGE & DATA MODELING</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 3: THẾ GIỚI DATABASE</h2>
+  <h3 class="lesson-title">BÀI 14: CONSISTENCY & DATA MODELING – KHI SỰ THẬT KHÔNG CHỈ CÓ MỘT</h3>
+
+  <h4 class="lesson-section">1. Consistency: Cuộc chiến giữa "Ngay lập tức" và "Từ từ rồi khoai sẽ nhừ"</h4>
+
+  <p class="lesson-text">Trong bài học về định lý CAP, chúng ta đã biết không thể có mọi thứ. Consistency trong lưu trữ thường được chia thành hai thái cực chính:</p>
+
+  <p class="lesson-text"><strong>1.1. Strong Consistency (Nhất quán mạnh)</strong></p>
+  <p class="lesson-text">Đây là "tiêu chuẩn vàng". Khi bạn ghi dữ liệu xong, bất kỳ ai đọc lại ở bất kỳ đâu cũng phải thấy dữ liệu mới nhất đó.</p>
+  <ul class="lesson-list">
+    <li>Cơ chế: Để làm được điều này, hệ thống phải thực hiện các giao thức đồng thuận (như Raft hay Paxos). Khi bạn ghi vào Node A, nó phải đợi Node B, Node C gật đầu xác nhận rồi mới báo thành công cho bạn.</li>
+    <li>Hệ quả: Latency cao. Nếu một node ở Mỹ và một node ở Singapore, ánh sáng phải bay qua bay lại mất vài trăm ms.</li>
+    <li>Ví dụ: Hệ thống ngân hàng, đặt vé máy bay (không thể để 2 người đặt cùng 1 ghế).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>1.2. Eventual Consistency (Nhất quán cuối cùng)</strong></p>
+  <p class="lesson-text">Đây là kiểu "hứa lèo nhưng có tâm". Hệ thống không hứa bạn sẽ thấy dữ liệu mới ngay lập tức, nhưng hứa rằng cuối cùng (sau vài ms hoặc vài giây), tất cả các node sẽ đồng bộ và thấy như nhau.</p>
+  <ul class="lesson-list">
+    <li>Cơ chế: Ghi vào Node gần nhất, báo thành công ngay. Sau đó dữ liệu mới âm thầm được "lan truyền" (Gossip) sang các node khác.</li>
+    <li>Hệ quả: Latency cực thấp, Availability cực cao. Nhưng bạn có thể gặp tình trạng: Vừa đăng Status lên Facebook, F5 lại không thấy đâu, 2 giây sau mới hiện ra.</li>
+    <li>Ví dụ: Lượt Like trên Youtube, Feed của Twitter, Hệ thống DNS.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Góc hài hước:</strong></p>
+  <ul class="lesson-list">
+    <li>Strong Consistency: Giống như việc bạn gọi điện cho mẹ báo có người yêu. Ngay sau đó ai gọi hỏi mẹ bạn, bà ấy cũng sẽ trả lời đúng tên người đó.</li>
+    <li>Eventual Consistency: Giống như việc bạn đăng tin lên Group xóm. Người đầu ngõ biết trước, người cuối ngõ biết sau, sau nửa ngày thì cả xóm đều biết.</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Data Modeling: Nỗi đau mang tên Normalization (Chuẩn hóa)</h4>
+
+  <p class="lesson-text">Hồi đi học, chúng ta được dạy về 1NF, 2NF, 3NF... Mục tiêu là để dữ liệu không bị dư thừa.</p>
+
+  <ul class="lesson-list">
+    <li>Ví dụ: Thay vì lưu tên tác giả vào mỗi cuốn sách, ta lưu author_id rồi nối (JOIN) sang bảng Authors.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Tại sao Normalization đôi khi là "Kẻ thù" của hiệu năng?</strong></p>
+  <p class="lesson-text">Khi hệ thống nhỏ, JOIN 2-3 bảng là chuyện nhỏ. Nhưng khi bạn có 1 tỷ bản ghi và cần JOIN 10 bảng để hiển thị một cái Profile người dùng?</p>
+
+  <ol class="lesson-list">
+    <li>Disk I/O vọt xà: Database phải nhảy khắp nơi trên ổ cứng để gom dữ liệu.</li>
+    <li>Khó Sharding: Nếu bảng Orders nằm ở Server 1, bảng Users nằm ở Server 2, bạn không thể thực hiện một cú JOIN SQL thông thường được nữa.</li>
+  </ol>
+
+  <h4 class="lesson-section">3. Denormalization (Phản chuẩn hóa): "Chiêu trò" của các Master</h4>
+
+  <p class="lesson-text">Để giải quyết vấn đề trên, chúng ta dùng Denormalization. Thay vì tách ra để tiết kiệm dung lượng, ta chấp nhận dư thừa dữ liệu để đổi lấy tốc độ đọc.</p>
+
+  <p class="lesson-text"><strong>Ví dụ thực tế: Trang chi tiết sản phẩm Thương mại điện tử</strong></p>
+  <p class="lesson-text">Một sản phẩm có: Tên, Giá, Ảnh, Tên Thương hiệu, Tên Shop.</p>
+
+  <ul class="lesson-list">
+    <li>Cách chuẩn hóa: JOIN 4 bảng: Products, Prices, Brands, Shops.</li>
+    <li>Cách phản chuẩn hóa: Lưu thẳng brand_name và shop_name vào bảng Products.</li>
+  </ul>
+
+  <p class="lesson-text">Kết quả:</p>
+  <ul class="lesson-list">
+    <li>Đọc: Chỉ cần 1 câu SELECT * FROM Products WHERE id = 123. Cực nhanh!</li>
+    <li>Ghi: Nếu Shop đổi tên, bạn phải đi cập nhật tên đó ở... 1 triệu sản phẩm của Shop đó. (Đây là cái giá phải trả).</li>
+  </ul>
+
+  <h4 class="lesson-section">4. Chiến thuật chọn lựa: Khi nào thì "Chuẩn", khi nào thì "Phản"?</h4>
+
+  <p class="lesson-text">Đừng chọn bừa, hãy dùng tư duy Read-Heavy hay Write-Heavy:</p>
+
+  <ul class="lesson-list">
+    <li>Read-Heavy (Đọc nhiều, Ghi ít): Ví dụ như Blog, Social Media, Catalog sản phẩm. Hãy dùng Denormalization mạnh tay. Thà ghi chậm một chút nhưng hàng triệu người xem sẽ thấy nhanh.</li>
+    <li>Write-Heavy (Ghi nhiều, Đọc ít): Ví dụ như hệ thống Log, Tracking hành vi. Hãy dùng Normalization hoặc các cấu trúc Append-only để việc ghi diễn ra mượt mà nhất.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Kỹ thuật "Materialized Views"</strong></p>
+  <p class="lesson-text">Đây là một dạng trung gian tuyệt vời. Bạn vẫn lưu dữ liệu chuẩn hóa trong DB, nhưng bạn tạo ra một cái "View" đã được tính toán sẵn (Pre-computed) các cú JOIN phức tạp. Khi cần đọc, bạn chỉ việc lấy từ View này.</p>
+
+  <h4 class="lesson-section">5. ACID vs. BASE: Hai thái cực tư duy</h4>
+
+  <p class="lesson-text">Để tổng kết về Consistency và Modeling, giới kỹ sư đúc kết thành hai mô hình:</p>
+
+  <ul class="lesson-list">
+    <li>ACID (Atomicity, Consistency, Isolation, Durability): Gắn liền với SQL và Strong Consistency. "Sai một ly đi một dặm", ưu tiên sự chính xác tuyệt đối.</li>
+    <li>BASE (Basically Available, Soft state, Eventual consistency): Gắn liền với NoSQL và Denormalization. "Nhanh là trên hết", chấp nhận dữ liệu có thể hơi "mềm" (Soft state) một chút nhưng hệ thống không bao giờ chết.</li>
+  </ul>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 14</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">1. Consistency không phải là miễn phí: Muốn "Strong" thì phải đợi, muốn "Nhanh" thì phải chấp nhận "Eventual".</p>
+    <p class="lesson-text">2. Đừng sợ dư thừa dữ liệu: Trong System Design hiện đại, giá ổ cứng rất rẻ, nhưng thời gian của người dùng là vô giá. Denormalization là chìa khóa để scale hệ thống lên hàng triệu người dùng.</p>
+    <p class="lesson-text">3. Modeling là sự đánh đổi: Hãy dựa vào nhu cầu truy vấn (Query Patterns) để thiết kế bảng, chứ không phải dựa vào lý thuyết giáo khoa.</p>
+    <p class="lesson-text"><strong>Nguồn trích dẫn:</strong></p>
+    <ul class="lesson-list">
+      <li>Designing Data-Intensive Applications (Chapter 7: Transactions & Chapter 9: Consistency and Consensus) - Martin Kleppmann.</li>
+      <li>Principles of Transaction-Oriented Database Recovery (Haerder and Reuter, 1983) - Nơi khai sinh thuật ngữ ACID.</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài học tiếp theo: Dữ liệu không thể nằm mãi trong Database chính. Theo thời gian, nó sẽ phình to và làm chậm hệ thống. Làm sao để "dọn dẹp" mà vẫn tuân thủ pháp luật? Chào mừng bạn đến với Bài 15: Data Lifecycle & Compliance. Chúng ta sẽ nói về Cold Storage, TTL (Time-to-live) và bóng ma mang tên GDPR!<br><br>
+    Câu hỏi dành cho bạn: Trong một ứng dụng Chat như Messenger, theo bạn tin nhắn nên dùng Strong hay Eventual Consistency? Nếu bạn vừa gửi tin nhắn mà bạn của bạn chưa thấy ngay, đó có phải là lỗi không?<br><br>
+    Bạn thấy bài viết về "Sự thật và Sự đánh đổi" này thế nào? Đã đủ chi tiết để bạn tự tin thiết kế một Schema "triệu view" chưa? Nếu ok, hãy cho mình biết để chuẩn bị cho bài tiếp theo về vòng đời dữ liệu nhé!
+  </p>
+</div>
+
+</body>
+</html>

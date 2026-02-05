@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 13: Indexing & Optimization – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào bạn! Chúng ta đã biết chọn "loại tim" (Database) nào cho hệ thống ở bài trước. Nhưng có một thực tế phũ phàng: Một trái tim to khỏe mà các mạch máu bị tắc nghẽn thì cơ thể vẫn cứ "lên bờ xuống ruộng" như thường.<br><br>
+    Trong Database, "tắc nghẽn mạch máu" chính là việc bạn thực hiện Full Table Scan (quét toàn bộ bảng) chỉ để tìm một bản ghi duy nhất. Hôm nay, chúng ta sẽ đi sâu vào "linh hồn" của hiệu năng – thứ giúp Database tìm kiếm dữ liệu trong chớp mắt giữa hàng tỷ dòng: Indexing.<br><br>
+    Hãy chuẩn bị một tinh thần thép, vì chúng ta sẽ "mổ xẻ" những cấu trúc dữ liệu kinh điển nhất. Bài này sẽ rất dài, cực kỳ chi tiết và đảm bảo bạn sẽ không bao giờ nhìn cái CREATE INDEX theo cách cũ nữa.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 3: STORAGE & DATA MODELING</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 3: THẾ GIỚI DATABASE</h2>
+  <h3 class="lesson-title">BÀI 13: INDEXING & OPTIMIZATION – LINH HỒN CỦA HIỆU NĂNG</h3>
+
+  <h4 class="lesson-section">1. B-Tree: Vị vua không ngai của thế giới SQL</h4>
+
+  <p class="lesson-text">Nếu bạn dùng MySQL (InnoDB) hay PostgreSQL, 99% trường hợp bạn đang dùng B-Tree (hoặc biến thể B+ Tree). Đây là cấu trúc dữ liệu được thiết kế hoàn hảo để hoạt động trên ổ đĩa (Disk-based storage).</p>
+
+  <p class="lesson-text"><strong>Cấu trúc và Cơ chế</strong></p>
+  <p class="lesson-text">B-Tree (Balanced Tree) giữ cho dữ liệu luôn được sắp xếp và cân bằng. Mọi node lá (leaf node) đều nằm ở cùng một độ sâu.</p>
+
+  <ul class="lesson-list">
+    <li>Độ phức tạp: Tìm kiếm, chèn, xóa đều đạt <strong><em>O(log n)</em></strong>. Với 1 tỷ bản ghi, bạn chỉ tốn khoảng 30 lần nhảy (hop) để tìm ra dữ liệu.</li>
+    <li>Tối ưu ổ đĩa: B-Tree được chia thành các "Page" (thường là 16KB). Một node có thể chứa hàng trăm "con", giúp giảm tối đa số lần đầu đọc của ổ cứng phải di chuyển (Disk I/O).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Tại sao nó thống trị SQL?</strong></p>
+  <p class="lesson-text">B-Tree cực kỳ mạnh mẽ trong việc truy vấn khoảng (Range Queries). Ví dụ: SELECT * FROM users WHERE age BETWEEN 18 AND 25. Vì dữ liệu được sắp xếp, B-Tree chỉ cần tìm điểm đầu và quét ngang qua các node lá.</p>
+
+  <p class="lesson-text"><strong>Góc hài hước:</strong> B-Tree giống như một ông quản gia cực kỳ ngăn nắp. Ông ấy không bao giờ để căn phòng lộn xộn, mỗi khi có đồ mới, ông ấy sẽ sắp xếp lại ngay lập tức để đảm bảo khi bạn hỏi "Kéo đâu?", ông ấy đưa ra trong vòng 1 nốt nhạc.</p>
+
+  <h4 class="lesson-section">2. LSM-Tree: "Cỗ máy tốc độ" của kỷ nguyên NoSQL</h4>
+
+  <p class="lesson-text">Nếu B-Tree là vua của việc Đọc, thì LSM-Tree (Log-Structured Merge-Tree) là "quái thú" của việc Ghi. Bạn sẽ tìm thấy nó trong Cassandra, RocksDB, hay LevelDB.</p>
+
+  <p class="lesson-text"><strong>Tại sao cần LSM-Tree?</strong></p>
+  <p class="lesson-text">Vấn đề của B-Tree là khi ghi dữ liệu, nó phải tìm đúng chỗ để chèn (Random Write). Với ổ cứng HDD cũ, đầu đọc phải bay qua bay lại rất chậm. Ngay cả với SSD, ghi ngẫu nhiên cũng gây ra hiện tượng Write Amplification.</p>
+
+  <p class="lesson-text">LSM-Tree giải quyết bằng cách: Biến mọi lượt ghi thành ghi tuần tự (Sequential Write).</p>
+
+  <p class="lesson-text"><strong>Quy trình "phù thủy":</strong></p>
+  <ol class="lesson-list">
+    <li>Memtable: Dữ liệu mới được ghi vào một bảng trên RAM (cực nhanh).</li>
+    <li>WAL (Write Ahead Log): Ghi đồng thời vào một file log dưới đĩa để đề phòng mất điện (ghi tuần tự nên vẫn nhanh).</li>
+    <li>SSTable (Sorted String Table): Khi Memtable đầy, nó được đẩy xuống đĩa thành một file SSTable không thể thay đổi (Immutable).</li>
+    <li>Compaction: Định kỳ, hệ thống sẽ gộp các file SSTable nhỏ thành file lớn, loại bỏ dữ liệu cũ/trùng lặp.</li>
+  </ol>
+
+  <p class="lesson-text"><strong>Đánh đổi:</strong></p>
+  <p class="lesson-text">Ghi nhanh kinh hoàng nhưng Đọc sẽ chậm hơn B-Tree một chút vì hệ thống có thể phải kiểm tra nhiều SSTable khác nhau để tìm ra phiên bản mới nhất của dữ liệu.</p>
+
+  <h4 class="lesson-section">3. Inverted Index: "Trí thông minh" đằng sau Search Engine</h4>
+
+  <p class="lesson-text">Bạn có bao giờ thắc mắc tại sao Elasticsearch hay Google Search có thể tìm một từ khóa trong hàng tỷ trang web nhanh đến thế? Câu trả lời là Inverted Index (Chỉ mục đảo ngược).</p>
+
+  <p class="lesson-text"><strong>Cơ chế "Lật ngược thế cờ"</strong></p>
+  <p class="lesson-text">Thay vì lưu: Document -> List of Words, Inverted Index lưu: Word -> List of Documents.</p>
+
+  <p class="lesson-text">Ví dụ bạn có 2 câu:</p>
+  <ol class="lesson-list">
+    <li>"Học System Design rất vui."</li>
+    <li>"Học lập trình rất khó."</li>
+  </ol>
+
+  <p class="lesson-text">Inverted Index sẽ trông như thế này:</p>
+  <ul class="lesson-list">
+    <li>"Học": {1, 2}</li>
+    <li>"System": {1}</li>
+    <li>"Design": {1}</li>
+    <li>"lập trình": {2}</li>
+  </ul>
+
+  <p class="lesson-text">Khi bạn tìm từ "Học", nó trả về ngay Document 1 và 2 mà không cần đọc nội dung câu nào cả.</p>
+
+  <p class="lesson-text"><strong>Use-case:</strong></p>
+  <ul class="lesson-list">
+    <li>Full-text search, tìm kiếm mờ (fuzzy search), và các hệ thống phân tích dữ liệu lớn.</li>
+  </ul>
+
+  <h4 class="lesson-section">4. Optimization: Nghệ thuật của sự đánh đổi (Trade-offs)</h4>
+
+  <p class="lesson-text">Index là một "con dao hai lưỡi". Đừng bao giờ CREATE INDEX cho mọi cột trong bảng.</p>
+
+  <p class="lesson-text"><strong>Cái giá phải trả (The Cost of Indexing):</strong></p>
+  <ol class="lesson-list">
+    <li>Ghi chậm lại: Mỗi khi bạn INSERT/UPDATE/DELETE, Database phải cập nhật cả bảng dữ liệu lẫn tất cả các bộ Index liên quan.</li>
+    <li>Tốn dung lượng: Index có khi nặng bằng hoặc hơn cả dữ liệu thật.</li>
+    <li>Lựa chọn của Optimizer: Đôi khi quá nhiều Index khiến bộ tối ưu hóa (Query Optimizer) bị "lú", dẫn đến chọn sai Index và làm query chậm đi.</li>
+  </ol>
+
+  <p class="lesson-text"><strong>Chiến thuật của bậc thầy:</strong></p>
+  <ul class="lesson-list">
+    <li>Composite Index (Chỉ mục tổ hợp): Nếu bạn thường xuyên query WHERE a = 1 AND b = 2, hãy tạo index (a, b) thay vì hai index riêng lẻ. Nhưng hãy nhớ Quy tắc tiền tố bên trái (Left-most prefix): Index (a, b) dùng được cho WHERE a = 1, nhưng KHÔNG dùng được cho WHERE b = 2.</li>
+    <li>Covering Index: Thiết kế index chứa luôn cả dữ liệu bạn muốn SELECT. Khi đó Database không cần phải mò vào bảng chính (Data Page) nữa -> Hiệu năng tăng vọt.</li>
+  </ul>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 13</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Trở thành Master về Storage nghĩa là bạn phải hiểu Database của mình đang dùng "vũ khí" gì ở bên dưới:</p>
+    <ul class="lesson-list">
+      <li>B-Tree: Cân bằng tốt giữa Đọc/Ghi, cực mạnh cho Range Query (SQL truyền thống).</li>
+      <li>LSM-Tree: Ưu tiên tốc độ Ghi, chấp nhận hy sinh một chút tốc độ Đọc (Big Data, NoSQL).</li>
+      <li>Inverted Index: Phù hợp cho tìm kiếm văn bản phức tạp (Search Engine).</li>
+    </ul>
+    <p class="lesson-text"><strong>Nguồn trích dẫn:</strong></p>
+    <ul class="lesson-list">
+      <li>The Ubiquitous B-Tree (Douglas Comer, 1979).</li>
+      <li>The Log-Structured Merge-Tree (LSM-Tree) (Patrick O'Neil et al., 1996).</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Chúng ta đã biết cách tìm dữ liệu nhanh, nhưng làm sao để đảm bảo dữ liệu đó "đúng" và "đồng nhất" khi có hàng nghìn người cùng sửa một lúc? Chào mừng bạn đến với Bài 13: Consistency & Data Modeling. Chúng ta sẽ mổ xẻ về Transaction, Isolation Levels và cách thiết kế Schema sao cho không bị "vỡ trận"!<br><br>
+    Câu hỏi dành cho bạn: Nếu bạn đang xây dựng một hệ thống Log cho App với tốc độ 1 triệu dòng/giây, bạn sẽ chọn Database dùng B-Tree hay LSM-Tree? Tại sao? Hãy để lại ý kiến dưới comment nhé!<br><br>
+    Bạn thấy nội dung "Mạch máu hệ thống" này đã đủ sâu sắc và chi tiết chưa? Nếu bạn thấy hài lòng, hãy cho mình biết để chúng ta chuyển sang phần "Consistency" – nơi những cơn ác mộng về Race Condition bắt đầu!
+  </p>
+</div>
+
+</body>
+</html>
