@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 20: Cloud-Native & Kubernetes – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào bạn, "người đồng hành" kiên nhẫn! Chúng ta đã đi một chặng đường rất dài: từ việc đặt viên gạch Database đầu tiên, xây dựng hệ thống Caching, phân luồng bằng Load Balancer, cho đến việc thiết lập cơ chế giao tiếp bằng Message Queue.<br><br>
+    Nhưng có một sự thật đau lòng: "Code chạy ngon trên máy của em, nhưng lên Server thì chết ngắc!".<br><br>
+    Đây là câu nói kinh điển khiến bao tình bạn Dev - Ops rạn nứt. Tại sao? Vì môi trường Dev và Production quá khác nhau. Dev dùng MacOS, Prod dùng Linux. Dev cài thư viện version 1.0, Prod lại có sẵn version 0.9.<br><br>
+    Để giải quyết vấn đề này, thế giới đã sinh ra Container và "người nhạc trưởng vĩ đại" Kubernetes. Hôm nay, chúng ta sẽ bước vào bài cuối cùng của Chương 4, một bài viết dài, sâu và đầy đủ về hạ tầng hiện đại. Hãy thắt dây an toàn, vì chúng ta sắp bay lên "Mây" (Cloud-Native)!
+  </p>
+
+  <h1 class="lesson-part">PHẦN 4: INFRASTRUCTURE & CLOUD-NATIVE</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 4: HẠ TẦNG & CLOUD</h2>
+  <h3 class="lesson-title">BÀI 20: CLOUD-NATIVE & KUBERNETES – HỆ ĐIỀU HÀNH CỦA INTERNET</h3>
+
+  <h4 class="lesson-section">1. Container: "Chiếc hộp thần kỳ" thay đổi thế giới</h4>
+
+  <p class="lesson-text">Trước khi có Container, chúng ta dùng Virtual Machine (VM - Máy ảo).</p>
+
+  <ul class="lesson-list">
+    <li><strong>VM:</strong> Giống như bạn xây một ngôi nhà riêng biệt cho mỗi ứng dụng. Mỗi nhà có móng, tường, điện nước riêng (Guest OS). → Rất nặng (vài GB), khởi động chậm (vài phút).</li>
+    <li><strong>Container:</strong> Giống như bạn thuê phòng trong một chung cư. Chung cư đã có sẵn móng, điện nước (Host OS Kernel). Bạn chỉ việc xách vali (Code + Libs) vào ở. → Rất nhẹ (vài chục MB), khởi động tức thì (ms).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Tại sao Container thắng thế?</strong></p>
+  <p class="lesson-text">Nó giải quyết triệt để bài toán "Works on my machine". Bạn đóng gói Code + Thư viện + Config vào một cái Image (như file .iso ngày xưa). Cái Image này chạy ở máy bạn thế nào, thì lên Server nó chạy y hệt thế ấy. Không còn cảnh "thiếu thư viện", "sai version" nữa.</p>
+
+  <p class="lesson-text"><strong>Ví dụ thực tế:</strong> Bạn build một ứng dụng Node.js trên máy Mac (ARM64). Nếu không dùng Container, khi deploy lên Server Linux x86_64, bạn có thể gặp lỗi "missing module" hoặc "incompatible architecture". Với Docker, bạn chỉ cần build một Image duy nhất và chạy được ở mọi nơi.</p>
+
+  <h4 class="lesson-section">2. Kubernetes (K8s): Vị thuyền trưởng (Helmsman)</h4>
+
+  <p class="lesson-text">Có Docker rồi, chạy 1-2 container thì dễ (docker run). Nhưng khi bạn có 100 Microservices, mỗi cái chạy 10 bản (Replicas) → Tổng cộng 1.000 containers.</p>
+
+  <ul class="lesson-list">
+    <li>Làm sao biết con nào chết để khởi động lại?</li>
+    <li>Làm sao update code mới cho 1.000 con mà không sập hệ thống?</li>
+    <li>Làm sao chia đều 1.000 con vào 50 cái máy chủ vật lý?</li>
+  </ul>
+
+  <p class="lesson-text">Nếu làm bằng tay, bạn cần 100 ông SysAdmin trực 24/7. Hoặc bạn dùng Kubernetes (K8s).</p>
+
+  <p class="lesson-text">K8s là một hệ thống Orchestration (Điều phối). Bạn chỉ cần ra lệnh: "Tôi muốn 3 bản sao của App A". K8s sẽ tự động tìm máy rảnh, bật container lên, và nếu có con nào chết, nó tự bật con mới thay thế để đảm bảo luôn đủ 3 con.</p>
+
+  <p class="lesson-text"><strong>Góc hài hước:</strong> K8s giống như một bà mẹ chồng cực kỳ khó tính và nguyên tắc. Bạn nói với bà ấy: "Nhà lúc nào cũng phải có 3 bát cơm". Nếu lỡ tay bạn làm vỡ 1 cái, bà ấy lập tức mua ngay cái mới về đặt vào. Bà ấy không quan tâm lý do, chỉ quan tâm đến kết quả cuối cùng (Desired State).</p>
+
+  <h4 class="lesson-section">3. Các khái niệm cốt lõi: Pods & Deployments</h4>
+
+  <p class="lesson-text">Đừng nhầm lẫn, K8s không quản lý trực tiếp Container. Đơn vị nhỏ nhất của nó là Pod.</p>
+
+  <p class="lesson-text"><strong>3.1. Pod: "Hạt đậu"</strong></p>
+  <p class="lesson-text">Một Pod là một lớp vỏ bọc bên ngoài một hoặc nhiều Container.</p>
+
+  <ul class="lesson-list">
+    <li>Tại sao cần Pod? Đôi khi bạn cần 2 container đi dính liền với nhau như hình với bóng (ví dụ: 1 container chạy Web App, 1 container chạy Log Collector sidecar). Chúng cần dùng chung IP, chung ổ cứng (volume), chung Network Namespace. K8s nhét chúng vào 1 Pod.</li>
+    <li>Vòng đời: Pod là thứ "phù du" (Ephemeral). Nó sinh ra, sống, và chết. Khi chết, nó không hồi sinh, mà được thay thế bằng một Pod mới toanh với ID mới và IP mới.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>3.2. Deployment & ReplicaSet</strong></p>
+  <p class="lesson-text">Bạn hiếm khi tạo Pod trực tiếp. Bạn tạo Deployment.</p>
+
+  <p class="lesson-text">Deployment là bản thiết kế (Blueprint). Nó định nghĩa: Dùng Image nào, chạy bao nhiêu bản (Replicas), cách update thế nào.</p>
+
+  <ul class="lesson-list">
+    <li><strong>Update không Downtime (Rolling Update):</strong> Khi bạn deploy code mới, K8s sẽ không giết hết Pod cũ cùng lúc. Nó giết từng cái một (maxUnavailable) và thay bằng cái mới (maxSurge). Người dùng không hề cảm thấy gián đoạn.</li>
+    <li><strong>Rollback:</strong> Nếu version mới lỗi, bạn chỉ cần chạy kubectl rollout undo → K8s tự động quay về version cũ trong vài giây.</li>
+  </ul>
+
+  <h4 class="lesson-section">4. Auto-scaling: "Hệ thống biết thở"</h4>
+
+  <p class="lesson-text">Đây là tính năng đáng tiền nhất của Cloud-Native. Hệ thống của bạn có thể tự phình to khi đông khách và tự thu nhỏ khi vắng khách để tiết kiệm tiền.</p>
+
+  <p class="lesson-text"><strong>4.1. Horizontal Pod Autoscaler (HPA) - Mở rộng ngang</strong></p>
+  <ul class="lesson-list">
+    <li>Cơ chế: K8s theo dõi CPU/RAM (hoặc Custom Metrics như số request/s). Nếu thấy các Pod đang thở dốc (CPU > 80%), nó sẽ tự động sinh thêm Pod mới (Scale Out).</li>
+    <li>Ví dụ: Bình thường chạy 2 Pods. Flash Sale đến, CPU tăng vọt → K8s nhân bản lên 50 Pods. Hết Sale → K8s giết bớt, còn lại 2 Pods.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>4.2. Vertical Pod Autoscaler (VPA) - Mở rộng dọc</strong></p>
+  <ul class="lesson-list">
+    <li>Cơ chế: Thay vì đẻ thêm Pod, nó tăng sức mạnh cho Pod hiện tại (Cấp thêm RAM/CPU request/limit).</li>
+    <li>Nhược điểm: Thường phải restart Pod để áp dụng cấu hình mới → Gây gián đoạn. Ít được dùng cho Production Web App hơn là HPA.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>4.3. Cluster Autoscaler</strong></p>
+  <ul class="lesson-list">
+    <li>Nếu HPA đẻ ra quá nhiều Pod đến mức 5 cái máy chủ vật lý (Nodes) không còn chỗ chứa thì sao?</li>
+    <li>Cluster Autoscaler sẽ tự động gọi API lên Cloud (AWS EC2 Auto Scaling Group, Google GKE Node Pool) để mua thêm máy chủ vật lý. Đây là cấp độ cao nhất của Scaling.</li>
+  </ul>
+
+  <h4 class="lesson-section">5. Service Mesh: "Lớp lưới" vô hình (Istio, Linkerd)</h4>
+
+  <p class="lesson-text">Khi bạn có hàng trăm Microservices gọi nhau chằng chịt, việc quản lý mạng (Network) trở thành địa ngục.</p>
+
+  <ul class="lesson-list">
+    <li>Service A gọi Service B bị chậm. Do mạng? Do code B dở? Hay do A cấu hình sai?</li>
+    <li>Làm sao mã hóa (Encrypt) toàn bộ giao tiếp nội bộ?</li>
+    <li>Làm sao theo dõi ai gọi ai, độ trễ bao nhiêu?</li>
+  </ul>
+
+  <p class="lesson-text">Service Mesh ra đời để giải quyết việc này bằng mô hình Sidecar Proxy.</p>
+
+  <p class="lesson-text"><strong>5.1. Sidecar Pattern: "Kẻ thì thầm"</strong></p>
+  <p class="lesson-text">Thay vì để Service A tự mở kết nối đến Service B, K8s sẽ tiêm (inject) vào mỗi Pod một container phụ gọi là Proxy (thường dùng Envoy).</p>
+
+  <ul class="lesson-list">
+    <li>Service A muốn gọi B → Nó gọi Proxy của chính nó.</li>
+    <li>Proxy A gọi Proxy B.</li>
+    <li>Proxy B chuyển tin nhắn cho Service B.</li>
+  </ul>
+
+  <p class="lesson-text">Application (A và B) không hề biết sự tồn tại của Proxy. Nhưng toàn bộ lưu lượng mạng đều đi qua Proxy.</p>
+
+  <p class="lesson-text"><strong>5.2. Lợi ích (Observability & Control)</strong></p>
+  <ol class="lesson-list">
+    <li><strong>Observability (Khả năng quan sát):</strong> Vì Proxy nắm hết lưu lượng, nó vẽ được bản đồ (Graph) ai đang gọi ai, độ trễ bao nhiêu, tỷ lệ lỗi thế nào. Bạn nhìn vào Dashboard (như Grafana/Kiali) là thấy hết "long mạch" của hệ thống.</li>
+    <li><strong>Traffic Splitting (Canary Deployment):</strong> Bạn có thể ra lệnh cho Proxy: "Chuyển 1% traffic sang version mới, 99% vẫn ở version cũ". Cực kỳ an toàn khi release tính năng mới.</li>
+    <li><strong>Security (mTLS):</strong> Proxy tự động mã hóa dữ liệu. Dev không cần viết một dòng code nào về SSL/TLS cả.</li>
+  </ol>
+
+  <p class="lesson-text"><strong>5.3. Cái giá phải trả (Complexity Tax)</strong></p>
+  <ul class="lesson-list">
+    <li>Latency: Mỗi request phải đi qua thêm 2 lớp Proxy → Thêm vài milisecond độ trễ.</li>
+    <li>Tài nguyên: Mỗi Pod phải gánh thêm 1 container Proxy. 1000 Pods = 1000 Proxies ngốn thêm RAM/CPU.</li>
+    <li>Độ phức tạp: Debug lỗi của Istio là một cơn ác mộng. Nếu bạn chưa rành K8s mà đã cài Istio, bạn đang "cầm đèn chạy trước ô tô" và dễ lao xuống vực.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Lời khuyên của Master:</strong> Chỉ dùng Service Mesh khi bạn thực sự có vấn đề về quản lý giao tiếp giữa hàng chục Microservices. Với hệ thống nhỏ (dưới 20 services), K8s thuần túy là đủ.</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 20 & CHƯƠNG 4</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Chúng ta đã đi qua một hành trình dài về Infrastructure:</p>
+    <ol class="lesson-list">
+      <li>Load Balancing: Phân phối tải ở cửa ngõ.</li>
+      <li>Caching/CDN: Tăng tốc truy cập.</li>
+      <li>Message Queue: Giảm áp lực, xử lý bất đồng bộ.</li>
+      <li>K8s & Cloud-Native: Tự động hóa việc triển khai và mở rộng (Scaling).</li>
+    </ol>
+    <p class="lesson-text">Hệ thống của bạn giờ đây giống như một sinh vật sống: Tự biết mình ốm (Health Check), tự biết chữa bệnh (Self-healing), tự biết lớn lên khi cần (Auto-scaling).</p>
+    <p class="lesson-text"><strong>Nguồn tham khảo:</strong></p>
+    <ul class="lesson-list">
+      <li>The Borg System (Google's predecessor to Kubernetes).</li>
+      <li>Kubernetes: Up and Running (Brendan Burns et al.).</li>
+      <li>Istio Documentation: What is a Service Mesh?</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    CÁNH CỔNG CHƯƠNG 5 ĐANG MỞ RA...<br><br>
+    Chúng ta đã xây xong "Thành phố" (Infrastructure) với đầy đủ nhà cửa, đường xá. Bây giờ, cư dân trong thành phố đó (các Services) nói chuyện với nhau bằng ngôn ngữ gì?<br><br>
+    - Họ dùng tiếng Anh phổ thông (REST API)?<br>
+    - Họ dùng mật mã nhị phân siêu tốc (gRPC)?<br>
+    - Hay họ dùng ngôn ngữ truy vấn linh hoạt (GraphQL)?<br><br>
+    Chào mừng bạn đến với CHƯƠNG 5: COMMUNICATION & SECURITY.<br><br>
+    Bài đầu tiên sẽ là cuộc đại chiến giữa các giao thức: Bài 21: Communication Protocols (REST vs. gRPC vs. GraphQL).<br><br>
+    Câu hỏi bài tập: Trong K8s, nếu một Pod bị chết và K8s tạo lại Pod mới, IP của nó sẽ thay đổi. Vậy làm sao các Service khác biết đường tìm đến IP mới đó? (Gợi ý: Tìm hiểu về khái niệm Service Discovery và ClusterIP trong K8s).<br><br>
+    Bạn thấy bài viết chốt hạ Chương 4 này thế nào? Đã đủ "phê" với Kubernetes chưa? Hãy chuẩn bị tinh thần, Chương 5 sẽ giúp bạn trở thành bậc thầy về giao tiếp hệ thống!
+  </p>
+</div>
+
+</body>
+</html>

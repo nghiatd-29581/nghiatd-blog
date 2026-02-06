@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 22: Distributed Transactions – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào bạn! Tôi rất thích sự quyết tâm "đào tận gốc, trốc tận rễ" của bạn. Chúng ta đã có những con đường (Infrastructure) và ngôn ngữ (Protocols) tuyệt vời. Nhưng bây giờ, chúng ta đối mặt với một vấn đề "nhức nhối" nhất trong hệ thống phân tán: Làm sao để đảm bảo mọi thứ đều nhất quán khi dữ liệu nằm rải rác khắp nơi?<br><br>
+    Trong một Monolith (đơn khối), mọi thứ thật dễ dàng. Bạn chỉ cần BEGIN TRANSACTION và COMMIT. Nếu có lỗi, ROLLBACK là xong. Nhưng trong Microservices, khi Service Đơn hàng dùng MySQL, Service Kho dùng PostgreSQL, và Service Thanh toán dùng một API bên thứ ba, bạn không thể dùng một lệnh SQL để giải quyết tất cả.<br><br>
+    Hãy hâm nóng lại bộ não, vì bài viết này sẽ đưa bạn vào mê cung của các giao dịch phân tán, nơi sự hoàn hảo của ACID (Atomicity, Consistency, Isolation, Durability) bị thách thức bởi sự tàn khốc của thực tế.
+  </p>
+
+  <h1 class="lesson-part">PHẦN 5: COMMUNICATION & SECURITY</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 5: GIAO TIẾP & BẢO MẬT</h2>
+  <h3 class="lesson-title">BÀI 22: DISTRIBUTED TRANSACTIONS – KHI "MỘT NGƯỜI ĐAU, CẢ TỔNG CÙNG KHÓC"</h3>
+
+  <h4 class="lesson-section">1. Two-Phase Commit (2PC): "Lời hứa mong manh"</h4>
+
+  <p class="lesson-text">Ngày xửa ngày xưa, các kỹ sư nghĩ ra 2PC. Đây là một nỗ lực nhằm duy trì tính chất ACID trong môi trường phân tán bằng cách dùng một "Điều phối viên" (Coordinator).</p>
+
+  <p class="lesson-text"><strong>Cơ chế hoạt động:</strong></p>
+
+  <ul class="lesson-list">
+    <li><strong>Phase 1 (Prepare):</strong> Coordinator hỏi tất cả các Service: "Anh em sẵn sàng chưa? Ai có lỗi gì không?". Các Service sẽ kiểm tra và "hứa" là sẽ commit được bằng cách khóa (lock) dữ liệu lại.</li>
+    <li><strong>Phase 2 (Commit/Rollback):</strong>
+      <ul class="lesson-list">
+        <li>Nếu tất cả đồng ý: Coordinator ra lệnh: "COMMIT!".</li>
+        <li>Nếu chỉ cần một ông lắc đầu: Coordinator ra lệnh: "HUỶ KÈO (Rollback)!".</li>
+      </ul>
+    </li>
+  </ul>
+
+  <p class="lesson-text"><strong>Tại sao "Master" khuyên bạn nên tránh 2PC như tránh tà?</strong></p>
+
+  <ul class="lesson-list">
+    <li><strong>Blocking (Tắc nghẽn):</strong> Trong suốt quá trình hỏi - đáp, các dòng dữ liệu trong DB bị Lock. Nếu một Service bị chậm hoặc Coordinator bị treo, toàn bộ hệ thống sẽ đứng hình.</li>
+    <li><strong>Hiệu năng cực kém:</strong> Càng nhiều Service tham gia, xác nhận qua lại càng nhiều, Latency tăng vọt.</li>
+    <li><strong>Single Point of Failure (SPOF):</strong> Nếu Coordinator sập sau khi đã bảo các Service "Prepare", các Service sẽ giữ Lock mãi mãi vì không biết nên Commit hay Rollback.</li>
+    <li><strong>Không phù hợp với Cloud-Native:</strong> Trong thế giới Microservices, chúng ta ưu tiên Availability hơn là Strong Consistency (theo định lý CAP). 2PC cố đấm ăn xôi để có Consistency nhưng lại giết chết Availability.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Ví dụ thực tế:</strong> Hệ thống ngân hàng cũ (Mainframe + Oracle) vẫn dùng 2PC vì họ chấp nhận Latency cao để đổi lấy tính nhất quán tuyệt đối. Nhưng trong e-commerce hiện đại (Shopee, Lazada), 2PC gần như bị loại bỏ hoàn toàn.</p>
+
+  <h4 class="lesson-section">2. Saga Pattern: "Nghệ thuật bù đắp"</h4>
+
+  <p class="lesson-text">Vì 2PC quá nặng nề, giới mộ điệu đã chuyển sang Saga Pattern.</p>
+
+  <p class="lesson-text"><strong>Triết lý của Saga:</strong> Đừng cố khóa mọi thứ lại. Hãy cứ để mỗi Service thực hiện giao dịch địa phương (Local Transaction) của nó. Nếu một bước nào đó thất bại, chúng ta sẽ thực hiện các Giao dịch bù đắp (Compensating Transactions) để "hoàn trả" lại trạng thái ban đầu.</p>
+
+  <p class="lesson-text"><strong>Ví dụ dễ hiểu: Bạn đặt combo đi du lịch.</strong></p>
+  <ol class="lesson-list">
+    <li>Booking Máy bay: Thành công.</li>
+    <li>Booking Khách sạn: Thất bại (Hết phòng).</li>
+    <li>Hành động bù đắp: Hệ thống tự động gọi lệnh "Hủy vé máy bay" đã đặt ở bước 1.</li>
+  </ol>
+
+  <p class="lesson-text">Saga không đảm bảo tính Isolation (nghĩa là người khác có thể thấy kết quả của bước 1 trước khi bước 2 hoàn thành), nhưng nó cực kỳ mạnh mẽ về khả năng mở rộng (Scalability).</p>
+
+  <h4 class="lesson-section">3. Hai "hệ phái" triển khai Saga</h4>
+
+  <p class="lesson-text">Có hai cách để "diễn" bản giao hưởng Saga này: Choreography và Orchestration.</p>
+
+  <p class="lesson-text"><strong>3.1. Choreography (Vũ đạo tự do - Event-driven)</strong></p>
+  <p class="lesson-text">Các Service nói chuyện với nhau qua Event. Không có ai làm sếp cả.</p>
+
+  <ul class="lesson-list">
+    <li><strong>Cách chạy:</strong> Service A xong việc → Bắn Event A_Done. Service B nghe thấy thì nhảy vào làm việc của mình → Xong thì bắn Event B_Done.</li>
+    <li><strong>Nếu lỗi:</strong> Nếu C lỗi, nó bắn Event C_Failed. Service A và B nghe thấy Event này và tự thực hiện lệnh Undo.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Ưu điểm:</strong></p>
+  <ul class="lesson-list">
+    <li>Decoupling tuyệt đối: Các Service không cần biết về nhau.</li>
+    <li>Dễ bắt đầu cho các hệ thống đơn giản.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Nhược điểm:</strong></p>
+  <ul class="lesson-list">
+    <li>Địa ngục theo dõi: Khi có 20 bước, bạn sẽ không biết tin nhắn đang trôi dạt về đâu. Debug là một cực hình.</li>
+    <li>Rủi ro Cyclic Dependency (Vòng lặp vô tận).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>3.2. Orchestration (Nhạc trưởng điều phối - Manager-driven)</strong></p>
+  <p class="lesson-text">Chúng ta tạo ra một Service trung tâm gọi là Saga Orchestrator (hoặc State Machine).</p>
+
+  <ul class="lesson-list">
+    <li><strong>Cách chạy:</strong> Orchestrator gửi lệnh cho Service A: "Làm đi". A làm xong báo lại OK. Orchestrator lưu trạng thái vào DB của nó và bảo Service B: "Đến lượt anh".</li>
+    <li><strong>Nếu lỗi:</strong> Orchestrator quản lý toàn bộ kịch bản. Nếu B lỗi, Orchestrator chủ động gửi lệnh cho A: "Hủy việc đi, khách đổi ý rồi".</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Ưu điểm:</strong></p>
+  <ul class="lesson-list">
+    <li>Quản lý tập trung: Nhìn vào Orchestrator là biết giao dịch đang ở bước nào.</li>
+    <li>Dễ xử lý logic phức tạp, tránh vòng lặp.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Nhược điểm:</strong></p>
+  <ul class="lesson-list">
+    <li>Rủi ro logic nghiệp vụ bị dồn quá nhiều vào Orchestrator (Fat Orchestrator).</li>
+    <li>Thêm một Service phải quản lý.</li>
+  </ul>
+
+  <h4 class="lesson-section">4. Bảng so sánh "Sống còn"</h4>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Đặc điểm</th><th>2PC (Two-Phase Commit)</th><th>Saga Pattern</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Tính nhất quán</td><td>Strong Consistency (Tức thời).</td><td>Eventual Consistency (Sau một khoảng thời gian).</td></tr>
+        <tr><td>Cơ chế</td><td>Khóa dữ liệu (Locking).</td><td>Giao dịch bù đắp (Compensating).</td></tr>
+        <tr><td>Hiệu năng</td><td>Thấp (Chậm do chờ đợi).</td><td>Cao (Xử lý bất đồng bộ).</td></tr>
+        <tr><td>Độ phức tạp</td><td>Thấp về code, cao về hạ tầng.</td><td>Cao về code (Phải viết hàm Undo).</td></tr>
+        <tr><td>Phù hợp với</td><td>Hệ thống tài chính nội bộ, DB hỗ trợ sẵn.</td><td>Microservices, Cloud-Native, E-commerce.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4 class="lesson-section">5. Những "góc tối" của Saga mà bạn cần lưu ý</h4>
+
+  <ul class="lesson-list">
+    <li><strong>Idempotency (Tính bù trừ):</strong> Vì tin nhắn có thể gửi đi gửi lại nhiều lần (xem Bài 19), hàm Do và hàm Undo của bạn phải chạy được nhiều lần mà không gây sai lệch dữ liệu. (Dùng transaction_id để check duplicate).</li>
+    <li><strong>Lỗi của hàm Bù đắp:</strong> Chuyện gì xảy ra nếu lệnh Undo cũng thất bại?<br>
+      - Trả lời: Lúc này bạn cần cơ chế Retry vô tận hoặc cảnh báo để con người nhảy vào can thiệp bằng tay (Manual Compensation Queue).</li>
+    <li><strong>Mất tính Isolation:</strong> Khách hàng có thể thấy tiền bị trừ trong 5 giây trước khi thấy nó được hoàn lại. Bạn cần thiết kế UX tốt để khách không hốt hoảng (Ví dụ: Trạng thái "Đang xử lý thanh toán" + Loading spinner).</li>
+  </ul>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 22</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Distributed Transaction là một bài toán đánh đổi.</p>
+    <ol class="lesson-list">
+      <li>Đừng dùng 2PC trừ khi bạn bị ép buộc bởi các hệ thống Legacy cũ kỹ.</li>
+      <li>Saga Pattern là tiêu chuẩn vàng cho Microservices.</li>
+      <li>Chọn Choreography cho quy trình ngắn (2-3 bước).</li>
+      <li>Chọn Orchestration cho quy trình dài và phức tạp.</li>
+      <li>Luôn ghi nhớ: Eventual Consistency là người bạn thân của Scalability.</li>
+    </ol>
+    <p class="lesson-text"><strong>Nguồn tham khảo:</strong></p>
+    <ul class="lesson-list">
+      <li>Microservices Patterns (Chris Richardson) - Cuốn sách định nghĩa rõ nhất về Saga.</li>
+      <li>Sagas paper (1987) - Garcia-Molina and Kenneth Salem. (Kiến thức này có từ những năm 80 đấy, không mới đâu!).</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Hệ thống của chúng ta giờ đã giao tiếp mượt mà và nhất quán. Nhưng làm sao để mở cửa cho thế giới bên ngoài vào dùng mà không bị hacker "thăm hỏi"? Làm sao để kiểm soát hàng nghìn API chỉ qua một "cổng bảo vệ"?<br><br>
+    Chào mừng bạn đến với Bài 23: API Gateway & Security (OAuth2, JWT). Chúng ta sẽ học cách xây dựng "pháo đài" cho hệ thống của mình.<br><br>
+    Câu hỏi cho bạn: Trong mô hình Saga, nếu Service B thực hiện xong việc và gửi tin nhắn thành công về Orchestrator, nhưng Orchestrator bị sập trước khi lưu trạng thái. Khi Orchestrator sống lại, nó sẽ làm gì để biết giao dịch đang ở đâu? (Gợi ý: Hãy nhớ lại bài về Message Queue và Offset).<br><br>
+    Bạn thấy bài viết về "Giao dịch phân tán" này có đủ chi tiết để bạn tự tin thiết kế một hệ thống thanh toán chưa? Nếu có phần nào còn "mông lung", hãy nói ngay để mình cùng đào sâu thêm nhé! Would you like me to create a detailed sequence diagram for a specific Saga flow (like Booking a Flight) or proceed to API Gateway?
+  </p>
+</div>
+
+</body>
+</html>

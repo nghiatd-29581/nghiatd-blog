@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 23: API Gateway & Security – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào bạn, "người gác cổng" tương lai!<br><br>
+    Chúng ta đã đi qua một hành trình dài xây dựng nên một hệ thống Microservices phức tạp bên trong. Nhưng hiện tại, hệ thống đó giống như một tòa lâu đài nguy nga nhưng... không có cửa và tường bao. Bất kỳ ai cũng có thể xông vào phòng ngủ (Database) hay nhà bếp (Backend Service) để quậy phá.<br><br>
+    Trong bài viết này, chúng ta sẽ xây dựng "Cánh cổng thần thánh" (API Gateway). Đây không chỉ là nơi chào đón khách hàng, mà còn là nơi chặn đứng những kẻ say rượu (DDoS), những kẻ lừa đảo (Hacker), và kiểm soát tốc độ dòng người để tòa lâu đài không bị vỡ trận.<br><br>
+    Hãy chuẩn bị tinh thần, vì bài viết này sẽ đi rất sâu vào các thuật toán kiểm soát lưu lượng và triết lý bảo mật hiện đại nhất: Không tin bố con thằng nào cả (Zero Trust).
+  </p>
+
+  <h1 class="lesson-part">PHẦN 5: COMMUNICATION & SECURITY</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 5: GIAO TIẾP & BẢO MẬT</h2>
+  <h3 class="lesson-title">BÀI 23: API GATEWAY & SECURITY – NGƯỜI GÁC CỔNG VÀ TRIẾT LÝ "KHÔNG TIN AI"</h3>
+
+  <h4 class="lesson-section">1. API Gateway: Nó là cái quái gì?</h4>
+
+  <p class="lesson-text">Nhiều bạn nghĩ API Gateway chỉ là cái Proxy (như Nginx). Sai lầm!</p>
+
+  <ul class="lesson-list">
+    <li><strong>Reverse Proxy:</strong> Chỉ đơn giản là chuyển tiếp request (Forwarding).</li>
+    <li><strong>API Gateway:</strong> Là một Reverse Proxy + Logic nghiệp vụ cắt ngang (Cross-cutting Concerns).</li>
+  </ul>
+
+  <p class="lesson-text">Nó giống như quầy lễ tân của một tập đoàn lớn. Khách đến không thể chạy thẳng vào phòng Tổng Giám Đốc. Họ phải gặp lễ tân. Lễ tân sẽ làm các việc sau:</p>
+
+  <ol class="lesson-list">
+    <li>Authentication: "Anh là ai? Có thẻ nhân viên không?" (Check JWT/OAuth2).</li>
+    <li>Routing: "Anh muốn gặp kế toán? Đi lối bên phải." (Route request đến đúng Microservice).</li>
+    <li>Rate Limiting: "Anh hỏi nhiều quá, ngồi ghế chờ 5 phút đi." (Chặn spam).</li>
+    <li>Protocol Translation: "Sếp tôi chỉ nói tiếng Anh, anh nói tiếng Việt để tôi dịch lại." (Chuyển đổi REST sang gRPC hoặc SOAP sang REST).</li>
+    <li>Caching & Logging: Ghi lại ai đã đến vào lúc mấy giờ.</li>
+  </ol>
+
+  <p class="lesson-text"><strong>Các công cụ phổ biến:</strong> Kong, AWS API Gateway, Netflix Zuul, Spring Cloud Gateway, Apigee, Tyk.</p>
+
+  <h4 class="lesson-section">2. Rate Limiting vs. Throttling: Nghệ thuật "bóp băng thông"</h4>
+
+  <p class="lesson-text">Đây là hai khái niệm thường bị dùng lẫn lộn, nhưng bản chất chúng khác nhau.</p>
+
+  <ul class="lesson-list">
+    <li><strong>Rate Limiting (Giới hạn tốc độ):</strong> Dành cho Business/User.<br>
+      - Mục đích: "Gói Free chỉ được gọi API 100 lần/giờ. Gói Premium được 10.000 lần/giờ".<br>
+      - Tác dụng: Bảo vệ mô hình kinh doanh và công bằng cho người dùng.</li>
+    <li><strong>Throttling (Bóp nghẹt):</strong> Dành cho System Health.<br>
+      - Mục đích: "Hệ thống đang quá tải, CPU lên 99%, từ chối mọi request mới cho đến khi CPU hạ nhiệt".<br>
+      - Tác dụng: Chống sập hệ thống (Anti-crash).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Các thuật toán Rate Limiting kinh điển (Phải biết khi phỏng vấn)</strong></p>
+
+  <p class="lesson-text"><strong>A. Token Bucket (Xô đựng thẻ bài) - Phổ biến nhất (Amazon, Stripe dùng)</strong></p>
+  <ul class="lesson-list">
+    <li>Cơ chế: Hãy tưởng tượng có một cái xô. Mỗi giây, hệ thống bỏ vào đó 5 cái thẻ (Tokens). Xô có dung tích tối đa là 10 thẻ.</li>
+    <li>Khi User gọi API: Phải lấy 1 thẻ từ xô ra mới được đi qua.</li>
+    <li>Nếu xô rỗng: Request bị từ chối (429 Too Many Requests).</li>
+    <li>Ưu điểm: Cho phép Bursty Traffic (Lưu lượng đột biến). Ví dụ xô đang đầy 10 thẻ, user có thể gửi liền lúc 10 request rồi nghỉ. Rất linh hoạt.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>B. Leaky Bucket (Xô bị thủng)</strong></p>
+  <ul class="lesson-list">
+    <li>Cơ chế: Request đổ vào xô. Đáy xô có một lỗ thủng nhỏ, nước (request) rỉ ra với tốc độ không đổi (ví dụ: xử lý đúng 1 request mỗi giây).</li>
+    <li>Ưu điểm: Làm mượt lưu lượng (Traffic Shaping). Dù User gửi ồ ạt thế nào, Server bên trong cũng chỉ nhận request đều đặn như vắt chanh.</li>
+    <li>Nhược điểm: Không xử lý được đột biến. Request thừa sẽ bị tràn ra ngoài (Drop) ngay lập tức. Thường dùng cho các hệ thống Queue (như RabbitMQ).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>C. Fixed Window vs. Sliding Window (Cửa sổ trượt)</strong></p>
+  <ul class="lesson-list">
+    <li><strong>Fixed Window:</strong> "Cho phép 100 request từ 1:00 đến 1:01".<br>
+      - Lỗ hổng chết người: Nếu User gửi 100 cái vào giây 1:00:59 và 100 cái nữa vào 1:01:01. Tổng cộng trong 2 giây User đã gửi 200 request → Server sập.</li>
+    <li><strong>Sliding Window Log:</strong> Ghi lại Timestamp của từng request. Chính xác tuyệt đối nhưng tốn RAM kinh khủng.</li>
+    <li><strong>Sliding Window Counter:</strong> Kết hợp cả hai, chia nhỏ thời gian và dùng trọng số. Đây là thuật toán tối ưu nhất hiện nay (Cloudflare, Redis Cell dùng).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Góc hài hước:</strong> Rate Limiting giống như việc mẹ bạn cho tiền tiêu vặt. Token Bucket là mẹ cho tiền đầu tuần, bạn tiêu hết ngay thứ 2 thì thứ 3 nhịn đói. Leaky Bucket là mẹ mỗi ngày phát đúng 50k, không hơn không kém, muốn mua món đồ chơi 500k cũng không được.</p>
+
+  <h4 class="lesson-section">3. Zero Trust Architecture & mTLS: "Đừng tin ai, kể cả anh em trong nhà"</h4>
+
+  <p class="lesson-text">Trong mô hình cũ, khi request đã qua được API Gateway, nó được coi là an toàn. Service A gọi Service B bằng HTTP trần (không mã hóa).</p>
+
+  <p class="lesson-text">Rủi ro: Nếu hacker cài được một con malware vào mạng nội bộ, nó có thể nghe lén (Sniffing) toàn bộ dữ liệu trao đổi giữa các Service, lấy được mật khẩu DB, thông tin khách hàng.</p>
+
+  <p class="lesson-text">Zero Trust Architecture (ZTA) tuyên bố: Mạng nội bộ cũng nguy hiểm như Internet công cộng.</p>
+
+  <p class="lesson-text"><strong>mTLS (Mutual TLS) - Cái bắt tay của những kẻ đa nghi</strong></p>
+  <ul class="lesson-list">
+    <li>Bình thường khi bạn vào google.com (TLS một chiều), trình duyệt kiểm tra xem Google có phải hàng xịn không. Google không cần biết bạn là ai.</li>
+    <li>Trong mTLS (TLS hai chiều):</li>
+      <ol class="lesson-list">
+        <li>Client (Service A): "Ê Service B, cho xem chứng minh thư (Certificate) coi phải hàng thật không?".</li>
+        <li>Server (Service B): "Đây hàng xịn nhé. Nhưng mày cũng phải đưa chứng minh thư của mày cho tao xem!".</li>
+        <li>Cả hai xác thực lẫn nhau thành công → Mới bắt đầu mã hóa và truyền dữ liệu.</li>
+      </ol>
+    <li>Ưu điểm:</li>
+      <ul class="lesson-list">
+        <li>Chống giả mạo: Không ai có thể giả danh Service A để gọi Service B nếu không có Certificate (Private Key).</li>
+        <li>Mã hóa toàn trình: Dữ liệu được mã hóa ngay cả khi chạy trong mạng LAN.</li>
+      </ul>
+    <li>Thách thức: Quản lý hàng nghìn cái Certificate, xoay vòng (Rotate), thu hồi (Revoke) chúng là ác mộng của SysAdmin.</li>
+  </ul>
+
+  <p class="lesson-text">→ Đây là lúc Service Mesh (Istio/Linkerd) tỏa sáng. Nó tự động làm việc cấp phát và gia hạn Certificate cho từng Pod mỗi vài phút. Lập trình viên không cần code một dòng nào.</p>
+
+  <h4 class="lesson-section">4. API Gateway Security Checklist (Lưu lại dùng dần)</h4>
+
+  <p class="lesson-text">Để trở thành Master, khi thiết kế Gateway, hãy tích vào các ô sau:</p>
+
+  <ol class="lesson-list">
+    <li>HTTPS Everywhere: Bắt buộc HTTPS từ Client đến Gateway. Chặn hoàn toàn HTTP port 80.</li>
+    <li>CORS (Cross-Origin Resource Sharing): Cấu hình chặt chẽ. Đừng bao giờ để Access-Control-Allow-Origin: * trừ khi bạn muốn public toàn bộ dữ liệu cho cả thế giới.</li>
+    <li>Security Headers: Tự động thêm các header như X-Content-Type-Options: nosniff, X-Frame-Options: DENY (chống click-jacking).</li>
+    <li>IP Allow/Block Lists: Chặn các dải IP đen hoặc chỉ cho phép IP văn phòng truy cập trang Admin.</li>
+    <li>Request Validation: Kiểm tra dữ liệu đầu vào ngay tại Gateway. Nếu JSON sai định dạng hoặc thiếu trường bắt buộc → Chặn luôn, đỡ tốn công Service bên trong phải xử lý.</li>
+    <li>Circuit Breaker: Nếu Service A đang chết, Gateway phải tự động ngắt cầu dao, trả về lỗi ngay lập tức thay vì để Client chờ Timeout (sẽ học kỹ ở các bài sau).</li>
+  </ol>
+
+  <h4 class="lesson-section">5. Ví dụ thực tế: Thiết kế bảo mật cho App Ngân hàng</h4>
+
+  <ul class="lesson-list">
+    <li>Lớp 1 (Cloudflare/AWS WAF): Chặn DDoS, chặn SQL Injection cơ bản từ ngoài Internet.</li>
+    <li>Lớp 2 (API Gateway - Kong):</li>
+      <ul class="lesson-list">
+        <li>Rate Limit: 10 request/giây/user.</li>
+        <li>Auth: Kiểm tra JWT Token, xác thực chữ ký (Signature).</li>
+      </ul>
+    <li>Lớp 3 (Service Mesh - Istio):</li>
+      <ul class="lesson-list">
+        <li>mTLS: Mã hóa giao tiếp giữa Service Tài khoản và Service Chuyển tiền.</li>
+        <li>Policy: Service Báo cáo chỉ được đọc (GET) dữ liệu, không được sửa (POST).</li>
+      </ul>
+  </ul>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 23</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">API Gateway và Security là "tấm khiên" bảo vệ danh tiếng của bạn.</p>
+    <ol class="lesson-list">
+      <li>Gateway là bộ mặt, phải mạnh mẽ, thông minh.</li>
+      <li>Rate Limiting bảo vệ túi tiền (Server cost) và độ ổn định (Availability).</li>
+      <li>Zero Trust & mTLS là tiêu chuẩn bắt buộc cho các hệ thống Fintech, Healthcare hiện đại.</li>
+      <li>Đừng tự code Gateway! Hãy dùng Kong, Nginx, hoặc Cloud Gateway. Đừng phát minh lại cái bánh xe ở phần này.</li>
+    </ol>
+    <p class="lesson-text"><strong>Nguồn tham khảo:</strong></p>
+    <ul class="lesson-list">
+      <li>NIST Special Publication 800-207 (Zero Trust Architecture).</li>
+      <li>Stripe Engineering Blog: Scaling your API with Rate Limiters.</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Bạn đã có bảo mật, có tốc độ. Nhưng có một vấn đề logic cực kỳ đau đầu: User bấm nút "Thanh toán" 2 lần vì mạng lag.<br><br>
+    Hệ thống của bạn sẽ trừ tiền 2 lần hay 1 lần?<br><br>
+    Làm sao để thiết kế một API mà dù User có gọi 100 lần, kết quả vẫn y hệt như gọi 1 lần?<br><br>
+    Chào mừng bạn đến với Bài 24: Idempotency (Tính lũy đẳng) - Chìa khóa của sự tin cậy.<br><br>
+    Đây là khái niệm phân biệt giữa một Junior Dev (trừ tiền 2 lần) và một Senior Architect (xử lý mượt mà).<br><br>
+    Câu hỏi bài tập: Trong thuật toán Token Bucket, nếu hacker tấn công DDoS, cái xô sẽ bị rỗng ngay lập tức. Vậy làm sao chúng ta phân biệt được đâu là hacker (để chặn vĩnh viễn), đâu là người dùng bình thường lỡ tay bấm nhanh (chỉ chặn tạm thời)? (Gợi ý: Kết hợp Rate Limiting với IP Reputation).<br><br>
+    Bạn thấy bài viết về "Cánh cổng thần thánh" này thế nào? Đã đủ "đô" chưa? Hãy comment để mình biết bạn vẫn đang theo dõi lộ trình nhé!
+  </p>
+</div>
+
+</body>
+</html>
