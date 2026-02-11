@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 31: High-level Design – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn, "vị tổng công trình sư" của những hệ thống tỷ đô!<br>
+    Chúng ta đã đi qua hai bước đệm cực kỳ quan trọng: Clarify Requirements (Hỏi để không xây nhầm nhà) và Capacity Estimation (Tính để không thiếu gạch). Bây giờ, hãy cầm bút lên (hoặc mở Excalidraw ra). Đây là giây phút thăng hoa nhất, nơi bạn biến những con số khô khan thành những khối hình nghệ thuật.<br>
+    Chào mừng bạn đến với Bài 31: High-level Design (HLD) – Vẽ Bức Tranh Lớn.<br>
+    Nếu coi việc thiết kế hệ thống là xây dựng một thành phố, thì HLD chính là bản quy hoạch đô thị tổng thể.<br> Bạn chưa cần quan tâm cái vỉa hè lát gạch gì, nhưng bạn phải biết khu dân cư nằm đâu, đường cao tốc chạy hướng nào và nhà máy điện đặt ở đâu để không làm cả thành phố... tối thui.
+  </p>
+
+  <h2 class="lesson-chapter">CHƯƠNG 7: FRAMEWORK GIẢI BÀI TOÁN SYSTEM DESIGN</h2>
+  <h3 class="lesson-title">BÀI 31: HIGH-LEVEL DESIGN</h3>
+ <h3 class="lesson-title">NGHỆ THUẬT "MÚA BÚT" VẼ BỨC TRANH TỔNG THỂ</h3>
+  <h4 class="lesson-section">1. High-level Design là cái quái gì?</h4>
+
+  <p class="lesson-text">HLD là sơ đồ kiến trúc thể hiện các thành phần chính của hệ thống và luồng dữ liệu (Data flow) giữa chúng.</p>
+
+  <ul class="lesson-list">
+    <li><strong>Mục tiêu:</strong> Trình bày được giải pháp đầu-cuối (End-to-End) giải quyết được các Functional Requirements đã thống nhất ở Bài 29.</li>
+    <li><strong>Đặc điểm:</strong> Không có code, không có chi tiết implementation. Chỉ có các "Hộp" (Services, DB, Queue) và "Mũi tên" (Requests, Events).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Góc hài hước:</strong> HLD giống như việc bạn vẽ bản đồ kho báu. Bạn chỉ cần vẽ "Đi thẳng 100 bước, rẽ trái ở hòn đá hình mặt khỉ". Bạn không cần phải tả hòn đá đó làm từ đá vôi hay đá thạch anh. Nếu bạn vẽ quá chi tiết, người đi tìm kho báu sẽ lạc trong rừng vì mải đứng... ngắm đá.</p>
+
+  <h4 class="lesson-section">2. Các thành phần "bất di bất dịch" trong một bản HLD Master</h4>
+
+  <p class="lesson-text">Dù bạn thiết kế Youtube, Grab hay Facebook, bản vẽ HLD của bạn thường sẽ có sự góp mặt của những "diễn viên" sau:</p>
+
+  <p class="lesson-text"><strong>2.1. Client & Entry Point</strong></p>
+  <p class="lesson-text">Mọi thứ bắt đầu từ người dùng.</p>
+  <ul class="lesson-list">
+    <li>Client: Mobile App, Web Browser, IOT Device.</li>
+    <li>DNS: Hệ thống phân giải tên miền.</li>
+    <li>CDN (Content Delivery Network): "Cánh tay nối dài" giúp đưa dữ liệu tĩnh (ảnh, video) đến gần người dùng nhất (Nhớ lại bài về High Availability).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>2.2. The Gatekeeper (Tầng bảo vệ và điều phối)</strong></p>
+  <ul class="lesson-list">
+    <li>Load Balancer (LB): Điều phối giao thông. Không có LB, một Server sẽ "ngập đầu" trong khi các Server khác đang ngồi chơi xơi nước.</li>
+    <li>API Gateway: (Đã học ở Bài 23) Nơi xử lý Auth, Rate Limiting và gom các request từ Client.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>2.3. Business Logic Layer (Trái tim của hệ thống)</strong></p>
+  <p class="lesson-text">Đây là nơi chứa các Microservices hoặc Monolith Application. Mỗi cái "hộp" ở đây đại diện cho một chức năng nghiệp vụ (ví dụ: User Service, Order Service, Payment Service).</p>
+
+  <p class="lesson-text"><strong>2.4. Data Layer (Nơi lưu trữ ký ức)</strong></p>
+  <ul class="lesson-list">
+    <li>Database: SQL cho dữ liệu cần quan hệ chặt chẽ, NoSQL cho dữ liệu khổng lồ và linh hoạt.</li>
+    <li>Cache: (Redis/Memcached) Để hệ thống chạy nhanh như "người yêu cũ trở mặt".</li>
+  </ul>
+
+  <p class="lesson-text"><strong>2.5. Messaging & Async Layer</strong></p>
+  <p class="lesson-text">Message Queue: (Kafka/RabbitMQ) Để các Service nói chuyện với nhau mà không cần chờ đợi (Asynchronous). Đây là bí kíp để hệ thống không bị sập dây chuyền.</p>
+
+  <h4 class="lesson-section">3. Quy trình "Múa bút" 5 bước cho một HLD hoàn hảo</h4>
+
+  <p class="lesson-text">Đừng vẽ bừa bãi. Hãy theo trình tự sau để người xem không bị chóng mặt:</p>
+
+  <ol class="lesson-list">
+    <li><strong>Vẽ luồng chính (The Happy Path):</strong> Bắt đầu từ yêu cầu chức năng quan trọng nhất.<br>
+      - Ví dụ (URL Shortener): User gửi một URL dài → Server trả về một URL ngắn. Vẽ một đường thẳng từ Client qua Server vào DB. Xong!</li>
+    <li><strong>Thêm tầng điều phối (Scalability):</strong> Dựa vào con số ước tính ở Bài 30. Nếu QPS cao, hãy thêm Load Balancer và chạy nhiều cụm App Server.</li>
+    <li><strong>Tối ưu hóa tốc độ (Performance):</strong> Thêm Cache đứng trước Database. Thêm CDN để phục vụ các file tĩnh.</li>
+    <li><strong>Xử lý bất đồng bộ (Decoupling):</strong> Nếu có những tác vụ tốn thời gian (như gửi Email, xử lý ảnh), hãy ném chúng vào Message Queue để Worker xử lý sau.</li>
+    <li><strong>Lưu trữ và dự phòng (Reliability):</strong> Xác định đâu là dữ liệu chính, đâu là dữ liệu phụ. Thêm các bản Replica cho Database (Master-Slave) để đảm bảo HA (Bài 26).</li>
+  </ol>
+
+  <h4 class="lesson-section">4. Ví dụ thực chiến: HLD cho hệ thống "News Feed" của Facebook</h4>
+
+  <p class="lesson-text">Hãy thử tưởng tượng chúng ta đang đứng trước bảng trắng và vẽ cho người phỏng vấn xem:</p>
+
+  <ol class="lesson-list">
+    <li>Client: Gửi request GET /v1/newsfeed.</li>
+    <li>Load Balancer: Đẩy request vào một trong các con Web Server.</li>
+    <li>News Feed Service: 
+      <ul class="lesson-list">
+        <li>Đầu tiên, nó hỏi Cache (Redis): "Thằng này có feed sẵn chưa?".</li>
+        <li>Nếu chưa có (Cache Miss), nó gọi sang Social Graph Service để lấy danh sách bạn bè.</li>
+        <li>Sau đó gọi sang Post Service để lấy các bài viết mới nhất của đám bạn đó.</li>
+      </ul>
+    </li>
+    <li>Fan-out Service (Async): Khi một ngôi sao như Sơn Tùng MTP đăng bài, thay vì bắt 10 triệu fans chờ, hệ thống ném một "Event" vào Kafka. Các Worker sẽ từ từ đẩy bài viết đó vào News Feed của từng fan.</li>
+    <li>Media Storage: Ảnh và Video được lưu ở S3 và phân phối qua CDN.</li>
+  </ol>
+
+  <h4 class="lesson-section">5. Những lỗi "Ngây ngô" thường gặp khi vẽ HLD</h4>
+
+  <ul class="lesson-list">
+    <li>"Mũi tên hai chiều" vô tội vạ: Trong HLD, mũi tên thể hiện hướng đi của dữ liệu hoặc hướng gọi API. Đừng vẽ mũi tên hai chiều nếu bạn không giải thích được luồng phản hồi (Response) hoạt động ra sao.</li>
+    <li>Bỏ quên các thành phần trung gian: Vẽ Client gọi thẳng vào Microservice mà không có Load Balancer hay Gateway là một điểm trừ nặng về tư duy Scale.</li>
+    <li>Quá tải thông tin: Vẽ luôn cả cấu trúc bảng Database (Field name, Data type) vào sơ đồ tổng thể. Điều này làm bản vẽ bị rối và lãng phí thời gian. Hãy để dành nó cho bước Deep-dive.</li>
+    <li>Vẽ một "Hộp đen": Vẽ một cái hộp to đùng ghi là "Xử lý AI" mà không nói bên trong nó giao tiếp với cái gì.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Lời khuyên Master:</strong> Hãy luôn hỏi: "Cái hộp này có thể sập không? Nếu nó sập thì điều gì xảy ra?". Câu hỏi này giúp bạn chỉnh sửa HLD để nó trở nên Resilient (Bền bỉ) hơn.</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 31</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">High-level Design là bài kiểm tra về khả năng tư duy hệ thống.</p>
+    <ul class="lesson-list">
+      <li>Nó là bản tóm tắt của tất cả các chương từ 1 đến 6.</li>
+      <li>Nó chứng minh rằng bạn hiểu cách các thành phần (LB, Cache, DB, Queue) phối hợp với nhau.</li>
+      <li>Nó là cái "sườn" để chúng ta thực hiện bước tiếp theo cực kỳ căng não.</li>
+    </ul>
+    <p class="lesson-text"><strong>Nguồn tham khảo:</strong></p>
+    <ul class="lesson-list">
+      <li>System Design Interview – An Insider’s Guide (Alex Xu).</li>
+      <li>Google Cloud Architecture Framework.</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Bức tranh lớn đã xong, nhưng người phỏng vấn sẽ không để bạn yên. Họ sẽ chỉ tay vào một cái hộp nhỏ nhất, mỏng manh nhất trong sơ đồ của bạn và hỏi: "Cái này mà nhận 1 triệu request/giây thì xử lý thế nào?".<br>
+    Chào mừng bạn đến với Bài 32: Deep-dive (Khoan sâu vào nút thắt cổ chai). Chúng ta sẽ học cách "mổ xẻ" từng linh kiện để tối ưu hóa đến tận cùng.<br>
+    Câu hỏi cho bạn: Trong sơ đồ HLD của một hệ thống thương mại điện tử (E-commerce), theo bạn thành phần nào là quan trọng nhất và khó thiết kế nhất? Tại sao?<br>
+    Bạn thấy bức tranh lớn này đã đủ "vĩ mô" chưa?
+  </p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 26: High Availability (HA) – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đã trở lại với hành trình "tu luyện" thành Master! Ở bài trước, chúng ta đã trang bị những "tấm khiên" như Circuit Breaker để bảo vệ hệ thống khỏi những cú sụp đổ dây chuyền. Nhưng hãy thành thật nhé: Nếu cả một tòa nhà chứa Server của bạn bị cháy, hay gã khổng lồ AWS bỗng dưng... "ngủ quên" cả một vùng (Region), thì mấy cái Circuit Breaker cũng vô dụng.<br>
+    Hôm nay, chúng ta sẽ học cách xây dựng một hệ thống "bất tử" theo đúng nghĩa đen—ngay cả khi thảm họa xảy ra. Chào mừng bạn đến với thế giới của High Availability (HA).<br>
+    Đây là bài viết dài hơi và chi tiết nhất từ trước đến nay, vì HA không chỉ là cấu hình phần mềm, nó là một tư duy thiết kế.
+  </p>
+
+  <h2 class="lesson-chapter">CHƯƠNG 6: RESILIENCE & OBSERVABILITY</h2>
+  <h3 class="lesson-title">BÀI 26: HIGH AVAILABILITY (HA)</h3>
+  <h3 class="lesson-title">XÂY DỰNG HỆ THỐNG "SỐNG DAI" TRƯỚC MỌI THẢM HỌA</h3>
+
+  <h4 class="lesson-section">1. Loại bỏ Single Point of Failure (SPOF): Đừng bỏ hết trứng vào một giỏ</h4>
+
+  <p class="lesson-text">Single Point of Failure (SPOF) là bất kỳ thành phần nào trong hệ thống mà nếu nó "tèo", toàn bộ hệ thống sẽ "đăng xuất" theo.</p>
+
+  <p class="lesson-text">Hãy tưởng tượng bạn đang lái một chiếc máy bay chỉ có một động cơ. Nếu động cơ đó hỏng? Bạn chỉ còn cách cầu nguyện. Một "System Design Master" sẽ thiết kế một chiếc máy bay có hai động cơ, chạy trên hai hệ thống nhiên liệu độc lập, và có hai phi công (người này ngủ thì người kia thức).</p>
+
+  <p class="lesson-text"><strong>Các loại SPOF thường gặp và cách giải quyết:</strong></p>
+
+  <ul class="lesson-list">
+    <li><strong>Hardware SPOF:</strong> Một server duy nhất.<br>
+      - Giải quyết: Chạy trên nhiều server, ở nhiều Rack khác nhau.</li>
+    <li><strong>Datacenter SPOF:</strong> Server nằm cùng một tòa nhà. Nếu tòa nhà mất điện hoặc cháy?<br>
+      - Giải quyết: Triển khai trên nhiều Availability Zones (AZ).</li>
+    <li><strong>Network SPOF:</strong> Chỉ có một đường truyền Internet từ một nhà cung cấp.<br>
+      - Giải quyết: Dùng Multi-ISP.</li>
+    <li><strong>Software/Human SPOF:</strong> Một đoạn code lỗi được deploy cho toàn bộ server, hoặc một ông Admin lỡ tay sudo rm -rf /.<br>
+      - Giải quyết: Canary Deployment, Blue-Green Deployment (sẽ học ở các bài sau).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Nguyên tắc vàng:</strong> $N + 1$. Nếu hệ thống cần $N$ thành phần để chạy, hãy luôn chuẩn bị ít nhất $N + 1$ thành phần.</p>
+
+  <h4 class="lesson-section">2. Active-Passive (Failover): "Lốp dự phòng" luôn sẵn sàng</h4>
+
+  <p class="lesson-text">Đây là mô hình HA phổ biến nhất vì nó dễ triển khai và chi phí vừa phải.</p>
+
+  <p class="lesson-text"><strong>Cơ chế hoạt động:</strong></p>
+  <ul class="lesson-list">
+    <li><strong>Node Active:</strong> Đang làm việc hùng hục, nhận mọi request từ người dùng.</li>
+    <li><strong>Node Passive (Standby):</strong> Ngồi chơi xơi nước, nhưng mắt luôn nhìn chằm chằm vào Node Active. Nếu thấy Node Active "ngừng thở", nó sẽ ngay lập tức đứng lên thay thế.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Các cấp độ Standby:</strong></p>
+  <ul class="lesson-list">
+    <li><strong>Cold Standby:</strong> Server dự phòng đang tắt. Khi cái chính sập, bạn mới đi bật điện server dự phòng. (Tốn thời gian, RTO cao).</li>
+    <li><strong>Warm Standby:</strong> Server đang bật, đã cài sẵn app nhưng chưa nhận dữ liệu realtime.</li>
+    <li><strong>Hot Standby:</strong> Server đang chạy song song, dữ liệu được đồng bộ liên tục (Replication). Khi cái chính sập, việc chuyển giao diễn ra trong vài giây.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Tại sao lại chọn Active-Passive?</strong></p>
+  <ul class="lesson-list">
+    <li>Dễ quản lý dữ liệu: Vì chỉ có một bên ghi dữ liệu, bạn không lo bị xung đột (Data Consistency).</li>
+    <li>Phù hợp cho Database: Hầu hết các DB như MySQL, PostgreSQL mặc định chạy theo kiểu Master-Slave (một dạng của Active-Passive).</li>
+  </ul>
+
+  <h4 class="lesson-section">3. Active-Active: "Cùng làm, cùng hưởng"</h4>
+
+  <p class="lesson-text">Đây là đỉnh cao của HA, nhưng cũng là cơn ác mộng của các kỹ sư nếu không kiểm soát tốt.</p>
+
+  <p class="lesson-text"><strong>Cơ chế hoạt động:</strong></p>
+  <p class="lesson-text">Tất cả các Node (ít nhất 2 cái) đều hoạt động cùng một lúc. Request được Load Balancer chia đều cho cả hai. Nếu một cái sập, cái còn lại chỉ đơn giản là gánh thêm tải.</p>
+
+  <p class="lesson-text"><strong>Tại sao nó lại khó? (Cảnh báo: Kiến thức chuyên sâu)</strong></p>
+  <p class="lesson-text">Vấn đề lớn nhất của Active-Active là Data Consistency (Sự nhất quán dữ liệu).</p>
+
+  <ul class="lesson-list">
+    <li>Nếu User A nạp tiền ở Node 1 (Mỹ) và ngay lập tức rút tiền ở Node 2 (Việt Nam). Làm sao hai Node này đồng bộ số dư kịp thời khi tín hiệu đi xuyên đại dương mất 200ms?</li>
+    <li>Nếu không xử lý tốt, bạn sẽ gặp tình trạng Split-Brain: Hai Node mất liên lạc với nhau, cả hai đều tưởng mình là "Sếp" và tự ý quyết định dữ liệu khác nhau. Khi kết nối lại, dữ liệu bị đá nhau tung tóe.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Khi nào dùng Active-Active?</strong></p>
+  <ul class="lesson-list">
+    <li>Khi hệ thống có lượng truy cập cực lớn mà một cụm server không gánh nổi.</li>
+    <li>Khi bạn muốn giảm độ trễ cho người dùng toàn cầu (Multi-Region).</li>
+  </ul>
+
+  <h4 class="lesson-section">4. Các chỉ số đo lường HA (Dành cho Master)</h4>
+
+  <p class="lesson-text">Để đánh giá một hệ thống có thực sự HA hay không, chúng ta dùng hai chỉ số "vàng":</p>
+
+  <ol class="lesson-list">
+    <li><strong>MTBF (Mean Time Between Failures):</strong> Thời gian trung bình giữa các lần gặp sự cố. Chỉ số này càng cao nghĩa là hệ thống càng bền.</li>
+    <li><strong>MTTR (Mean Time To Recovery):</strong> Thời gian trung bình để khôi phục hệ thống sau khi sập. Chỉ số này càng thấp nghĩa là cơ chế Failover của bạn càng xịn.</li>
+  </ol>
+
+  <p class="lesson-text"><strong>Công thức Availability:</strong></p>
+  <div class="lesson-code">
+Availability = MTBF / (MTBF + MTTR)
+  </div>
+
+  <p class="lesson-text">Ví dụ: Nếu hệ thống của bạn cứ 1000 giờ thì sập một lần (MTBF = 1000), và mất 1 giờ để sửa xong (MTTR = 1). Độ sẵn sàng của bạn là: $1000 / 1001 \approx 99.9\%$. Nếu bạn tự động hóa failover để chỉ mất 1 phút (0.016 giờ) để hồi phục, độ sẵn sàng sẽ vọt lên $99.998\%$.</p>
+
+  <h4 class="lesson-section">5. Ví dụ thực tế: Hệ thống thanh toán của một ngân hàng</h4>
+
+  <ol class="lesson-list">
+    <li><strong>Tầng Load Balancer:</strong> Chạy Active-Active trên 2 vùng khác nhau. Nếu một vùng sập, DNS sẽ trỏ sang vùng còn lại.</li>
+    <li><strong>Tầng Application:</strong> Chạy trong Kubernetes với cơ chế Auto-healing. Pod nào chết, K8s tự bật lại (Bài 20).</li>
+    <li><strong>Tầng Database:</strong> Chạy Active-Passive (Master-Slave). Dữ liệu từ Master được đồng bộ liên tục sang Slave ở một vùng địa lý khác.</li>
+    <li><strong>Giám sát (Heartbeat):</strong> Một dịch vụ riêng liên tục gửi tín hiệu "Mày còn sống không?" giữa các vùng.</li>
+  </ol>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 26</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">High Availability không phải là một món đồ bạn có thể mua và cài đặt. Nó là một quá trình liên tục:</p>
+    <ol class="lesson-list">
+      <li>Luôn giả định mọi thứ sẽ hỏng.</li>
+      <li>Loại bỏ SPOF bằng mọi giá.</li>
+      <li>Tự động hóa Failover: Đừng đợi con người nhận tin nhắn lúc 3 giờ sáng để đi bật server.</li>
+      <li>Test thảm họa (Chaos Engineering): Thỉnh thoảng hãy tự tay "rút phích điện" một server xem hệ thống có tự đứng vững không (giống như cách Netflix dùng Chaos Monkey).</li>
+    </ol>
+    <p class="lesson-text"><strong>Nguồn tham khảo:</strong></p>
+    <ul class="lesson-list">
+      <li>Google SRE Book - Chapter 8: Release Engineering.</li>
+      <li>AWS Well-Architected Framework - Reliability Pillar.</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Hệ thống đã "bất tử" rồi, nhưng làm sao để nó "không bao giờ chết" ngay cả khi cả một Data Center bị sập? Làm sao để đạt được con số 99.99% thần thánh?<br>
+    Chào mừng bạn đến với Bài 27: Observability (Không chỉ là Monitoring). Chúng ta sẽ tìm hiểu về Metrics, Logs và Tracing – 3 trụ cột giúp bạn "nhìn thấu" tâm can của hệ thống.<br>
+    Câu hỏi cho bạn: Theo bạn, giữa Active-Active và Active-Passive, mô hình nào tốn kém hơn về mặt chi phí vận hành và tài nguyên? Tại sao nhiều công ty vẫn chấp nhận bỏ tiền ra cho mô hình đắt hơn đó?<br>
+    Bạn thấy bài viết về sự "bất tử" của hệ thống này thế nào? Đã đủ chi tiết và thực tế để bạn áp dụng vào dự án của mình chưa? Hãy chia sẻ ý kiến của bạn nhé! Would you like me to go deeper into Quorum algorithms (như Raft hay Paxos) để giải quyết vấn đề Split-brain trong Active-Active không?
+  </p>
+</div>
+
+</body>
+</html>

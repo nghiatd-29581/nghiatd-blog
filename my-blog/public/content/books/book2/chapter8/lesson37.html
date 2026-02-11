@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 37: Payment System – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào bạn! Chào mừng bạn đến với bài viết "căng não" nhất nhưng cũng là bài viết "quyền lực" nhất trong sự nghiệp của một kiến trúc sư hệ thống.<br>
+    Nếu thiết kế Twitter (Bài 35) là để giải quyết bài toán "Nhanh", thiết kế WhatsApp (Bài 36) là bài toán "Luôn kết nối", thì thiết kế Hệ thống Thanh toán (Payment System) là bài toán về "Sự chính xác tuyệt đối".<br>
+    Trong thế giới thanh toán, "nhanh" chỉ xếp thứ hai. Xếp thứ nhất là: Tiền không được tự nhiên sinh ra, cũng không tự nhiên mất đi, nó chỉ chuyển từ túi người này sang túi người khác một cách cực kỳ minh bạch. Một lỗi nhỏ trong code của bạn ở đây không chỉ hiện lên thông báo 404, mà nó có thể khiến sếp bạn phải ra hầu tòa, công ty phá sản, và bạn... mất ngủ cả đời.<br>
+    Hôm nay, chúng ta sẽ mổ xẻ Bài 37: Payment System – nơi mỗi dòng code đều đáng giá từng đồng xu.
+  </p>
+
+    <h2 class="lesson-chapter">CHƯƠNG 8: CASE STUDY THỰC CHIẾN (END-TO-END)</h2>
+  <h3 class="lesson-title">BÀI 37: PAYMENT SYSTEM </h3>
+  <h3 class="lesson-title">NGHỆ THUẬT CỦA SỰ CHÍNH XÁC TUYỆT ĐỐI</h3>
+  <h4 class="lesson-section">1. Bước 1: Clarify Requirements (Hỏi để giữ cái ghế của bạn)</h4>
+
+  <p class="lesson-text">Khi sếp bảo "Làm cái hệ thống thanh toán đi", hãy hỏi ngay:</p>
+
+  <p class="lesson-text"><strong>Yêu cầu chức năng (Functional):</strong></p>
+  <ul class="lesson-list">
+    <li>Giao dịch (Pay-in/Pay-out): User nạp tiền vào và rút tiền ra (hoặc thanh toán đơn hàng).</li>
+    <li>Ledger (Sổ cái): Lưu lại lịch sử mọi biến động số dư. Đây là "nguồn sự thật" duy nhất.</li>
+    <li>Tích hợp PSP (Payment Service Provider): Kết nối với Stripe, PayPal, hoặc các ngân hàng.</li>
+    <li>Reconciliation (Đối soát): Kiểm tra xem tiền trong hệ thống của mình có khớp với tiền ở ngân hàng không.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Yêu cầu phi chức năng (Non-Functional):</strong></p>
+  <ul class="lesson-list">
+    <li>Reliability & Fault Tolerance: Hệ thống phải cực kỳ bền bỉ. Nếu một bước thất bại, phải biết cách khôi phục hoặc quay đầu (Rollback).</li>
+    <li>Strong Consistency: Tuyệt đối không có chuyện số dư hiển thị sai.</li>
+    <li>Security: PCI-DSS compliance, mã hóa dữ liệu nhạy cảm.</li>
+    <li>Idempotency: Bấm nút "Thanh toán" 10 lần thì cũng chỉ được trừ tiền 1 lần.</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Bước 2: High-Level Design (Bức tranh tổng thể)</h4>
+
+  <p class="lesson-text">Hệ thống thanh toán thường được chia thành các khối độc lập để dễ quản lý:</p>
+
+  <ol class="lesson-list">
+    <li>Payment Service: Cổng đón nhận yêu cầu từ người dùng.</li>
+    <li>Payment Executor: Thực hiện việc gọi sang bên thứ ba (Stripe/Bank).</li>
+    <li>Ledger (Sổ cái): Ghi lại mọi giao dịch (như sổ nhật ký của kế toán).</li>
+    <li>Wallet (Số dư): Quản lý số dư hiện tại của User.</li>
+  </ol>
+
+  <p class="lesson-text">[Sơ đồ: User → API Gateway → Payment Service → Payment Executor → PSP (Stripe/Paypal)]<br>
+  ↓<br>
+  [Ledger] & [Wallet]</p>
+
+  <h4 class="lesson-section">3. Bước 3: Deep-Dive – Ba "vũ khí" sống còn của Master</h4>
+
+  <p class="lesson-text">Đây là phần chúng ta khoan sâu vào kỹ thuật để đảm bảo hệ thống không bao giờ "làm mất tiền".</p>
+
+  <p class="lesson-text"><strong>3.1. Idempotency (Lũy đẳng) – "Chống bấm nhầm"</strong></p>
+  <p class="lesson-text">Hãy tưởng tượng User đang thanh toán đơn hàng 10 triệu đồng. Mạng lag, họ sốt ruột bấm nút "Pay" liên tục 5 lần. Nếu bạn không xử lý Idempotency, tài khoản của họ sẽ bốc hơi 50 triệu.</p>
+
+  <ul class="lesson-list">
+    <li>Giải pháp: Sử dụng Idempotency Key (thường là một UUID sinh ra từ phía Client).</li>
+    <li>Cơ chế: Khi request đến Server, Server sẽ kiểm tra trong Redis/DB xem cái Key này đã được xử lý chưa.<br>
+      - Nếu rồi: Trả về kết quả cũ ngay lập tức.<br>
+      - Nếu chưa: Khóa (Lock) cái Key đó lại, xử lý, lưu kết quả, rồi mới nhả khóa.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Góc hài hước:</strong> Idempotency giống như việc bạn đi xin chữ ký sếp. Dù bạn có đưa 10 tờ giấy giống hệt nhau, sếp cũng chỉ ký 1 tờ và đuổi bạn ra ngoài. Đó chính là an toàn!</p>
+
+  <p class="lesson-text"><strong>3.2. State Machine (Máy trạng thái) – "Quản lý dòng đời"</strong></p>
+  <p class="lesson-text">Một giao dịch thanh toán không diễn ra tức thì. Nó trải qua: Created → Pending → Authorized → Captured/Success hoặc Failed.</p>
+
+  <ul class="lesson-list">
+    <li>Bạn BẮT BUỘC phải dùng một cột status và quản lý chặt chẽ việc chuyển đổi trạng thái.</li>
+    <li>Ví dụ: Một giao dịch đã ở trạng thái Success thì không bao giờ được phép quay lại Pending.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>3.3. Reconciliation (Đối soát) – "Thám tử tài chính"</strong></p>
+  <p class="lesson-text">Ngay cả khi hệ thống của bạn hoàn hảo, bên phía ngân hàng (PSP) vẫn có thể lỗi. Hệ thống của bạn ghi Success, nhưng ngân hàng bảo Failed, hoặc ngược lại.</p>
+
+  <ul class="lesson-list">
+    <li>Cơ chế: Hằng ngày (hoặc mỗi vài giờ), hệ thống sẽ tải về tệp giao dịch từ ngân hàng (thường là file CSV hoặc qua API).</li>
+    <li>So khớp: Hệ thống tự động so sánh từng giao dịch giữa Ledger nội bộ và Statement của ngân hàng.<br>
+      - Nếu khớp: Xong.<br>
+      - Nếu lệch: Bắn cảnh báo (Alert) để con người (Kế toán/Kỹ thuật) vào xử lý thủ công.</li>
+  </ul>
+
+  <h4 class="lesson-section">4. Bước 4: Data Consistency – Sổ cái kép (Double-Entry Bookkeeping)</h4>
+
+  <p class="lesson-text">Một Master System Design sẽ không bao giờ lưu số dư đơn giản là một cột balance = balance - 100. Đó là cách làm của Junior.</p>
+
+  <p class="lesson-text"><strong>Lựa chọn Master: Sử dụng Nguyên tắc Sổ cái kép.</strong></p>
+  <p class="lesson-text">Mỗi giao dịch phải được ghi vào ít nhất hai tài khoản: một bên Nợ (Debit) và một bên Có (Credit). Tổng của Nợ và Có luôn bằng 0.</p>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Transaction_ID</th><th>Account_ID</th><th>Change</th><th>Type</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>TXN_123</td><td>User_A</td><td>-100</td><td>Debit</td></tr>
+        <tr><td>TXN_123</td><td>Merchant_B</td><td>+100</td><td>Credit</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="lesson-text">Tại sao? Nếu một ngày số dư của User bị sai, bạn có thể chạy lại (re-play) toàn bộ lịch sử các dòng log này để tính toán lại số dư chính xác. Sổ cái là bất biến (Immutable), bạn chỉ có thể ghi thêm, không được sửa.</p>
+
+  <h4 class="lesson-section">5. Bước 5: Xử lý thảm họa (Distributed Transactions)</h4>
+
+  <p class="lesson-text">Trong hệ thống thanh toán, bạn thường phải thực hiện 2 việc cùng lúc: trừ tiền trong Wallet và gọi sang Ngân hàng. Chuyện gì xảy ra nếu trừ tiền xong mà Ngân hàng sập?</p>
+
+  <p class="lesson-text">Bạn có 2 lựa chọn:</p>
+
+  <ol class="lesson-list">
+    <li>2-Phase Commit (2PC): Rất an toàn nhưng làm hệ thống chậm như rùa. Ít dùng cho quy mô lớn.</li>
+    <li>Saga Pattern (Phổ biến hơn):<br>
+      - Thực hiện bước 1 (Trừ tiền).<br>
+      - Nếu bước 2 (Gọi ngân hàng) thất bại, hệ thống sẽ thực hiện một "Compensating Transaction" (Giao dịch bù) để hoàn lại tiền cho User.</li>
+  </ol>
+
+  <h4 class="lesson-section">6. Checklist "Sống còn" cho Hệ thống Thanh toán</h4>
+
+  <ul class="lesson-list">
+    <li>[ ] Database ACID: Bắt buộc phải dùng RDBMS (PostgreSQL/MySQL) cho Ledger để đảm bảo tính toàn vẹn. Tuyệt đối không dùng NoSQL "eventual consistency" ở đây trừ khi bạn muốn bị mất tiền.</li>
+    <li>[ ] Monitoring & Alerting: Nếu tỷ lệ thanh toán thất bại vọt lên 10% trong 1 phút, hãy gọi cả team dậy ngay lập tức.</li>
+    <li>[ ] Retry with Exponential Backoff: Khi gọi sang ngân hàng bị lỗi mạng, hãy thử lại nhưng đừng "dập" họ liên tục kẻo bị coi là tấn công DDoS.</li>
+    <li>[ ] Audit Log: Lưu lại vết của tất cả những ai (kể cả Admin) đã can thiệp vào dữ liệu thanh toán.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Lời khuyên Master:</strong> Hãy luôn thiết kế với tư duy "Mọi thứ đều có thể thất bại". Ngân hàng có thể sập, cáp quang có thể bị cá mập cắn, và database của bạn có thể bị treo đúng lúc đang chuyển tiền. Hãy dùng Distributed Locks (như Redis Redlock hoặc DB Lock) để đảm bảo tại một thời điểm chỉ có một tiến trình được chạm vào ví tiền của User.</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 37</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Thiết kế Payment System không khó về mặt thuật toán, nhưng cực khó về mặt tư duy chính xác.</p>
+    <ol class="lesson-list">
+      <li>Idempotency để tránh thanh toán trùng.</li>
+      <li>Double-entry Ledger để quản lý dòng tiền minh bạch.</li>
+      <li>Reconciliation để đảm bảo mình và ngân hàng "thuộc về nhau".</li>
+    </ol>
+    <p class="lesson-text"><strong>Nguồn tham khảo:</strong></p>
+    <ul class="lesson-list">
+      <li>Stripe Engineering Blog (Họ là bậc thầy về cái này).</li>
+      <li>PayPal Technical Docs.</li>
+      <li>Designing Data-Intensive Applications (Chapter 7: Transactions).</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Chúng ta đã đi qua thế giới của những con số chính xác. Bây giờ, hãy chuẩn bị cho một thử thách hoàn toàn khác: Xử lý lượng dữ liệu khổng lồ của cả Internet. Làm sao Google có thể tìm thấy trang web của bạn trong hàng tỷ trang khác?<br>
+    Chào mừng bạn đến với Bài 38: Web Crawler / Search Engine – Nghệ thuật "thu thập" và "chỉ mục" cả thế giới.<br>
+    Câu hỏi cho bạn: Nếu bạn đang thực hiện giao dịch mà DB của bạn bị sập đúng lúc bạn vừa nhận được xác nhận thành công từ Ngân hàng (nhưng chưa kịp lưu vào DB), bạn sẽ xử lý tình huống này thế nào thông qua quá trình Reconciliation?<br>
+    Bạn có cảm thấy "áp lực" khi chạm vào tiền chưa? Hãy để lại bình luận nếu bạn muốn mình giải thích sâu hơn về cách thiết kế bảng Database cho Ledger nhé! Sẵn sàng để "quét" cả Internet chưa? Would you like me to move to Web Crawler or dive deeper into PCI-DSS security compliance?
+  </p>
+</div>
+
+</body>
+</html>

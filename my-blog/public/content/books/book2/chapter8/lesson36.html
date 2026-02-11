@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 36: Thiết kế hệ thống Chat (WhatsApp/Slack) – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đã quay trở lại! Sau khi đã cùng nhau "bay lượn" trên bầu trời Twitter để học cách phát sóng (broadcast) thông tin, hôm nay chúng ta sẽ hạ cánh xuống một địa hạt cực kỳ riêng tư, kịch tính và... đầy áp lực: Hệ thống Chat thời gian thực.<br>
+    Nếu Twitter là một cái loa phường, thì WhatsApp hay Slack là những cuộc thì thầm trong bóng tối (hoặc những cuộc họp "hét vào mặt nhau" trên kênh #general). Thiết kế một hệ thống chat không chỉ là lưu tin nhắn vào database; đó là nghệ thuật giữ cho hàng triệu kết nối luôn "sống", xử lý trạng thái "vừa mới truy cập", và đảm bảo tin nhắn đến tay người nhận nhanh hơn cách người yêu cũ trở mặt.<br>
+    Hãy cùng bước vào Bài 36: Chat System – Khi mili giây quyết định sự sống còn.
+  </p>
+
+ <h2 class="lesson-chapter">CHƯƠNG 8: CASE STUDY THỰC CHIẾN (END-TO-END)</h2>
+  <h3 class="lesson-title">BÀI 36: THIẾT KẾ HỆ THỐNG CHAT (WHATSAPP/SLACK)</h3>
+<h3 class="lesson-title">REAL-TIME & PRESENCE STATUS</h3>
+  <h4 class="lesson-section">1. Bước 1: Clarify Requirements (Hỏi để "bắt thóp" yêu cầu)</h4>
+
+  <p class="lesson-text">Đừng vội code, hãy hỏi! Chat cho 10 người khác Chat cho 1 tỷ người.</p>
+
+  <p class="lesson-text"><strong>Yêu cầu chức năng (Functional):</strong></p>
+  <ul class="lesson-list">
+    <li>Chat 1-1: Gửi và nhận tin nhắn riêng tư.</li>
+    <li>Group Chat: Nhóm nhỏ (WhatsApp - vài trăm) hoặc nhóm lớn (Slack/Telegram - hàng chục ngàn).</li>
+    <li>Presence Status: Biết ai đang Online/Offline và trạng thái "Last seen".</li>
+    <li>Message Storage: Tin nhắn phải được lưu vĩnh viễn (hoặc theo chính sách).</li>
+    <li>Push Notifications: Báo chuông khi App đang đóng.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Yêu cầu phi chức năng (Non-Functional):</strong></p>
+  <ul class="lesson-list">
+    <li>Low Latency: Tin nhắn phải đến ngay lập tức (< 100ms).</li>
+    <li>Reliability: Không được mất tin nhắn (Message Delivery Guarantee).</li>
+    <li>Scalability: Chịu được hàng tỷ tin nhắn mỗi ngày.</li>
+    <li>High Availability: Chat sập là thế giới ngừng quay, nên hệ thống phải "bất tử".</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Bước 2: Capacity Estimation (Những con số "nặng đô")</h4>
+
+  <p class="lesson-text">Giả sử chúng ta xây dựng một "WhatsApp mini":</p>
+
+  <ul class="lesson-list">
+    <li>DAU (Daily Active Users): 500 triệu.</li>
+    <li>Số tin nhắn/người/ngày: Trung bình 40 tin.</li>
+    <li>Tổng tin nhắn/ngày: 500 triệu × 40 = 20 tỷ tin nhắn.</li>
+    <li>QPS trung bình: 20 × 10⁹ / 86,400 ≈ 230,000 QPS.</li>
+    <li>Peak QPS: Gấp 3 lần trung bình ≈ 700,000 QPS.</li>
+    <li>Storage (5 năm): Mỗi tin nhắn 100 bytes.<br>
+      - 20 tỷ × 100 bytes = 2 TB/ngày.<br>
+      - 5 năm ≈ 3.6 Petabytes. (Lại một lần nữa, đừng nghĩ đến việc dùng Excel để lưu nhé!).</li>
+  </ul>
+
+  <h4 class="lesson-section">3. Bước 3: High-level Design (Bức tranh lớn)</h4>
+
+  <p class="lesson-text">Trong hệ thống Chat, chúng ta có 3 luồng chính:</p>
+
+  <ol class="lesson-list">
+    <li>Luồng Stateless: Đăng ký, đăng nhập, quản lý profile (Dùng REST API thông thường).</li>
+    <li>Luồng Stateful (Real-time): Gửi/nhận tin nhắn (Dùng WebSockets).</li>
+    <li>Luồng Presence: Cập nhật trạng thái online/offline.</li>
+  </ol>
+
+  <p class="lesson-text"><strong>Tại sao dùng WebSocket thay vì HTTP?</strong></p>
+  <ul class="lesson-list">
+    <li>HTTP: Client phải hỏi "Có tin nhắn mới không?" (Polling). Rất tốn tài nguyên và chậm.</li>
+    <li>WebSocket: Thiết lập một "đường ống" vĩnh viễn giữa Client và Server. Server có thể chủ động "đẩy" (Push) tin nhắn xuống ngay khi có.</li>
+  </ul>
+
+  <h4 class="lesson-section">4. Bước 4: Deep-dive (Khoan sâu vào "huyệt đạo")</h4>
+
+  <p class="lesson-text"><strong>4.1. Luồng gửi tin nhắn (Message Flow)</strong></p>
+  <p class="lesson-text">Khi User A gửi tin cho User B:</p>
+
+  <ol class="lesson-list">
+    <li>User A gửi tin qua WebSocket đến Chat Server 1.</li>
+    <li>Chat Server 1 lưu tin nhắn vào Database.</li>
+    <li>Chat Server 1 gửi xác nhận (ACK) cho User A (để hiện dấu tích thứ nhất).</li>
+    <li>Chat Server 1 hỏi Presence Service: "User B đang ở đâu?".</li>
+    <li>Nếu User B Online trên Chat Server 2: Chat Server 1 đẩy tin qua Server 2, Server 2 đẩy xuống User B.</li>
+    <li>Nếu User B Offline: Đẩy vào Push Notification Service (Firebase/APNS).</li>
+  </ol>
+
+  <p class="lesson-text"><strong>4.2. Lưu trữ tin nhắn (Message Store) – NoSQL lên ngôi</strong></p>
+  <p class="lesson-text">Với 2 TB dữ liệu mỗi ngày, SQL sẽ "khóc thét" khi thực hiện phân trang (pagination).</p>
+
+  <ul class="lesson-list">
+    <li>Lựa chọn Master: HBase (Facebook Messenger dùng) hoặc Cassandra (Discord dùng).</li>
+    <li>Lý do: Khả năng ghi cực nhanh, hỗ trợ truy vấn theo Key_Range (lấy N tin nhắn gần nhất của chat_id) rất hiệu quả.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>4.3. Presence Status (Trạng thái Online)</strong></p>
+  <p class="lesson-text">Làm sao biết User vừa Offline?</p>
+
+  <ul class="lesson-list">
+    <li>Chúng ta không thể đợi Client gửi tin "Em đi ngủ đây". Nếu mất mạng đột ngột thì sao?</li>
+    <li>Cơ chế Heartbeat (Nhịp đập): Cứ mỗi 5-10 giây, Client gửi một tín hiệu "Tôi còn sống" về Presence Service.</li>
+    <li>Nếu sau 30 giây không thấy Heartbeat -> Đánh dấu Offline.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Góc hài hước:</strong> Heartbeat giống như việc bạn cứ 5 phút lại nhắn tin "Alo" cho người yêu. Nếu 15 phút bạn không nhắn, cô ấy sẽ mặc định bạn đã "Offline" (hoặc đang đi chơi với đứa khác) và bắt đầu kích hoạt hệ thống "Alerting" (gọi điện cháy máy).</p>
+
+  <h4 class="lesson-section">5. Bước 5: Trade-offs & Challenges (Những thách thức thực tế)</h4>
+
+  <ul class="lesson-list">
+    <li><strong>Group Chat Fan-out:</strong> Nếu nhóm có 100,000 người (Telegram), một tin nhắn gửi đi sẽ tạo ra 100,000 lượt đẩy. Đây là "cơn ác mộng" về tài nguyên.<br>
+      - Giải pháp: Giới hạn số người nhận real-time hoặc chỉ đẩy cho những người đang mở app.</li>
+    <li><strong>Message Sequence:</strong> Trong hệ thống phân tán, tin nhắn A có thể đến sau tin nhắn B dù gửi trước.<br>
+      - Giải pháp: Không dùng Timestamp của server (vì lệch clock). Hãy dùng Sequence ID (như Snowflake ID hoặc vế logic tăng dần cho từng hội thoại).</li>
+    <li><strong>Security:</strong> End-to-End Encryption (E2EE). Server chỉ là bên trung chuyển dữ liệu đã mã hóa, ngay cả Admin cũng không đọc được tin nhắn. (Đánh đổi: Tìm kiếm tin nhắn trên server sẽ trở nên bất khả thi).</li>
+  </ul>
+
+  <h4 class="lesson-section">6. Bước 6: Checklist "Ghi điểm tuyệt đối"</h4>
+
+  <ul class="lesson-list">
+    <li>[ ] Service Discovery: Để Client biết nên kết nối vào Chat Server nào ít tải nhất.</li>
+    <li>[ ] Media Handling: Ảnh/Video phải được nén, upload lên S3, và gửi cái Link kèm Thumbnail qua WebSocket (đừng gửi cả file 20MB qua WebSocket kẻo sập server!).</li>
+    <li>[ ] Read Receipts: Xử lý trạng thái "Đã nhận" (Delivered) và "Đã xem" (Read) tương tự như luồng gửi tin nhắn.</li>
+  </ul>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 36</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Thiết kế Chat System là bài toán quản lý Kết nối (Connections) và Trạng thái (State).</p>
+    <ol class="lesson-list">
+      <li>Dùng WebSockets cho real-time.</li>
+      <li>Dùng NoSQL (Column-family) cho lưu trữ tin nhắn khổng lồ.</li>
+      <li>Dùng Heartbeat để quản lý trạng thái Online/Offline.</li>
+      <li>Luôn có Push Notification làm phương án dự phòng khi User thoát app.</li>
+    </ol>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Chúng ta đã đi từ mạng xã hội đến nhắn tin. Bây giờ, hãy chuẩn bị cho một bài toán "đau đầu" và đòi hỏi sự chính xác tuyệt đối, nơi một lỗi nhỏ có thể khiến công ty mất hàng triệu đô.<br>
+    Chào mừng bạn đến với Bài 37: Payment System - Khi mỗi con số là một "sinh mạng". Chúng ta sẽ học về Idempotency, 2PC, và cách thế giới vận chuyển tiền qua những dòng code.<br>
+    Câu hỏi cho bạn: Trong Group Chat của Slack với hàng ngàn người, bạn sẽ thiết kế Presence Status như thế nào để không làm nghẽn mạng khi hàng ngàn người cùng lúc "chớp tắt" trạng thái Online?<br>
+    Hy vọng bài viết này mang lại cho bạn cái nhìn sâu sắc về thế giới Real-time.
+  </p>
+</div>
+
+</body>
+</html>

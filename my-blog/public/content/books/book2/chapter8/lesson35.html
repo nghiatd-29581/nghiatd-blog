@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 35: Thiết kế mạng xã hội X (Twitter) – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đã bước vào "Đấu trường La Mã" của giới System Design! 🏟️<br>
+    Nếu toàn bộ các chương trước là những buổi tập luyện trong phòng gym, thì Chương 8 chính là lúc bạn bước ra chiến trường thật sự. Và không có "con quái vật" nào thích hợp để bắt đầu hơn là Twitter (bây giờ là X).<br>
+    Tại sao? Vì Twitter là bài toán kinh điển hội tụ mọi "nỗi đau" của hệ thống phân tán: High Concurrency (hàng triệu người dùng cùng lúc), Fan-out (một người nói, triệu người nghe), và Celebrity Problem (khi các ngôi sao làm nổ tung database).<br>
+    Hãy hít một hơi thật sâu, pha một ly cà phê thật đậm, vì bài viết này sẽ rất dài và "nặng đô". Chúng ta sẽ áp dụng đúng Framework 6 bước đã học ở Chương 7 để giải quyết bài toán này.
+  </p>
+
+ <h2 class="lesson-chapter">CHƯƠNG 8: CASE STUDY THỰC CHIẾN (END-TO-END)</h2>
+  <h3 class="lesson-title">BÀI 35: THIẾT KẾ MẠNG XÃ HỘI X (TWITTER)</h3>
+  <h3 class="lesson-title">KHI CON CHIM XANH "GÁNH" CẢ THẾ GIỚI</h3>
+
+  <h4 class="lesson-section">1. Bước 1: Clarify Requirements (Hỏi để không "vỡ trận")</h4>
+
+  <p class="lesson-text">Đừng bao giờ bắt đầu vẽ khi chưa biết mình đang phục vụ ai. Sau khi "vặn vẹo" người phỏng vấn, chúng ta chốt bộ yêu cầu sau:</p>
+
+  <p class="lesson-text"><strong>Yêu cầu chức năng (Functional):</strong></p>
+  <ul class="lesson-list">
+    <li>User có thể đăng Tweet (text, image, video).</li>
+    <li>User có thể Follow người khác.</li>
+    <li>Newsfeed (Timeline): Hiển thị các Tweet từ những người mình follow theo thứ tự thời gian.</li>
+    <li>User có thể Like và Retweet.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Yêu cầu phi chức năng (Non-Functional):</strong></p>
+  <ul class="lesson-list">
+    <li>High Availability: Hệ thống không được phép sập (trừ khi Elon Musk cố tình tắt server).</li>
+    <li>Low Latency: Newsfeed phải hiện ra trong < 200ms.</li>
+    <li>Scalability: Chịu được hàng trăm triệu người dùng.</li>
+    <li>Eventual Consistency: Dữ liệu có thể chậm vài giây cũng được, nhưng hệ thống phải luôn sẵn sàng.</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Bước 2: Capacity Estimation (Con số biết nói)</h4>
+
+  <p class="lesson-text">Hãy dùng "phép tính sau phong bì" để biết độ lớn của con quái vật này:</p>
+
+  <ul class="lesson-list">
+    <li>DAU (Daily Active Users): 300 triệu.</li>
+    <li>Tweet mới mỗi ngày: Giả sử 100 triệu Tweet.<br>
+      - Average Write QPS = 10⁸ / 86,400 ≈ 1,200 QPS.<br>
+      - Peak Write QPS ≈ 1,200 × 2 = 2,400 QPS.</li>
+    <li>Số lần đọc Timeline: Mỗi user check feed 10 lần/ngày.<br>
+      - Read QPS = 300M × 10 / 86,400 ≈ 35,000 QPS.</li>
+    <li>Storage (Dữ liệu): 100 triệu Tweet * 300 bytes ≈ 30 GB/ngày.<br>
+      - Nếu tính cả ảnh/video (chiếm 20%): 20M × 200KB ≈ 4 TB/ngày.<br>
+      - Sau 5 năm? Bạn cần khoảng 7 Petabyte. (Chúc mừng, bạn vừa nhận ra mình không thể dùng ổ cứng laptop để lưu cái này).</li>
+  </ul>
+
+  <h4 class="lesson-section">3. Bước 3: High-level Design (Bức tranh tổng thể)</h4>
+
+  <p class="lesson-text">Ở mức độ tổng quát, chúng ta cần:</p>
+
+  <ol class="lesson-list">
+    <li>Load Balancer: Điều hướng traffic.</li>
+    <li>App Servers: Xử lý logic.</li>
+    <li>Data Storage:
+      <ul class="lesson-list">
+        <li>User DB (SQL): Lưu thông tin user, mật khẩu.</li>
+        <li>Tweet DB (NoSQL - Cassandra/HBase): Lưu hàng tỷ tweet.</li>
+        <li>Social Graph (Graph DB - Neo4j/FlockDB): Lưu ai đang follow ai.</li>
+      </ul>
+    </li>
+    <li>Cache (Redis): Cực kỳ quan trọng để tăng tốc Newsfeed.</li>
+  </ol>
+
+  <h4 class="lesson-section">4. Bước 4: Deep-dive – "Nút thắt" Fan-out</h4>
+
+  <p class="lesson-text">Đây là phần "đắt" nhất của bài toán Twitter. Có 2 cách để tạo Newsfeed cho bạn:</p>
+
+  <p class="lesson-text"><strong>Cách A: Pull Model (Fan-out on Load)</strong></p>
+  <p class="lesson-text">Khi bạn mở App, hệ thống sẽ đi tìm tất cả những người bạn follow, lấy Tweet mới nhất của họ, gộp lại rồi sắp xếp theo thời gian.</p>
+
+  <ul class="lesson-list">
+    <li>Ưu điểm: Ghi Tweet rất nhanh (chỉ cần lưu vào DB).</li>
+    <li>Nhược điểm: Đọc cực chậm. Nếu bạn follow 1000 người, DB phải thực hiện một cú JOIN khổng lồ.</li>
+    <li>Kết luận: Không khả thi với quy mô Twitter.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Cách B: Push Model (Fan-out on Write)</strong></p>
+  <p class="lesson-text">Mỗi người dùng có một "Hộp thư đến" (In-memory Timeline) trong Redis. Khi ai đó đăng Tweet, hệ thống sẽ chủ động "đẩy" Tweet đó vào hộp thư của tất cả những người theo dõi.</p>
+
+  <ul class="lesson-list">
+    <li>Ưu điểm: Đọc cực nhanh (O(1)). Chỉ cần mở hộp thư ra là có sẵn Feed.</li>
+    <li>Nhược điểm: Ghi cực nặng. Nếu một người có 10 triệu follower, hệ thống phải thực hiện 10 triệu lượt ghi vào Redis ngay lập tức.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Cách C: The Hybrid Model (Giải pháp Master)</strong></p>
+  <p class="lesson-text">Twitter sử dụng kết hợp cả hai:</p>
+
+  <ul class="lesson-list">
+    <li>Người dùng bình thường: Dùng Push Model.</li>
+    <li>Người nổi tiếng (Celebrity - như Taylor Swift): Dùng Pull Model.<br>
+      - Hệ thống sẽ không đẩy Tweet của họ cho hàng triệu người. Thay vào đó, khi bạn mở Feed, hệ thống sẽ lấy Feed từ Redis của bạn (Push) + Tweet của người nổi tiếng bạn follow (Pull) và trộn lại.</li>
+  </ul>
+
+  <h4 class="lesson-section">5. Bước 5: Data Storage – Lưu gì và lưu ở đâu?</h4>
+
+  <ul class="lesson-list">
+    <li>Tweets: Dùng NoSQL như Cassandra. Nó được thiết kế để chịu được lượng ghi khổng lồ và dữ liệu có thể scale theo hàng ngang (Horizontal Scaling).</li>
+    <li>Social Graph: Để biết User A follow User B, Twitter từng dùng FlockDB (một dạng Graph DB được tối ưu). Nó giúp trả lời câu hỏi: "Ai đang theo dõi tôi?" một cách nhanh chóng.</li>
+    <li>Media: Ảnh và Video không bao giờ nằm trong DB. Chúng nằm ở Object Storage (S3) và được cache tại các CDN khắp thế giới để đảm bảo bạn xem clip mèo nhanh như chớp.</li>
+  </ul>
+
+  <h4 class="lesson-section">6. Bước 6: Những "Gia vị" Ghi điểm Tuyệt đối</h4>
+
+  <p class="lesson-text">Để trở thành Master, bạn cần nhắc thêm các yếu tố này:</p>
+
+  <p class="lesson-text"><strong>A. Idempotency (Lũy đẳng)</strong></p>
+  <p class="lesson-text">Khi mạng lag, user bấm nút "Tweet" 3 lần. Bạn phải đảm bảo chỉ có 1 Tweet được đăng. Giải pháp: Dùng một unique_id được generate ở phía Client.</p>
+
+  <p class="lesson-text"><strong>B. Trending Topics</strong></p>
+  <p class="lesson-text">Làm sao biết cái gì đang "hot"?</p>
+
+  <ul class="lesson-list">
+    <li>Dùng Stream Processing (Apache Flink/Spark) để đếm các hashtag theo thời gian thực trong một "cửa sổ thời gian" (sliding window).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>C. Search (Tìm kiếm)</strong></p>
+  <p class="lesson-text">Dùng Elasticsearch hoặc Lucene. Mỗi tweet khi đăng sẽ được đánh chỉ mục (index) để user có thể tìm kiếm theo từ khóa.</p>
+
+  <p class="lesson-text"><strong>Góc hài hước:</strong> Thiết kế Twitter giống như việc bạn cố gắng chuyển thư cho cả thế giới. Nếu là người bình thường, bạn viết thư và gửi cho bạn bè. Nhưng nếu là Elon Musk, bạn đứng trên loa phóng thanh hét lên, và nhiệm vụ của hệ thống là làm sao để cái loa đó không bị cháy khi hàng tỷ người cùng ghé tai vào nghe.</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 35</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Thiết kế Twitter là bài toán về sự cân bằng giữa Read và Write.</p>
+    <ul class="lesson-list">
+      <li>Key takeaway 1: Fan-out là trái tim của hệ thống.</li>
+      <li>Key takeaway 2: Caching (Redis) là cứu cánh cho Latency.</li>
+      <li>Key takeaway 3: Hybrid model là cách duy nhất để xử lý các "ngôi sao".</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Twitter là về việc phát sóng (Broadcast), nhưng WhatsApp hay Slack lại là về giao tiếp thời gian thực 1-1 hoặc nhóm nhỏ. Ở đó, chúng ta không cần Fan-out khủng khiếp, nhưng chúng ta cần sự kết nối Persistent (luôn duy trì).<br>
+    Chào mừng bạn đến với bài tiếp theo: Bài 36: Chat System (WhatsApp/Slack) - Bí mật đằng sau những dòng tin nhắn tức thời.<br>
+    Câu hỏi cho bạn: Trong bài toán Twitter, nếu Redis chứa Newsfeed của bạn bị "chết", hệ thống nên làm gì để phục hồi dữ liệu đó cho bạn? Bạn sẽ chọn rebuild từ DB hay có phương án backup nào khác?<br>
+    Bạn thấy Case Study đầu tiên này thế nào?
+  </p>
+</div>
+
+</body>
+</html>

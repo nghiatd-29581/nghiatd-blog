@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 34: Checklist – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào bạn, "vị thuyền trưởng" sắp sửa đưa con tàu kiến trúc ra khơi thực chiến! 🚢<br>
+    Chúng ta đã đi qua một hành trình dài của Chương 7: từ việc hỏi đúng câu hỏi (Clarify Requirements), tính toán những con số khổng lồ (Capacity Estimation), vẽ nên bức tranh tổng thể (High-level Design), cho đến việc "mổ xẻ" những nút thắt (Deep-dive) và chấp nhận những sự đánh đổi (Trade-offs).<br>
+    Nhưng hãy thành thật đi, trong phòng phỏng vấn hoặc khi trình bày trước hội đồng kỹ thuật, áp lực có thể khiến bộ não của chúng ta "bốc khói" và quên sạch những chi tiết nhỏ nhưng đắt giá. Đó là lý do tại sao bài viết hôm nay ra đời.<br>
+    Chào mừng bạn đến với Bài 34: Checklist - Những "từ khóa" giúp ghi điểm tuyệt đối. Đây là bản "phao cứu sinh" cuối cùng để bạn kiểm tra lại bản thiết kế của mình, đảm bảo nó không chỉ chạy được mà còn phải "sang, xịn, mịn".
+  </p>
+
+  <h2 class="lesson-chapter">CHƯƠNG 7: FRAMEWORK GIẢI BÀI TOÁN SYSTEM DESIGN</h2>
+  <h3 class="lesson-title">BÀI 34: CHECKLIST</h3>
+ <h3 class="lesson-title">NHỮNG "TỪ KHÓA" BIẾN BẠN THÀNH SYSTEM DESIGN MASTER</h3>
+  <h4 class="lesson-section">1. Cấp độ 1: Resilience – Hệ thống có "lì lợm" không?</h4>
+
+  <p class="lesson-text">Đừng chỉ nói hệ thống sẽ không sập. Hãy nói về cách nó đối mặt với cái chết.</p>
+
+  <ul class="lesson-list">
+    <li>[ ] Timeout & Retries: Bạn đã đặt thời gian chờ chưa? Có dùng Exponential Backoff kèm Jitter (Bài 25) không?</li>
+    <li>[ ] Circuit Breaker: Khi một dịch vụ con bị "sặc", bạn có "ngắt cầu dao" để cứu toàn bộ hệ thống không?</li>
+    <li>[ ] Idempotency (Tính lũy đẳng): Đây là từ khóa "ăn tiền". Nếu người dùng bấm nút "Thanh toán" 10 lần do mạng lag, hệ thống của bạn có trừ tiền 10 lần không? Hãy nhắc đến Idempotency Key.</li>
+    <li>[ ] Dead Letter Queue (DLQ): Những message lỗi trong Kafka/RabbitMQ sẽ đi về đâu? Có vùng đất nào cho những "linh hồn lạc lối" đó để chúng ta xử lý sau không?</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Cấp độ 2: Scalability – Hệ thống có "co giãn" tốt không?</h4>
+
+  <p class="lesson-text">Đừng chỉ nói "em sẽ thêm server". Hãy nói về cách bạn thêm.</p>
+
+  <ul class="lesson-list">
+    <li>[ ] Horizontal vs. Vertical Scaling: Tại sao bạn chọn mở rộng hàng ngang?</li>
+    <li>[ ] Database Sharding: Bạn chọn Sharding Key dựa trên tiêu chí nào? Có tránh được Hotspot (điểm nóng dữ liệu) không?</li>
+    <li>[ ] Consistent Hashing: Khi thêm một Cache Node mới, bạn có làm 90% dữ liệu cũ bị mất hiệu lực không? (Nhắc đến vòng tròn băm ở Bài 4).</li>
+    <li>[ ] Read Replicas: Bạn có tách biệt luồng Đọc và Ghi để giảm tải cho Database chính không?</li>
+  </ul>
+
+  <h4 class="lesson-section">3. Cấp độ 3: Performance – Hệ thống có "mượt" không?</h4>
+
+  <p class="lesson-text">Tốc độ là hơi thở của trải nghiệm người dùng.</p>
+
+  <ul class="lesson-list">
+    <li>[ ] Caching Strategy: Bạn dùng Write-through, Write-around hay Write-back? (Bài 9). Tại sao?</li>
+    <li>[ ] CDN (Content Delivery Network): Những file tĩnh (ảnh, video) đã được đưa đến "đầu ngõ" nhà người dùng chưa?</li>
+    <li>[ ] Database Indexing: Bạn dùng B-Tree hay Hash Index? Có cột nào bị quét (Full table scan) mà không có Index không?</li>
+    <li>[ ] Connection Pooling: Bạn có mở/đóng kết nối DB liên tục không, hay dùng một "hồ chứa" kết nối để tái sử dụng?</li>
+  </ul>
+
+  <h4 class="lesson-section">4. Cấp độ 4: Consistency – Dữ liệu có "thật" không?</h4>
+
+  <p class="lesson-text">Đây là nơi bạn thể hiện sự hiểu biết về định lý CAP và sự đánh đổi (Bài 33).</p>
+
+  <ul class="lesson-list">
+    <li>[ ] Eventual vs. Strong Consistency: Bạn có chấp nhận người dùng thấy dữ liệu cũ trong vài mili giây để đổi lấy tốc độ không?</li>
+    <li>[ ] Quorum (R/W): Bạn cần bao nhiêu Node đồng ý để coi là một lần Ghi thành công? ($W + R > N$).</li>
+    <li>[ ] Distributed Transactions: Nếu cần giao dịch qua nhiều Service, bạn dùng Saga Pattern (Choreography hay Orchestration) hay Two-Phase Commit (2PC)?</li>
+  </ul>
+
+  <h4 class="lesson-section">5. Cấp độ 5: Security & Observability – Hệ thống có "an toàn và minh bạch" không?</h4>
+
+  <p class="lesson-text">Đừng để hệ thống là một "hộp đen".</p>
+
+  <ul class="lesson-list">
+    <li>[ ] Rate Limiting: Bạn có cơ chế chặn những đợt tấn công Brute-force hay DDoS cơ bản không?</li>
+    <li>[ ] Encryption: Dữ liệu được mã hóa At Rest (trong ổ cứng) và In Transit (trên đường truyền - TLS) như thế nào?</li>
+    <li>[ ] The Three Pillars: Bạn đã lắp Metrics, Logs và Tracing (Bài 27) chưa? Bạn dùng OpenTelemetry chứ?</li>
+    <li>[ ] RBAC (Role-Based Access Control): Ai có quyền xóa dữ liệu? Bạn có phân quyền chặt chẽ không?</li>
+  </ul>
+
+  <h4 class="lesson-section">6. Cấp độ 6: Master Buzzwords – Những "gia vị" thượng hạng</h4>
+
+  <p class="lesson-text">Nếu bạn nhắc đến những điều này, người phỏng vấn sẽ biết bạn đã thực sự "thành tinh":</p>
+
+  <ul class="lesson-list">
+    <li>[ ] Backpressure: Khi hệ thống phía sau quá tải, nó có biết bảo hệ thống phía trước "gửi chậm lại" không?</li>
+    <li>[ ] Service Discovery: Các Microservice tìm thấy nhau bằng cách nào? (Consul, Eureka hay K8s DNS?).</li>
+    <li>[ ] Graceful Degradation: Khi hệ thống yếu đi, nó có biết hy sinh những tính năng phụ (như Comment) để giữ lại tính năng chính (như Thanh toán) không?</li>
+    <li>[ ] Chaos Engineering: Bạn có dám tự tay "rút phích điện" để thử độ bền của hệ thống không? (Bài 28).</li>
+  </ul>
+
+  <h4 class="lesson-section">VÍ DỤ THỰC CHIẾN: ÁP DỤNG CHECKLIST CHO HỆ THỐNG "THANH TOÁN"</h4>
+
+  <p class="lesson-text">Hãy xem cách một Master trình bày khi sử dụng Checklist:</p>
+
+  <p class="lesson-text">"Để thiết kế hệ thống thanh toán, tôi ưu tiên Strong Consistency vì tiền bạc không thể đùa được. Tôi sẽ dùng Pessimistic Locking ở mức DB cho những giao dịch nhạy cảm. Để đảm bảo hệ thống không trừ tiền hai lần, tôi áp dụng Idempotency với một Unique Token từ Client.</p>
+
+  <p class="lesson-text">Về mặt Resilience, tôi dùng Circuit Breaker khi gọi sang Gateway của ngân hàng. Nếu Gateway chậm, hệ thống sẽ trả về lỗi ngay để không treo Thread. Đồng thời, tôi sử dụng Dead Letter Queue để lưu lại các giao dịch nghi vấn nhằm đối soát thủ công sau này. Cuối cùng, mọi hành động đều được ghi log qua Distributed Tracing để chúng ta có thể truy vết từng mili giây của dòng tiền."</p>
+
+  <p class="lesson-text">Kết quả: Bạn vừa "bắn" ra 5-6 từ khóa Master chỉ trong một đoạn văn ngắn. Người nghe sẽ hoàn toàn bị thuyết phục!</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT CHƯƠNG 7</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Chúng ta đã hoàn thành bộ khung (Framework) để giải bất kỳ bài toán System Design nào. Hãy nhớ lộ trình 6 bước "thần thánh":</p>
+    <ol class="lesson-list">
+      <li>Clarify: Hỏi để hiểu.</li>
+      <li>Estimate: Tính để biết tầm vóc.</li>
+      <li>High-level: Vẽ để thấy bức tranh.</li>
+      <li>Deep-dive: Khoan để giải quyết nút thắt.</li>
+      <li>Trade-offs: Chọn để đánh đổi.</li>
+      <li>Checklist: Rà soát để ghi điểm tuyệt đối.</li>
+    </ol>
+    <p class="lesson-text"><strong>Góc hài hước:</strong> Học xong chương này, bạn giống như một võ sĩ đã thuộc lòng các chiêu thức. Nhưng "võ công cao cường không bằng năng đến trường". Bạn cần phải mang những chiêu thức này đi "thực chiến" với những bài toán thực tế.</p>
+  </div>
+
+  <p class="lesson-ending">
+    BƯỚC SANG CHƯƠNG 8: CASE STUDY THỰC CHIẾN (END-TO-END)<br>
+    Lý thuyết đã đủ, bây giờ là lúc chúng ta bước vào "chiến trường" thực sự. Chúng ta sẽ áp dụng toàn bộ Framework đã học để giải quyết những bài toán hóc búa nhất của các ông lớn công nghệ.<br>
+    Bài tiếp theo: Bài 35: Thiết kế mạng xã hội X (Twitter).<br>
+    Chúng ta sẽ giải bài toán: Làm sao để 300 triệu người dùng có thể thấy bài đăng của Elon Musk ngay lập tức mà không làm sập server? Làm sao để xử lý hàng vạn Tweet mỗi giây?<br>
+    Câu hỏi cho bạn: Trong bản Checklist trên, từ khóa nào bạn cảm thấy mình còn "yếu" nhất và cần xem lại kiến thức cũ? Hãy thành thật với bản thân nhé!<br>
+    Bạn thấy bản Checklist này có giúp bạn tự tin hơn không? Hãy lưu nó vào điện thoại để "ôn bài" ngay trước khi bước vào bất kỳ cuộc họp quan trọng nào nhé! Bạn đã sẵn sàng để "xây dựng" Twitter chưa?
+  </p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 38: Web Crawler & Search Engine – Trần's Blog</title>
+
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào bạn! Sau khi đã "toát mồ hôi hột" với từng đồng xu trong hệ thống Payment, hôm nay chúng ta sẽ cùng nhau chuyển sang một trạng thái "khổng lồ" hơn. Nếu Payment là bài toán về sự tỉ mỉ, thì Web Crawler và Search Engine là bài toán về sức mạnh cơ bắp và trí tuệ nhân tạo ở quy mô toàn cầu.<br>
+    Chào mừng bạn đến với Bài 38: Web Crawler & Search Engine – Nghệ thuật "nuốt chửng" Internet. Hãy tưởng tượng Internet là một thư viện khổng lồ nhưng các cuốn sách bị vứt bừa bãi trên sàn, và cứ mỗi giây lại có thêm hàng ngàn cuốn mới được ném vào.<br>
+    Nhiệm vụ của bạn là xây dựng một đội quân "nhện" (spiders) để đi đọc hết chỗ đó, ghi chép lại và phân loại sao cho khi ai đó hỏi: "Tìm cho tôi chỗ nào bán phở ngon ở Hà Nội?", bạn phải đưa ra câu trả lời chính xác trong vòng 0.1 giây.
+  </p>
+
+  <h2 class="lesson-chapter">CHƯƠNG 8: CASE STUDY THỰC CHIẾN (END-TO-END)</h2>
+  <h3 class="lesson-title">BÀI 38: WEB CRAWLER & SEARCH ENGINE</h3>
+  <h3 class="lesson-title">NGHỆ THUẬT "NUỐT CHỬNG" INTERNET</h3>
+  <h4 class="lesson-section">1. Bước 1: Clarify Requirements (Phạm vi của "con nhện")</h4>
+
+  <p class="lesson-text">Web Crawler có rất nhiều loại: từ loại đơn giản để so sánh giá web thương mại điện tử, đến loại "khủng long" để đánh chỉ mục toàn bộ Internet.</p>
+
+  <p class="lesson-text"><strong>Yêu cầu chức năng (Functional):</strong></p>
+  <ul class="lesson-list">
+    <li>Crawling: Thu thập nội dung từ các trang web bắt đầu từ một danh sách URL gốc (Seeds).</li>
+    <li>Extraction: Trích xuất văn bản, hình ảnh và đặc biệt là các URL mới từ trang hiện tại để tiếp tục hành trình.</li>
+    <li>Indexing: Lưu trữ và đánh chỉ mục để hỗ trợ tìm kiếm nhanh.</li>
+    <li>Deduplication: Loại bỏ các trang trùng lặp (Internet rất nhiều rác, bạn không muốn lưu 1000 bản copy của một bài báo).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Yêu cầu phi chức năng (Non-Functional):</strong></p>
+  <ul class="lesson-list">
+    <li>Scalability: Có thể mở rộng để xử lý hàng tỷ trang web.</li>
+    <li>Politeness: Phải "lịch sự". Không được dội bom (DDoS) một server web bằng quá nhiều request trong thời gian ngắn.</li>
+    <li>Robustness: Hệ thống không được sập khi gặp mã độc, link lỗi (dead links) hoặc các "bẫy nhện" (spider traps).</li>
+    <li>Extensibility: Dễ dàng thêm các module mới (ví dụ: module quét ảnh, module dịch thuật).</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Bước 2: Capacity Estimation (Khi Terabyte chỉ là "hạt cát")</h4>
+
+  <p class="lesson-text">Hãy làm một vài phép tính để thấy độ khủng khiếp:</p>
+
+  <ul class="lesson-list">
+    <li>Giả định: Chúng ta muốn quét 1 tỷ trang web mỗi tháng.</li>
+    <li>Storage: Mỗi trang web trung bình (sau khi nén và loại bỏ code thừa) nặng khoảng 100 KB.<br>
+      - 10⁹ trang × 100 KB = 100 Terabytes/tháng.<br>
+      - Lưu trong 5 năm? Bạn cần 6 Petabytes.</li>
+    <li>QPS (Queries Per Second): 1 tỷ trang/tháng ≈ 400 trang/giây.<br>
+      - Peak QPS: Có thể lên tới 1,200 trang/giây. Băng thông sẽ là một con số khổng lồ (khoảng vài chục Gbps).</li>
+  </ul>
+
+  <h4 class="lesson-section">3. Bước 3: High-Level Design (Bức tranh tổng thể)</h4>
+
+  <p class="lesson-text">Thiết kế một Web Crawler giống như một dây chuyền sản xuất tự động.</p>
+
+  <ol class="lesson-list">
+    <li>Seed URLs: Điểm xuất phát (ví dụ: https://www.google.com/search?q=google.com, wikipedia.org).</li>
+    <li>URL Frontier: Trái tim của hệ thống – nơi lưu trữ danh sách các URL đang chờ được quét.</li>
+    <li>HTML Downloader: Đội quân đi tải nội dung web về.</li>
+    <li>Content Parser: "Đọc" nội dung, kiểm tra xem trang đó có bị lỗi không.</li>
+    <li>Content Seen: Bộ lọc kiểm tra xem nội dung này đã được lưu chưa (tránh trùng lặp).</li>
+    <li>URL Extractor: Trích xuất các link mới từ trang vừa tải.</li>
+    <li>URL Filter: Loại bỏ các link rác, link quảng cáo, hoặc các định dạng file không cần thiết (.mp4, .zip).</li>
+    <li>URL Seen: Kiểm tra xem URL này đã từng được quét chưa.</li>
+  </ol>
+
+  <h4 class="lesson-section">4. Bước 4: Deep-Dive – Những "Huyệt đạo" Kỹ thuật</h4>
+
+  <p class="lesson-text"><strong>4.1. URL Frontier: Sự lịch sự và Ưu tiên</strong></p>
+  <p class="lesson-text">Đây là phần khó nhất. Bạn không thể chỉ dùng một cái Queue đơn giản (FIFO).</p>
+
+  <ul class="lesson-list">
+    <li><strong>Politeness (Lịch sự):</strong> Bạn phải đảm bảo không gửi quá nhiều request đến cùng một Host (ví dụ: cnn.com) trong cùng một lúc.<br>
+      - Giải pháp: Chia URL vào các queue khác nhau dựa trên Hostname. Mỗi worker chỉ được lấy từ một queue tại một thời điểm và phải nghỉ (delay) giữa các lần gọi.</li>
+    <li><strong>Priority (Ưu tiên):</strong> Trang Wikipedia quan trọng hơn trang blog cá nhân của một ai đó.<br>
+      - Giải pháp: Tính điểm dựa trên PageRank hoặc tần suất cập nhật của trang đó.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>4.2. Khử trùng lặp (Deduplication) bằng SimHash</strong></p>
+  <p class="lesson-text">Làm sao biết hai trang web có nội dung "gần giống nhau" (chỉ khác nhau cái timestamp chẳng hạn)?</p>
+
+  <ul class="lesson-list">
+    <li>Sử dụng SimHash hoặc MinHash. Nó biến toàn bộ nội dung văn bản thành một dấu vân tay (fingerprint) số học. Nếu hai dấu vân tay chỉ khác nhau vài bit, chúng là đồ trùng lặp. Điều này giúp tiết kiệm hàng Petabyte lưu trữ.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>4.3. Inverted Index – Bí mật của Search Engine</strong></p>
+  <p class="lesson-text">Sau khi tải xong, làm sao tìm kiếm? Nếu bạn dùng SELECT * FROM pages WHERE content LIKE '%phở%', hệ thống sẽ sập ngay lập tức.</p>
+
+  <ul class="lesson-list">
+    <li>Inverted Index (Chỉ mục đảo ngược): Thay vì lưu theo kiểu Trang A → [Từ 1, Từ 2], chúng ta lưu theo kiểu Từ "phở" → [Trang A, Trang C, Trang Z].</li>
+    <li>Khi user gõ "phở", bạn chỉ việc lấy danh sách các trang đã được map sẵn. Tốc độ tìm kiếm từ O(N) giảm xuống còn O(1).</li>
+  </ul>
+
+  <h4 class="lesson-section">5. Bước 5: Thách thức về lưu trữ (Storage Architecture)</h4>
+
+  <p class="lesson-text">Ở quy mô này, các Database quan hệ (SQL) sẽ "đầu hàng".</p>
+
+  <ul class="lesson-list">
+    <li>Metadata (URL, trạng thái, điểm ưu tiên): Lưu trong các Key-Value Store như HBase hoặc Cassandra (BigTable của Google).</li>
+    <li>Nội dung trang (Raw HTML): Lưu trong Object Storage (như S3, GCS) hoặc hệ thống file phân tán (HDFS).</li>
+  </ul>
+
+  <h4 class="lesson-section">6. Bước 6: Checklist "Ghi điểm tuyệt đối"</h4>
+
+  <ul class="lesson-list">
+    <li>[ ] Robots.txt: Con nhện của bạn phải biết đọc file này để tôn trọng quyền riêng tư của chủ web. Nếu họ cấm "crawl", bạn phải rút lui ngay lập tức.</li>
+    <li>[ ] DNS Resolver: Việc phân giải hàng triệu tên miền mỗi giây là một gánh nặng. Bạn cần một bộ DNS Cache riêng biệt.</li>
+    <li>[ ] Checkpoint/Checkpointing: Crawling là một quá trình dài hơi. Nếu hệ thống sập, nó phải biết bắt đầu lại từ đâu thay vì quét lại từ đầu (tốn băng thông, tốn tiền).</li>
+    <li>[ ] Spider Traps: Hãy cẩn thận với những trang web tự sinh ra URL vô hạn (ví dụ: web.com/a/a/a/a...). Bạn cần một module để phát hiện các URL quá dài hoặc có cấu trúc lặp.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Góc hài hước:</strong> Làm Web Crawler giống như việc bạn đi ăn buffet vậy. Bạn muốn ăn tất cả mọi thứ, nhưng nếu bạn ăn quá nhanh, nhà hàng sẽ đuổi bạn ra (Politeness). Nếu bạn ăn quá nhiều đồ rác, bạn sẽ bị đau bụng (Storage). Và nếu bạn không biết cách phân loại món ăn, lần sau bạn sẽ chẳng tìm thấy món mình thích đâu (Indexing)!</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 38</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Thiết kế Web Crawler và Search Engine là một bài tập tuyệt vời để bạn hiểu về:</p>
+    <ol class="lesson-list">
+      <li>Dữ liệu khổng lồ (Big Data): Cách lưu trữ và quản lý Petabyte.</li>
+      <li>Hệ thống phân tán: Cách phối hợp hàng ngàn worker tải web đồng thời.</li>
+      <li>Thuật toán tối ưu: Inverted Index và SimHash.</li>
+    </ol>
+    <p class="lesson-text"><strong>Nguồn tham khảo:</strong></p>
+    <ul class="lesson-list">
+      <li>The Anatomy of a Large-Scale Hypertextual Web Search Engine (Bài báo gốc của Sergey Brin và Larry Page - hai nhà sáng lập Google).</li>
+      <li>Introduction to Information Retrieval (Christopher D. Manning).</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    CHƯƠNG 9: TỔNG KẾT & CON ĐƯỜNG PHÁT TRIỂN<br>
+    Chúng ta đã đi qua 38 bài học, từ những khái niệm cơ bản nhất đến những hệ thống phức tạp nhất hành tinh. Bạn đã có đủ "vũ khí" để đối đầu với bất kỳ vòng phỏng vấn System Design nào. Nhưng hành trình của một Master không dừng lại ở đó.<br>
+    Bài tiếp theo (Bài 39): Career Path: Từ Junior → Senior → Staff/Principal Architect.<br>
+    Chúng ta sẽ thảo luận về lộ trình thăng tiến, cách tư duy của một Architect khác gì với một Coder, và làm sao để giữ cho mình luôn "rực cháy" trong ngành công nghiệp thay đổi chóng mặt này.<br>
+    Câu hỏi cho bạn: Nếu bạn phải thiết kế một Crawler chỉ để quét dữ liệu từ các sàn thương mại điện tử (Shopee, Lazada) để so sánh giá, bạn sẽ thay đổi chiến lược "Politeness" và "Priority" như thế nào so với Google?<br>
+    Chúc mừng bạn đã hoàn thành các Case Study thực chiến! Bạn cảm thấy mình đã sẵn sàng để trở thành một "Kiến trúc sư trưởng" chưa? Hãy để lại cảm nghĩ của bạn về hành trình này nhé! Would you like me to move to the Career Path or do a Recap of all 8 Chapters first?
+  </p>
+</div>
+
+</body>
+</html>
