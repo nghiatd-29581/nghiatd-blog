@@ -9,14 +9,15 @@
 
 <div class="lesson-container">
   <p class="lesson-intro">
-    Chào bạn! Tôi rất thích sự quyết tâm "đào tận gốc, trốc tận rễ" của bạn. Chúng ta đã có những con đường (Infrastructure) và ngôn ngữ (Protocols) tuyệt vời. Nhưng bây giờ, chúng ta đối mặt với một vấn đề "nhức nhối" nhất trong hệ thống phân tán: Làm sao để đảm bảo mọi thứ đều nhất quán khi dữ liệu nằm rải rác khắp nơi?<br><br>
-    Trong một Monolith (đơn khối), mọi thứ thật dễ dàng. Bạn chỉ cần BEGIN TRANSACTION và COMMIT. Nếu có lỗi, ROLLBACK là xong. Nhưng trong Microservices, khi Service Đơn hàng dùng MySQL, Service Kho dùng PostgreSQL, và Service Thanh toán dùng một API bên thứ ba, bạn không thể dùng một lệnh SQL để giải quyết tất cả.<br><br>
+    Chào bạn! Tôi rất thích sự quyết tâm "đào tận gốc, trốc tận rễ" của bạn. Chúng ta đã có những con đường (Infrastructure) và ngôn ngữ (Protocols) tuyệt vời. Nhưng bây giờ, chúng ta đối mặt với một vấn đề "nhức nhối" nhất trong hệ thống phân tán: Làm sao để đảm bảo mọi thứ đều nhất quán khi dữ liệu nằm rải rác khắp nơi?<br>
+    Trong một Monolith (đơn khối), mọi thứ thật dễ dàng. Bạn chỉ cần BEGIN TRANSACTION và COMMIT. Nếu có lỗi, ROLLBACK là xong. Nhưng trong Microservices, khi Service Đơn hàng dùng MySQL, Service Kho dùng PostgreSQL, và Service Thanh toán dùng một API bên thứ ba, bạn không thể dùng một lệnh SQL để giải quyết tất cả.<br>
     Hãy hâm nóng lại bộ não, vì bài viết này sẽ đưa bạn vào mê cung của các giao dịch phân tán, nơi sự hoàn hảo của ACID (Atomicity, Consistency, Isolation, Durability) bị thách thức bởi sự tàn khốc của thực tế.
   </p>
 
   <h1 class="lesson-part">PHẦN 5: COMMUNICATION & SECURITY</h1>
   <h2 class="lesson-chapter">CHƯƠNG 5: GIAO TIẾP & BẢO MẬT</h2>
-  <h3 class="lesson-title">BÀI 22: DISTRIBUTED TRANSACTIONS – KHI "MỘT NGƯỜI ĐAU, CẢ TỔNG CÙNG KHÓC"</h3>
+  <h3 class="lesson-title">BÀI 22: DISTRIBUTED TRANSACTIONS"</h3>
+    <h3 class="lesson-title">KHI "MỘT NGƯỜI ĐAU, CẢ TÀU CÙNG KHÓC"</h3>
 
   <h4 class="lesson-section">1. Two-Phase Commit (2PC): "Lời hứa mong manh"</h4>
 
@@ -149,9 +150,9 @@
   </div>
 
   <p class="lesson-ending">
-    Bài tiếp theo: Hệ thống của chúng ta giờ đã giao tiếp mượt mà và nhất quán. Nhưng làm sao để mở cửa cho thế giới bên ngoài vào dùng mà không bị hacker "thăm hỏi"? Làm sao để kiểm soát hàng nghìn API chỉ qua một "cổng bảo vệ"?<br><br>
-    Chào mừng bạn đến với Bài 23: API Gateway & Security (OAuth2, JWT). Chúng ta sẽ học cách xây dựng "pháo đài" cho hệ thống của mình.<br><br>
-    Câu hỏi cho bạn: Trong mô hình Saga, nếu Service B thực hiện xong việc và gửi tin nhắn thành công về Orchestrator, nhưng Orchestrator bị sập trước khi lưu trạng thái. Khi Orchestrator sống lại, nó sẽ làm gì để biết giao dịch đang ở đâu? (Gợi ý: Hãy nhớ lại bài về Message Queue và Offset).<br><br>
+    Bài tiếp theo: Hệ thống của chúng ta giờ đã giao tiếp mượt mà và nhất quán. Nhưng làm sao để mở cửa cho thế giới bên ngoài vào dùng mà không bị hacker "thăm hỏi"? Làm sao để kiểm soát hàng nghìn API chỉ qua một "cổng bảo vệ"?<br>
+    Chào mừng bạn đến với Bài 23: API Gateway & Security (OAuth2, JWT). Chúng ta sẽ học cách xây dựng "pháo đài" cho hệ thống của mình.<br>
+    Câu hỏi cho bạn: Trong mô hình Saga, nếu Service B thực hiện xong việc và gửi tin nhắn thành công về Orchestrator, nhưng Orchestrator bị sập trước khi lưu trạng thái. Khi Orchestrator sống lại, nó sẽ làm gì để biết giao dịch đang ở đâu? (Gợi ý: Hãy nhớ lại bài về Message Queue và Offset).<br>
     Bạn thấy bài viết về "Giao dịch phân tán" này có đủ chi tiết để bạn tự tin thiết kế một hệ thống thanh toán chưa? Nếu có phần nào còn "mông lung", hãy nói ngay để mình cùng đào sâu thêm nhé! Would you like me to create a detailed sequence diagram for a specific Saga flow (like Booking a Flight) or proceed to API Gateway?
   </p>
 </div>

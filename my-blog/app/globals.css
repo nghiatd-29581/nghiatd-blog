@@ -77,16 +77,16 @@ body {
   .lesson-text { margin: 16px 0; }
   /*.lesson-section { font-size: 1.35em; margin: 35px 0 12px; color: #d4380d; font-weight: bold; } */
   .lesson-section { 
-    font-size: 1.5em; 
+    font-size: 1.3em; 
     color: #ea580c; 
-    margin: 50px 0 18px; 
+    margin: 20px 0 18px; 
     font-weight: bold;
     padding-bottom: 8px;
     border-bottom: 3px solid #fdba74;
   }
   .lesson-part { font-size: 1.5em; text-align: center; color: #c41f3e; margin: 40px 0 10px; }
   .lesson-chapter { font-size: 2em; text-align: center; color: #722ed1; margin-bottom: 10px; }
-  .lesson-title { font-size: 1.85em; text-align: center; margin: 30px 0 15px; }
+  .lesson-title { font-size: 1.55em; text-align: center; margin: 1px 0 1px; }
   .lesson-subtitle { font-size: 0.9em; color: #9254de; font-style: italic; }
   .lesson-note { background: #f6ffed; border-left: 6px solid #52c41a; padding: 20px; font-size: 1.1em; margin: 25px 0; border-radius: 8px; }
    .lesson-table-wrapper { overflow-x: auto; margin: 45px 0; }
@@ -168,7 +168,7 @@ body {
   }
   .lesson-list { 
     background: #f2f2f2;
-    padding: 25px;
+    padding: 15px;
     margin: 25px 0; 
     font-size: 1em;
     border-radius: 16px; 
@@ -194,3 +194,21 @@ body {
       font-size: 0.75em;
       vertical-align: super;
     }
+
+  .image-wrapper {
+    width: 100%;
+    max-width: 600px;
+    margin: 20px auto;
+}
+
+.base64-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+}
+.gif-image {
+    width: 300px;
+    height: auto;
+    display: block;
+}

@@ -404,7 +404,7 @@
             },
             {
               "id": "lesson33",
-              "title": "Bài 33: Trade-offs & Alternatives (Tại sao không dùng cái khác?).",
+              "title": "Bài 33: Trade-offs & Alternatives).",
               "htmlPath": "/content/books/book2/chapter7/lesson33.html"
             },
             { 
@@ -420,22 +420,22 @@
           "lessons": [
             {
               "id": "lesson35",
-              "title": "Bài 35: Social Network (X/Twitter):** Bài toán Fan-out và Hot partitions.",
+              "title": "Bài 35: Social Network (X/Twitter)",
               "htmlPath": "/content/books/book2/chapter8/lesson35.html"
             },
             {
               "id": "lesson36",
-              "title": "Bài 36: Chat System (WhatsApp/Slack):** Real-time & Presence status.",
+              "title": "Bài 36: Chat System (WhatsApp/Slack)",
               "htmlPath": "/content/books/book2/chapter8/lesson36.html"
             },
             {
               "id": "lesson37",
-              "title": "Bài 37: Payment System:** **Reconciliation (Đối soát)**, Consistency & Idempotency.",
+              "title": "Bài 37: Payment System",
               "htmlPath": "/content/books/book2/chapter8/lesson37.html"
             },
             {
               "id": "lesson38",
-              "title": "Bài 38: Web Crawler / Search Engine:** Kiến trúc lưu trữ khổng lồ và Indexing",
+              "title": "Bài 38: Web Crawler / Search Engine",
               "htmlPath": "/content/books/book2/chapter8/lesson38.html"
             }
           ]

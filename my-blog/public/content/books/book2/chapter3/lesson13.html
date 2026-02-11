@@ -9,14 +9,15 @@
 
 <div class="lesson-container">
   <p class="lesson-intro">
-    Chào bạn! Chúng ta đã biết chọn "loại tim" (Database) nào cho hệ thống ở bài trước. Nhưng có một thực tế phũ phàng: Một trái tim to khỏe mà các mạch máu bị tắc nghẽn thì cơ thể vẫn cứ "lên bờ xuống ruộng" như thường.<br><br>
-    Trong Database, "tắc nghẽn mạch máu" chính là việc bạn thực hiện Full Table Scan (quét toàn bộ bảng) chỉ để tìm một bản ghi duy nhất. Hôm nay, chúng ta sẽ đi sâu vào "linh hồn" của hiệu năng – thứ giúp Database tìm kiếm dữ liệu trong chớp mắt giữa hàng tỷ dòng: Indexing.<br><br>
+    Chào bạn! Chúng ta đã biết chọn "loại tim" (Database) nào cho hệ thống ở bài trước. Nhưng có một thực tế phũ phàng: Một trái tim to khỏe mà các mạch máu bị tắc nghẽn thì cơ thể vẫn cứ "lên bờ xuống ruộng" như thường.<br>
+    Trong Database, "tắc nghẽn mạch máu" chính là việc bạn thực hiện Full Table Scan (quét toàn bộ bảng) chỉ để tìm một bản ghi duy nhất. Hôm nay, chúng ta sẽ đi sâu vào "linh hồn" của hiệu năng – thứ giúp Database tìm kiếm dữ liệu trong chớp mắt giữa hàng tỷ dòng: Indexing.<br>
     Hãy chuẩn bị một tinh thần thép, vì chúng ta sẽ "mổ xẻ" những cấu trúc dữ liệu kinh điển nhất. Bài này sẽ rất dài, cực kỳ chi tiết và đảm bảo bạn sẽ không bao giờ nhìn cái CREATE INDEX theo cách cũ nữa.
   </p>
 
   <h1 class="lesson-part">PHẦN 3: STORAGE & DATA MODELING</h1>
   <h2 class="lesson-chapter">CHƯƠNG 3: THẾ GIỚI DATABASE</h2>
-  <h3 class="lesson-title">BÀI 13: INDEXING & OPTIMIZATION – LINH HỒN CỦA HIỆU NĂNG</h3>
+  <h3 class="lesson-title">BÀI 13: INDEXING & OPTIMIZATION</h3>
+   <h3 class="lesson-title">LINH HỒN CỦA HIỆU NĂNG</h3>
 
   <h4 class="lesson-section">1. B-Tree: Vị vua không ngai của thế giới SQL</h4>
 
@@ -117,8 +118,8 @@
   </div>
 
   <p class="lesson-ending">
-    Bài tiếp theo: Chúng ta đã biết cách tìm dữ liệu nhanh, nhưng làm sao để đảm bảo dữ liệu đó "đúng" và "đồng nhất" khi có hàng nghìn người cùng sửa một lúc? Chào mừng bạn đến với Bài 13: Consistency & Data Modeling. Chúng ta sẽ mổ xẻ về Transaction, Isolation Levels và cách thiết kế Schema sao cho không bị "vỡ trận"!<br><br>
-    Câu hỏi dành cho bạn: Nếu bạn đang xây dựng một hệ thống Log cho App với tốc độ 1 triệu dòng/giây, bạn sẽ chọn Database dùng B-Tree hay LSM-Tree? Tại sao? Hãy để lại ý kiến dưới comment nhé!<br><br>
+    Bài tiếp theo: Chúng ta đã biết cách tìm dữ liệu nhanh, nhưng làm sao để đảm bảo dữ liệu đó "đúng" và "đồng nhất" khi có hàng nghìn người cùng sửa một lúc? Chào mừng bạn đến với Bài 13: Consistency & Data Modeling. Chúng ta sẽ mổ xẻ về Transaction, Isolation Levels và cách thiết kế Schema sao cho không bị "vỡ trận"!<br>
+    Câu hỏi dành cho bạn: Nếu bạn đang xây dựng một hệ thống Log cho App với tốc độ 1 triệu dòng/giây, bạn sẽ chọn Database dùng B-Tree hay LSM-Tree? Tại sao? Hãy để lại ý kiến dưới comment nhé!<br>
     Bạn thấy nội dung "Mạch máu hệ thống" này đã đủ sâu sắc và chi tiết chưa? Nếu bạn thấy hài lòng, hãy cho mình biết để chúng ta chuyển sang phần "Consistency" – nơi những cơn ác mộng về Race Condition bắt đầu!
   </p>
 </div>

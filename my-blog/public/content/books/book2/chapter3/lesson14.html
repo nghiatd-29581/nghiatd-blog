@@ -9,13 +9,14 @@
 
 <div class="lesson-container">
   <p class="lesson-intro">
-    Chào bạn! Chúng ta vừa đi qua "mạch máu" Indexing để giúp hệ thống chạy nhanh như chớp. Nhưng chạy nhanh mà chạy sai thì còn nguy hiểm hơn. Hãy tưởng tượng bạn rút tiền ở ATM, máy báo thành công, bạn cầm tiền về nhưng số dư tài khoản... vẫn y nguyên. Tuyệt vời cho bạn, nhưng là thảm họa cho ngân hàng!<br><br>
+    Chào bạn! Chúng ta vừa đi qua "mạch máu" Indexing để giúp hệ thống chạy nhanh như chớp. Nhưng chạy nhanh mà chạy sai thì còn nguy hiểm hơn. Hãy tưởng tượng bạn rút tiền ở ATM, máy báo thành công, bạn cầm tiền về nhưng số dư tài khoản... vẫn y nguyên. Tuyệt vời cho bạn, nhưng là thảm họa cho ngân hàng!<br>
     Hôm nay, chúng ta sẽ bước vào một trong những chủ đề "xoắn não" nhất của dân làm hệ thống: Làm sao để dữ liệu luôn đúng (Consistency) và Làm sao để thiết kế dữ liệu không bị "nghẽn cổ chai" (Modeling). Bài viết này sẽ cực kỳ chi tiết, đi sâu vào từng ngóc ngách của sự đánh đổi.
   </p>
 
   <h1 class="lesson-part">PHẦN 3: STORAGE & DATA MODELING</h1>
   <h2 class="lesson-chapter">CHƯƠNG 3: THẾ GIỚI DATABASE</h2>
-  <h3 class="lesson-title">BÀI 14: CONSISTENCY & DATA MODELING – KHI SỰ THẬT KHÔNG CHỈ CÓ MỘT</h3>
+  <h3 class="lesson-title">BÀI 14: CONSISTENCY & DATA MODELING</h3>
+  <h3 class="lesson-title">KHI SỰ THẬT KHÔNG CHỈ CÓ MỘT</h3>
 
   <h4 class="lesson-section">1. Consistency: Cuộc chiến giữa "Ngay lập tức" và "Từ từ rồi khoai sẽ nhừ"</h4>
 
@@ -112,8 +113,8 @@
   </div>
 
   <p class="lesson-ending">
-    Bài học tiếp theo: Dữ liệu không thể nằm mãi trong Database chính. Theo thời gian, nó sẽ phình to và làm chậm hệ thống. Làm sao để "dọn dẹp" mà vẫn tuân thủ pháp luật? Chào mừng bạn đến với Bài 15: Data Lifecycle & Compliance. Chúng ta sẽ nói về Cold Storage, TTL (Time-to-live) và bóng ma mang tên GDPR!<br><br>
-    Câu hỏi dành cho bạn: Trong một ứng dụng Chat như Messenger, theo bạn tin nhắn nên dùng Strong hay Eventual Consistency? Nếu bạn vừa gửi tin nhắn mà bạn của bạn chưa thấy ngay, đó có phải là lỗi không?<br><br>
+    Bài học tiếp theo: Dữ liệu không thể nằm mãi trong Database chính. Theo thời gian, nó sẽ phình to và làm chậm hệ thống. Làm sao để "dọn dẹp" mà vẫn tuân thủ pháp luật? Chào mừng bạn đến với Bài 15: Data Lifecycle & Compliance. Chúng ta sẽ nói về Cold Storage, TTL (Time-to-live) và bóng ma mang tên GDPR!<br>
+    Câu hỏi dành cho bạn: Trong một ứng dụng Chat như Messenger, theo bạn tin nhắn nên dùng Strong hay Eventual Consistency? Nếu bạn vừa gửi tin nhắn mà bạn của bạn chưa thấy ngay, đó có phải là lỗi không?<br>
     Bạn thấy bài viết về "Sự thật và Sự đánh đổi" này thế nào? Đã đủ chi tiết để bạn tự tin thiết kế một Schema "triệu view" chưa? Nếu ok, hãy cho mình biết để chuẩn bị cho bài tiếp theo về vòng đời dữ liệu nhé!
   </p>
 </div>

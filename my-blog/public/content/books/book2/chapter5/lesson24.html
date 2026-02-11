@@ -9,14 +9,15 @@
 
 <div class="lesson-container">
   <p class="lesson-intro">
-    Chào mừng bạn đã đi đến "nút thắt" cuối cùng của Chương 5!<br><br>
-    Nếu bạn đã từng làm việc trong các hệ thống Tài chính (Fintech), Thương mại điện tử (E-commerce), hay đơn giản là xây dựng một hệ thống có tính năng "Nạp tiền", bạn sẽ biết cảm giác kinh hoàng khi nhận được email từ khách hàng với nội dung: "Tại sao tôi bấm thanh toán một lần mà tài khoản ngân hàng của tôi bị trừ tiền hai lần?".<br><br>
+    Chào mừng bạn đã đi đến "nút thắt" cuối cùng của Chương 5!<br>
+    Nếu bạn đã từng làm việc trong các hệ thống Tài chính (Fintech), Thương mại điện tử (E-commerce), hay đơn giản là xây dựng một hệ thống có tính năng "Nạp tiền", bạn sẽ biết cảm giác kinh hoàng khi nhận được email từ khách hàng với nội dung: "Tại sao tôi bấm thanh toán một lần mà tài khoản ngân hàng của tôi bị trừ tiền hai lần?".<br>
     Lúc đó, mồ hôi hột sẽ chảy, và bạn nhận ra rằng hệ thống của mình đang thiếu một "bùa hộ mệnh" cực kỳ quan trọng: Idempotency (Tính lũy đẳng). Bài viết này sẽ cực kỳ chi tiết, vì nó là ranh giới giữa một hệ thống "đồ chơi" và một hệ thống cấp độ Master.
   </p>
 
   <h1 class="lesson-part">PHẦN 5: COMMUNICATION & SECURITY</h1>
   <h2 class="lesson-chapter">CHƯƠNG 5: GIAO TIẾP & BẢO MẬT</h2>
-  <h3 class="lesson-title">BÀI 24: IDEMPOTENCY (TÍNH LŨY ĐẲNG) – CHÌA KHÓA SỐNG CÒN CỦA HỆ THỐNG TIN CẬY</h3>
+  <h3 class="lesson-title">BÀI 24: IDEMPOTENCY (TÍNH LŨY ĐẲNG)</h3>
+   <h3 class="lesson-title">CHÌA KHÓA SỐNG CÒN CỦA HỆ THỐNG TIN CẬY</h3>
 
   <h4 class="lesson-section">1. Tại sao hệ thống phân tán lại "Dị ứng" với việc gọi lại?</h4>
 
@@ -129,11 +130,11 @@ UPDATE orders SET status = 'PAID' WHERE id = 1 AND status = 'PENDING';
   </div>
 
   <p class="lesson-ending">
-    Kết thúc Chương 5!<br><br>
-    Chúng ta đã đi qua một chương dài về việc làm sao để các Services nói chuyện với nhau, bảo mật ra sao, và đảm bảo sự tin cậy như thế nào.<br><br>
-    Nhưng hãy chuẩn bị tâm lý, vì Chương 6: RESILIENCE & OBSERVABILITY sẽ là nơi chúng ta đối mặt với cái chết. Đúng vậy, hệ thống chắc chắn sẽ có lúc sập. Master không phải là người xây dựng hệ thống không bao giờ sập, mà là người xây dựng hệ thống "bất tử" – dù sập vẫn có thể tự đứng dậy và chúng ta biết chính xác nó sập ở đâu.<br><br>
-    Bài tiếp theo: Bài 25: Resilience Patterns (Circuit Breaker, Retry, Timeout). Chúng ta sẽ học cách lắp "cầu dao" cho hệ thống để tránh sập dây chuyền (Cascading Failure).<br><br>
-    Câu hỏi cho bạn: Nếu bạn sử dụng DELETE /user/123, lần đầu trả về 204 No Content (Thành công), lần hai trả về 404 Not Found. Về mặt kỹ thuật, kết quả cuối cùng (User 123 bị xóa) là không đổi, nhưng mã trả về khác nhau. Theo bạn, điều này có vi phạm tính lũy đẳng không?<br><br>
+    Kết thúc Chương 5!<br>
+    Chúng ta đã đi qua một chương dài về việc làm sao để các Services nói chuyện với nhau, bảo mật ra sao, và đảm bảo sự tin cậy như thế nào.<br>
+    Nhưng hãy chuẩn bị tâm lý, vì Chương 6: RESILIENCE & OBSERVABILITY sẽ là nơi chúng ta đối mặt với cái chết. Đúng vậy, hệ thống chắc chắn sẽ có lúc sập. Master không phải là người xây dựng hệ thống không bao giờ sập, mà là người xây dựng hệ thống "bất tử" – dù sập vẫn có thể tự đứng dậy và chúng ta biết chính xác nó sập ở đâu.<br>
+    Bài tiếp theo: Bài 25: Resilience Patterns (Circuit Breaker, Retry, Timeout). Chúng ta sẽ học cách lắp "cầu dao" cho hệ thống để tránh sập dây chuyền (Cascading Failure).<br>
+    Câu hỏi cho bạn: Nếu bạn sử dụng DELETE /user/123, lần đầu trả về 204 No Content (Thành công), lần hai trả về 404 Not Found. Về mặt kỹ thuật, kết quả cuối cùng (User 123 bị xóa) là không đổi, nhưng mã trả về khác nhau. Theo bạn, điều này có vi phạm tính lũy đẳng không?<br>
     Bài viết này đã đủ sâu và "đẫm" kiến thức cho blog của bạn chưa? Nếu bạn muốn đào sâu thêm về cách xử lý Idempotency trong các hệ thống Event-driven (Kafka), hãy cho mình biết nhé! Would you like me to move to the next chapter or explain Idempotent Consumers in Kafka?
   </p>
 </div>

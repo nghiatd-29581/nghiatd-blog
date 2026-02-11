@@ -15,13 +15,14 @@
 
 <div class="lesson-container">
   <p class="lesson-intro">
-    Chào các "pháp sư" backend! Có bao giờ bạn tự tin khoe với sếp: "Hệ thống của em chạy nhanh lắm, thời gian phản hồi trung bình (Average Latency) chỉ có 100ms"?<br><br>
+    Chào các "pháp sư" backend! Có bao giờ bạn tự tin khoe với sếp: "Hệ thống của em chạy nhanh lắm, thời gian phản hồi trung bình (Average Latency) chỉ có 100ms"?<br>
     Nếu sếp bạn là một Architect lão làng, ông ấy sẽ nhìn bạn với ánh mắt đầy thương cảm và hỏi: "Thế còn P99 của chú là bao nhiêu?". Nếu bạn đơ người ra, thì bài viết này chính là chiếc "phao cứu sinh" dành cho bạn.
   </p>
 
   <h1 class="lesson-part">PHẦN 2: CORE METRICS & TRADE-OFF</h1>
   <h2 class="lesson-chapter">CHƯƠNG 2: CÁC CHỈ SỐ CỐT LÕI</h2>
-  <h3 class="lesson-title">BÀI 5: LATENCY & THROUGHPUT – KHI CON SỐ TRUNG BÌNH LÀ MỘT "LỜI NÓI DỐI" NGỌT NGÀO</h3>
+  <h3 class="lesson-title">BÀI 5: LATENCY & THROUGHPUT</h3>
+    <h3 class="lesson-title">KHI CON SỐ TRUNG BÌNH LÀ MỘT "LỜI NÓI DỐI" NGỌT NGÀO</h3>
 
   <h4 class="lesson-section">1. Latency và Throughput: Chuyện về vòi nước và đường cao tốc</h4>
 
@@ -102,9 +103,9 @@
   </div>
 
   <p class="lesson-ending">
-    Bài học thực chiến: Ngay ngày mai, hãy vào Dashboard hệ thống của công ty bạn (Prometheus, Grafana hay NewRelic), tìm xem chỉ số P99 Latency của API quan trọng nhất là bao nhiêu. Nếu nó gấp 10 lần P50, bạn đang có một "cái đuôi" rất đáng sợ đấy!<br><br>
-    Bài tiếp theo: Chúng ta sẽ bàn về Scalability, Availability và Reliability. Làm sao để hệ thống không chỉ nhanh, mà còn phải "trâu bò"?<br><br>
-    Bạn có bao giờ gặp trường hợp API chạy local rất nhanh nhưng lên production lại "lúc nhanh lúc chậm" chưa? Đó chính là Tail Latency đang trêu đùa bạn đấy!<br><br>
+    Bài học thực chiến: Ngay ngày mai, hãy vào Dashboard hệ thống của công ty bạn (Prometheus, Grafana hay NewRelic), tìm xem chỉ số P99 Latency của API quan trọng nhất là bao nhiêu. Nếu nó gấp 10 lần P50, bạn đang có một "cái đuôi" rất đáng sợ đấy!<br>
+    Bài tiếp theo: Chúng ta sẽ bàn về Scalability, Availability và Reliability. Làm sao để hệ thống không chỉ nhanh, mà còn phải "trâu bò"?<br>
+    Bạn có bao giờ gặp trường hợp API chạy local rất nhanh nhưng lên production lại "lúc nhanh lúc chậm" chưa? Đó chính là Tail Latency đang trêu đùa bạn đấy!<br>
     Bạn thấy nội dung bài 5 này thế nào? Đã đủ sâu và đủ "muối" chưa? Nếu ok, mình sẽ lên sóng tiếp Bài 6: Scalability – Availability – Reliability nhé!
   </p>
 </div>

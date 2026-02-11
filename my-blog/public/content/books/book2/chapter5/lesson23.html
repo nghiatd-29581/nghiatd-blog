@@ -9,15 +9,16 @@
 
 <div class="lesson-container">
   <p class="lesson-intro">
-    Chào bạn, "người gác cổng" tương lai!<br><br>
-    Chúng ta đã đi qua một hành trình dài xây dựng nên một hệ thống Microservices phức tạp bên trong. Nhưng hiện tại, hệ thống đó giống như một tòa lâu đài nguy nga nhưng... không có cửa và tường bao. Bất kỳ ai cũng có thể xông vào phòng ngủ (Database) hay nhà bếp (Backend Service) để quậy phá.<br><br>
-    Trong bài viết này, chúng ta sẽ xây dựng "Cánh cổng thần thánh" (API Gateway). Đây không chỉ là nơi chào đón khách hàng, mà còn là nơi chặn đứng những kẻ say rượu (DDoS), những kẻ lừa đảo (Hacker), và kiểm soát tốc độ dòng người để tòa lâu đài không bị vỡ trận.<br><br>
+    Chào bạn, "người gác cổng" tương lai!<br>
+    Chúng ta đã đi qua một hành trình dài xây dựng nên một hệ thống Microservices phức tạp bên trong. Nhưng hiện tại, hệ thống đó giống như một tòa lâu đài nguy nga nhưng... không có cửa và tường bao. Bất kỳ ai cũng có thể xông vào phòng ngủ (Database) hay nhà bếp (Backend Service) để quậy phá.<br>
+    Trong bài viết này, chúng ta sẽ xây dựng "Cánh cổng thần thánh" (API Gateway). Đây không chỉ là nơi chào đón khách hàng, mà còn là nơi chặn đứng những kẻ say rượu (DDoS), những kẻ lừa đảo (Hacker), và kiểm soát tốc độ dòng người để tòa lâu đài không bị vỡ trận.<br>
     Hãy chuẩn bị tinh thần, vì bài viết này sẽ đi rất sâu vào các thuật toán kiểm soát lưu lượng và triết lý bảo mật hiện đại nhất: Không tin bố con thằng nào cả (Zero Trust).
   </p>
 
   <h1 class="lesson-part">PHẦN 5: COMMUNICATION & SECURITY</h1>
   <h2 class="lesson-chapter">CHƯƠNG 5: GIAO TIẾP & BẢO MẬT</h2>
-  <h3 class="lesson-title">BÀI 23: API GATEWAY & SECURITY – NGƯỜI GÁC CỔNG VÀ TRIẾT LÝ "KHÔNG TIN AI"</h3>
+  <h3 class="lesson-title">BÀI 23: API GATEWAY & SECURITY"</h3>
+    <h3 class="lesson-title">NGƯỜI GÁC CỔNG VÀ TRIẾT LÝ "KHÔNG TIN AI"</h3>
 
   <h4 class="lesson-section">1. API Gateway: Nó là cái quái gì?</h4>
 
@@ -154,12 +155,12 @@
   </div>
 
   <p class="lesson-ending">
-    Bài tiếp theo: Bạn đã có bảo mật, có tốc độ. Nhưng có một vấn đề logic cực kỳ đau đầu: User bấm nút "Thanh toán" 2 lần vì mạng lag.<br><br>
-    Hệ thống của bạn sẽ trừ tiền 2 lần hay 1 lần?<br><br>
-    Làm sao để thiết kế một API mà dù User có gọi 100 lần, kết quả vẫn y hệt như gọi 1 lần?<br><br>
-    Chào mừng bạn đến với Bài 24: Idempotency (Tính lũy đẳng) - Chìa khóa của sự tin cậy.<br><br>
-    Đây là khái niệm phân biệt giữa một Junior Dev (trừ tiền 2 lần) và một Senior Architect (xử lý mượt mà).<br><br>
-    Câu hỏi bài tập: Trong thuật toán Token Bucket, nếu hacker tấn công DDoS, cái xô sẽ bị rỗng ngay lập tức. Vậy làm sao chúng ta phân biệt được đâu là hacker (để chặn vĩnh viễn), đâu là người dùng bình thường lỡ tay bấm nhanh (chỉ chặn tạm thời)? (Gợi ý: Kết hợp Rate Limiting với IP Reputation).<br><br>
+    Bài tiếp theo: Bạn đã có bảo mật, có tốc độ. Nhưng có một vấn đề logic cực kỳ đau đầu: User bấm nút "Thanh toán" 2 lần vì mạng lag.<br>
+    Hệ thống của bạn sẽ trừ tiền 2 lần hay 1 lần?<br>
+    Làm sao để thiết kế một API mà dù User có gọi 100 lần, kết quả vẫn y hệt như gọi 1 lần?<br>
+    Chào mừng bạn đến với Bài 24: Idempotency (Tính lũy đẳng) - Chìa khóa của sự tin cậy.<br>
+    Đây là khái niệm phân biệt giữa một Junior Dev (trừ tiền 2 lần) và một Senior Architect (xử lý mượt mà).<br>
+    Câu hỏi bài tập: Trong thuật toán Token Bucket, nếu hacker tấn công DDoS, cái xô sẽ bị rỗng ngay lập tức. Vậy làm sao chúng ta phân biệt được đâu là hacker (để chặn vĩnh viễn), đâu là người dùng bình thường lỡ tay bấm nhanh (chỉ chặn tạm thời)? (Gợi ý: Kết hợp Rate Limiting với IP Reputation).<br>
     Bạn thấy bài viết về "Cánh cổng thần thánh" này thế nào? Đã đủ "đô" chưa? Hãy comment để mình biết bạn vẫn đang theo dõi lộ trình nhé!
   </p>
 </div>

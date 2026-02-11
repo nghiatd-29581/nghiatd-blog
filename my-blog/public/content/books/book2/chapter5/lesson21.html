@@ -9,15 +9,16 @@
 
 <div class="lesson-container">
   <p class="lesson-intro">
-    Chào mừng bạn bước sang CHƯƠNG 5: COMMUNICATION & SECURITY.<br><br>
-    Nếu Chương 4 là việc chúng ta xây dựng những ngôi nhà (Container) và đường xá (Infrastructure), thì Chương 5 chính là việc quy định ngôn ngữ mà cư dân trong thành phố đó dùng để nói chuyện với nhau.<br><br>
-    Hãy tưởng tượng: Service A nói tiếng Anh (JSON), Service B nói tiếng Nga (Binary), còn Service C thì bị... câm điếc bẩm sinh. Hậu quả là một tháp Babel hỗn loạn. Để trở thành Master, bạn không chỉ cần biết code, bạn cần phải là một "nhà ngoại giao" đại tài, biết khi nào nên dùng văn bản hành chính, khi nào nên gọi điện thoại, và khi nào nên gửi mật mã.<br><br>
+    Chào mừng bạn bước sang CHƯƠNG 5: COMMUNICATION & SECURITY.<br>
+    Nếu Chương 4 là việc chúng ta xây dựng những ngôi nhà (Container) và đường xá (Infrastructure), thì Chương 5 chính là việc quy định ngôn ngữ mà cư dân trong thành phố đó dùng để nói chuyện với nhau.<br>
+    Hãy tưởng tượng: Service A nói tiếng Anh (JSON), Service B nói tiếng Nga (Binary), còn Service C thì bị... câm điếc bẩm sinh. Hậu quả là một tháp Babel hỗn loạn. Để trở thành Master, bạn không chỉ cần biết code, bạn cần phải là một "nhà ngoại giao" đại tài, biết khi nào nên dùng văn bản hành chính, khi nào nên gọi điện thoại, và khi nào nên gửi mật mã.<br>
     Bài viết này sẽ rất dài và sâu, vì đây là kiến thức nền tảng bắt buộc phải có trong mọi buổi phỏng vấn System Design. Pha một ấm trà đi, chúng ta bắt đầu!
   </p>
 
   <h1 class="lesson-part">PHẦN 5: COMMUNICATION & SECURITY</h1>
   <h2 class="lesson-chapter">CHƯƠNG 5: GIAO TIẾP & BẢO MẬT</h2>
-  <h3 class="lesson-title">BÀI 21: COMMUNICATION PROTOCOLS – CUỘC ĐẠI CHIẾN GIỮA CÁC VỊ THẦN</h3>
+  <h3 class="lesson-title">BÀI 21: COMMUNICATION PROTOCOLS</h3>
+  <h3 class="lesson-title">CUỘC ĐẠI CHIẾN GIỮA CÁC VỊ THẦN</h3>
 
   <h4 class="lesson-section">PHẦN 1: REST (Representational State Transfer) – "Ông già gân" của Web</h4>
 
@@ -200,9 +201,9 @@ query {
   </div>
 
   <p class="lesson-ending">
-    Bài tiếp theo: Vậy là các dịch vụ đã biết nói chuyện với nhau. Nhưng chuyện gì xảy ra nếu Service A đã trừ tiền khách hàng, nhưng Service B lại lỗi không giao hàng được? Làm sao để đòi lại tiền (Rollback) khi dữ liệu nằm ở 2 Database khác nhau?<br><br>
-    Chào mừng bạn đến với Bài 22: Distributed Transactions. Chúng ta sẽ khám phá mô hình Saga Pattern và Two-Phase Commit (2PC) - những kỹ thuật khó nhằn nhất của Backend.<br><br>
-    Câu hỏi cho bạn: Tại sao Shopee/Lazada lại dùng WebSockets cho khung chat, nhưng lại dùng cơ chế khác (có thể là polling hoặc SSE) cho việc cập nhật trạng thái đơn hàng? Sự khác biệt về yêu cầu nghiệp vụ ở đây là gì?<br><br>
+    Bài tiếp theo: Vậy là các dịch vụ đã biết nói chuyện với nhau. Nhưng chuyện gì xảy ra nếu Service A đã trừ tiền khách hàng, nhưng Service B lại lỗi không giao hàng được? Làm sao để đòi lại tiền (Rollback) khi dữ liệu nằm ở 2 Database khác nhau?<br>
+    Chào mừng bạn đến với Bài 22: Distributed Transactions. Chúng ta sẽ khám phá mô hình Saga Pattern và Two-Phase Commit (2PC) - những kỹ thuật khó nhằn nhất của Backend.<br>
+    Câu hỏi cho bạn: Tại sao Shopee/Lazada lại dùng WebSockets cho khung chat, nhưng lại dùng cơ chế khác (có thể là polling hoặc SSE) cho việc cập nhật trạng thái đơn hàng? Sự khác biệt về yêu cầu nghiệp vụ ở đây là gì?<br>
     Bạn thấy bài viết "đại chiến giao thức" này thế nào? Đã đủ sâu và chi tiết để bạn tự tin "chém gió" với Tech Lead chưa? Hãy để lại comment nhé!
   </p>
 </div>

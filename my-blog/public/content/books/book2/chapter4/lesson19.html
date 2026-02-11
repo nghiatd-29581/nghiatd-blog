@@ -9,15 +9,15 @@
 
 <div class="lesson-container">
   <p class="lesson-intro">
-    Chào mừng bạn quay trở lại! Chúng ta đã đưa được logic ra "biên giới" với CDN và Edge Computing ở bài trước, giúp người dùng cảm thấy hệ thống nhanh như chớp. Nhưng ở phía "hậu phương" (Backend), các dịch vụ đang bắt đầu cãi vã.<br><br>
-    Hãy tưởng tượng Service A (Order) vừa nhận được một đơn hàng, nó hớt hải chạy sang gọi Service B (Payment) để thanh toán, rồi lại chạy sang Service C (Shipping) để giao hàng. Nếu Service B đang bận "đi vệ sinh" (down hoặc chậm), Service A sẽ đứng đợi và... chết chùm theo. Đó là thảm họa của Tight Coupling (liên kết chặt).<br><br>
+    Chào mừng bạn quay trở lại! Chúng ta đã đưa được logic ra "biên giới" với CDN và Edge Computing ở bài trước, giúp người dùng cảm thấy hệ thống nhanh như chớp. Nhưng ở phía "hậu phương" (Backend), các dịch vụ đang bắt đầu cãi vã.<br>
+    Hãy tưởng tượng Service A (Order) vừa nhận được một đơn hàng, nó hớt hải chạy sang gọi Service B (Payment) để thanh toán, rồi lại chạy sang Service C (Shipping) để giao hàng. Nếu Service B đang bận "đi vệ sinh" (down hoặc chậm), Service A sẽ đứng đợi và... chết chùm theo. Đó là thảm họa của Tight Coupling (liên kết chặt).<br>
     Hôm nay, chúng ta sẽ học cách dùng "thư ký" Message Queue và "nhà sử học" Event Streaming để giải quyết mớ hỗn độn này. Bài này sẽ cực dài và chi tiết vì nó là xương sống của mọi hệ thống phân tán hiện đại.
   </p>
 
   <h1 class="lesson-part">PHẦN 4: INFRASTRUCTURE & CLOUD-NATIVE</h1>
   <h2 class="lesson-chapter">CHƯƠNG 4: HẠ TẦNG & CLOUD</h2>
-  <h3 class="lesson-title">BÀI 19: MESSAGE QUEUE & EVENT STREAMING – NGHỆ THUẬT GIAO TIẾP "ĐƯỜNG AI NẤY ĐI"</h3>
-
+  <h3 class="lesson-title">BÀI 19: MESSAGE QUEUE & EVENT STREAMING"</h3>
+  <h3 class="lesson-title">NGHỆ THUẬT GIAO TIẾP "ĐƯỜNG AI NẤY ĐI"</h3>
   <h4 class="lesson-section">1. Pub/Sub và Message Ordering: Ai đến trước, phục vụ trước?</h4>
 
   <p class="lesson-text">Trong thế giới Messaging, chúng ta có hai mô hình chính:</p>
@@ -122,9 +122,9 @@
   </div>
 
   <p class="lesson-ending">
-    Bài tiếp theo: Chúng ta đã có dữ liệu, có giao tiếp, có hạ tầng. Nhưng làm sao để đóng gói tất cả đống hỗn độn này vào một cái "hộp" và ném nó lên mây mà không sợ nó "vỡ"?<br><br>
-    Chào mừng bạn đến với bài cuối cùng của Chương 4: Bài 20: Cloud-Native & Kubernetes. Chúng ta sẽ giải mã tại sao K8s lại trở thành "hệ điều hành" của toàn bộ Internet hiện đại.<br><br>
-    Câu hỏi cho bạn: Nếu bạn dùng một Message Queue để gửi Email thông báo mật khẩu. Giả sử hệ thống bị lỗi và gửi 10 email giống hệt nhau cho khách hàng (At-least-once). Theo bạn, đây là lỗi nghiêm trọng hay chỉ là một sự bất tiện nhỏ? Bạn sẽ làm gì để khắc phục nó?<br><br>
+    Bài tiếp theo: Chúng ta đã có dữ liệu, có giao tiếp, có hạ tầng. Nhưng làm sao để đóng gói tất cả đống hỗn độn này vào một cái "hộp" và ném nó lên mây mà không sợ nó "vỡ"?<br>
+    Chào mừng bạn đến với bài cuối cùng của Chương 4: Bài 20: Cloud-Native & Kubernetes. Chúng ta sẽ giải mã tại sao K8s lại trở thành "hệ điều hành" của toàn bộ Internet hiện đại.<br>
+    Câu hỏi cho bạn: Nếu bạn dùng một Message Queue để gửi Email thông báo mật khẩu. Giả sử hệ thống bị lỗi và gửi 10 email giống hệt nhau cho khách hàng (At-least-once). Theo bạn, đây là lỗi nghiêm trọng hay chỉ là một sự bất tiện nhỏ? Bạn sẽ làm gì để khắc phục nó?<br>
     Bài này có đủ "đậm đặc" kiến thức cho bạn chưa? Nếu bạn đã sẵn sàng để "đóng gói" hệ thống và bay lên Cloud, hãy cho tôi biết nhé! Would you like me to elaborate more on Kafka's Partitioning strategy or move straight to Kubernetes?
   </p>
 </div>

@@ -9,17 +9,18 @@
 
 <div class="lesson-container">
   <p class="lesson-intro">
-    Chào mừng bạn đã trở lại! Bạn đã kiên nhẫn đi qua hết phần Storage, nơi chúng ta học cách lưu trữ dữ liệu sao cho an toàn. Nhưng hãy tưởng tượng: Bạn có một kho dữ liệu xịn sò, một trái tim khỏe mạnh, nhưng mạch máu (hạ tầng mạng) lại tắc nghẽn thì cơ thể vẫn "đột quỵ" như thường.<br><br>
-    Đã đến lúc chúng ta trang bị cho hệ thống một "bảo bối" giúp tăng tốc độ lên gấp 10, thậm chí 100 lần. Đó chính là Caching.<br><br>
-    Nhưng đừng vội mừng, Phil Karlton – một kỹ sư huyền thoại tại Netscape – từng nói một câu khiến mọi Senior Developer đều phải rùng mình:<br><br>
-    "There are only two hard things in Computer Science: cache invalidation and naming things."<br><br>
-    (Chỉ có hai điều khó nhất trong Khoa học máy tính: Làm mới bộ nhớ đệm và Đặt tên cho biến).<br><br>
+    Chào mừng bạn đã trở lại! Bạn đã kiên nhẫn đi qua hết phần Storage, nơi chúng ta học cách lưu trữ dữ liệu sao cho an toàn. Nhưng hãy tưởng tượng: Bạn có một kho dữ liệu xịn sò, một trái tim khỏe mạnh, nhưng mạch máu (hạ tầng mạng) lại tắc nghẽn thì cơ thể vẫn "đột quỵ" như thường.<br>
+    Đã đến lúc chúng ta trang bị cho hệ thống một "bảo bối" giúp tăng tốc độ lên gấp 10, thậm chí 100 lần. Đó chính là Caching.<br>
+    Nhưng đừng vội mừng, Phil Karlton – một kỹ sư huyền thoại tại Netscape – từng nói một câu khiến mọi Senior Developer đều phải rùng mình:<br>
+    "There are only two hard things in Computer Science: cache invalidation and naming things."<br>
+    (Chỉ có hai điều khó nhất trong Khoa học máy tính: Làm mới bộ nhớ đệm và Đặt tên cho biến).<br>
     Hôm nay, chúng ta sẽ đi sâu vào hang hùm để giải quyết bài toán "khó nhất" đó. Bài viết này sẽ cực kỳ chi tiết, phân tích từng chiến lược Đọc/Ghi để bạn không bao giờ vô tình biến hệ thống của mình thành một mớ dữ liệu "ôi thiu".
   </p>
 
   <h1 class="lesson-part">PHẦN 4: INFRASTRUCTURE & CLOUD-NATIVE</h1>
   <h2 class="lesson-chapter">CHƯƠNG 4: HẠ TẦNG & CLOUD</h2>
-  <h3 class="lesson-title">BÀI 17: CACHING STRATEGY – LIỀU THUỐC TĂNG LỰC VÀ CƠN ÁC MỘNG "DỮ LIỆU CŨ"</h3>
+  <h3 class="lesson-title">BÀI 17: CACHING STRATEGY"</h3>
+  <h3 class="lesson-title">LIỀU THUỐC TĂNG LỰC VÀ CƠN ÁC MỘNG "DỮ LIỆU CŨ"</h3>
 
   <h4 class="lesson-section">1. Các Chiến lược Caching (Caching Patterns): Chọn mặt gửi vàng</h4>
 
@@ -193,9 +194,9 @@
   </div>
 
   <p class="lesson-ending">
-    Bài tiếp theo: Cache giúp dữ liệu nhanh hơn, nhưng Cache vẫn nằm ở Server của bạn (ví dụ ở Mỹ). Làm sao để người dùng ở Việt Nam tải ảnh, video nhanh như người Mỹ? Chúng ta cần mang Cache đi khắp thế giới.<br><br>
-    Chào mừng bạn đến với Bài 18: CDN & Edge Computing. Chúng ta sẽ tìm hiểu về mạng lưới phân phối nội dung và cách xử lý logic ngay tại "biên giới" mạng.<br><br>
-    Câu hỏi thử thách: Trong chiến lược Cache-Aside, nên xóa Cache trước khi update DB hay sau khi update DB? Thứ tự nào an toàn hơn? Hãy suy nghĩ kỹ về các trường hợp lỗi xảy ra ở giữa nhé!<br><br>
+    Bài tiếp theo: Cache giúp dữ liệu nhanh hơn, nhưng Cache vẫn nằm ở Server của bạn (ví dụ ở Mỹ). Làm sao để người dùng ở Việt Nam tải ảnh, video nhanh như người Mỹ? Chúng ta cần mang Cache đi khắp thế giới.<br>
+    Chào mừng bạn đến với Bài 18: CDN & Edge Computing. Chúng ta sẽ tìm hiểu về mạng lưới phân phối nội dung và cách xử lý logic ngay tại "biên giới" mạng.<br>
+    Câu hỏi thử thách: Trong chiến lược Cache-Aside, nên xóa Cache trước khi update DB hay sau khi update DB? Thứ tự nào an toàn hơn? Hãy suy nghĩ kỹ về các trường hợp lỗi xảy ra ở giữa nhé!<br>
     Bạn thấy bài viết về Caching này đã đủ "thông não" chưa? Những khái niệm như Race Condition hay Thundering Herd có làm bạn thấy thú vị không? Hãy phản hồi để mình chuẩn bị cho bài CDN nhé!
   </p>
 </div>
