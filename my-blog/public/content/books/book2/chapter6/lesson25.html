@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 25: Resilience Patterns – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đã trở lại! Chúng ta đã biết cách đọc "chỉ số sinh tồn" (Latency/Throughput) ở bài trước. Bây giờ, hãy cùng bàn về "Sức mạnh cơ bắp" và "Độ bền bỉ" của hệ thống.<br>
+    Trong giới kiến trúc sư, đây là bộ ba "kiềng ba chân" giúp bạn ngủ ngon vào đêm giao thừa mà không sợ bị "alo hệ thống sập rồi em ơi". Hãy chuẩn bị tinh thần, bài này sẽ giúp bạn biết cách tiêu tiền của sếp sao cho đúng chỗ nhất!
+  </p>
+
+  <h2 class="lesson-chapter">CHƯƠNG 6: RESILIENCE & OBSERVABILITY</h2>
+  <h3 class="lesson-title">BÀI 25: RESILIENCE PATTERNS</h3>
+  <h3 class="lesson-title">NGHỆ THUẬT XÂY DỰNG HỆ THỐNG "VÌ CÁI CHẾT MÀ SINH RA"</h3>
+  <h4 class="lesson-section">1. TIMEOUT: "ĐỪNG CHỜ ĐỢI TRONG VÔ VỌNG"</h4>
+
+  <p class="lesson-text">Hãy tưởng tượng bạn đi hẹn hò. Bạn hẹn người ấy lúc 7h tối. 7h15 chưa thấy, bạn đợi. 8h chưa thấy, bạn bắt đầu lo. 10h đêm vẫn đứng đó chờ dưới mưa? Đó không phải là chung tình, đó là... thiếu cấu hình Timeout.</p>
+
+  <p class="lesson-text">Trong hệ thống, nếu Service A gọi Service B mà không có Timeout, Service A sẽ giữ kết nối đó mãi mãi. Nếu Service B đang bị "treo", hàng nghìn request từ A sẽ chiếm hết Thread Pool, RAM và Sockets. Kết quả? Service A cũng sập theo. Đây gọi là Cascading Failure (Lỗi dây chuyền).</p>
+
+  <p class="lesson-text"><strong>Các loại Timeout cần nhớ:</strong></p>
+  <ul class="lesson-list">
+    <li><strong>Connect Timeout:</strong> Thời gian tối đa để thiết lập kết nối (bắt tay TCP). Thường để ngắn (ví dụ 1s-3s).</li>
+    <li><strong>Read/Response Timeout:</strong> Thời gian tối đa chờ Server trả dữ liệu về sau khi đã kết nối. Tùy thuộc vào tác vụ (ví dụ: API lấy list thì 2s, API xuất báo cáo thì 30s).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Lời khuyên Master:</strong> Luôn luôn, nhắc lại là LUÔN LUÔN đặt Timeout cho mọi lời gọi mạng. Đừng bao giờ dùng giá trị mặc định (thường là vô hạn).</p>
+
+  <p class="lesson-text"><strong>Ví dụ thực tế:</strong> Trong hệ thống đặt vé máy bay, nếu API kiểm tra giá vé của hãng hàng không (external) không có Timeout, một lần lag của hãng đó có thể làm toàn bộ hệ thống của bạn "treo" hàng phút, dẫn đến mất khách hàng.</p>
+
+  <h4 class="lesson-section">2. RETRY & EXPONENTIAL BACKOFF: "KIÊN TRÌ CÓ TRÍ TUỆ"</h4>
+
+  <p class="lesson-text">Khi Service A gọi Service B và bị lỗi mạng (Transient Failure), phản xạ tự nhiên là: "Thử lại phát nữa xem sao!".</p>
+
+  <p class="lesson-text">Nhưng nếu bạn thử lại ngay lập tức và liên tục, bạn đang gián tiếp thực hiện một cuộc tấn công Self-DDoS vào hệ thống của mình. Nếu Service B đang thoi thóp vì quá tải, và hàng nghìn con "zombie" Service A cùng lúc Retry điên cuồng, Service B sẽ "đăng xuất" khỏi trái đất luôn.</p>
+
+  <p class="lesson-text"><strong>Giải pháp: Exponential Backoff (Lùi bước tiến lên)</strong></p>
+  <p class="lesson-text">Thay vì thử lại sau 1 giây, chúng ta tăng dần thời gian chờ: 1s, 2s, 4s, 8s, 16s...</p>
+
+  <p class="lesson-text">Gia vị không thể thiếu: Jitter (Độ nhiễu ngẫu nhiên)</p>
+  <p class="lesson-text">Nếu tất cả 1.000 client cùng Retry vào đúng giây thứ 2, thứ 4, thứ 8... Service B vẫn sẽ bị trúng một "cú đấm" tập thể (Thundering Herd Problem).</p>
+
+  <p class="lesson-text">Jitter là việc cộng hoặc trừ một khoảng thời gian ngẫu nhiên vào mỗi lần Retry.</p>
+  <ul class="lesson-list">
+    <li>Lần 1: 1.2s</li>
+    <li>Lần 2: 2.5s</li>
+    <li>Lần 3: 3.8s</li>
+  </ul>
+
+  <p class="lesson-text">Việc này giúp tản đều các request ra, biến "cú đấm" thành những "cú chạm" nhẹ nhàng.</p>
+
+  <p class="lesson-text"><strong>Nguồn trích dẫn:</strong> Amazon Builders' Library: Exponential Backoff And Jitter.</p>
+
+  <h4 class="lesson-section">3. CIRCUIT BREAKER: "CẦU DAO CHỐNG CHÁY"</h4>
+
+  <p class="lesson-text">Đây là Pattern quan trọng nhất. Nó hoạt động giống hệt cái cầu dao điện ở nhà bạn. Khi dòng điện quá tải, cầu dao tự ngắt để bảo vệ cả ngôi nhà không bị cháy.</p>
+
+  <p class="lesson-text"><strong>Circuit Breaker có 3 trạng thái:</strong></p>
+  <ol class="lesson-list">
+    <li><strong>CLOSED (Đóng - Bình thường):</strong> Request đi qua thoải mái. Nếu có vài lỗi nhỏ, nó vẫn chưa làm gì.</li>
+    <li><strong>OPEN (Mở - Ngắt điện):</strong> Khi tỷ lệ lỗi vượt ngưỡng (ví dụ 50% trong 1 phút), cầu dao "bật" lên. Mọi request gọi đến sẽ bị FAIL FAST ngay lập tức mà không cần gửi đến Service B nữa. Điều này giúp bảo vệ Service B và trả về lỗi nhanh cho người dùng (ví dụ: "Hệ thống đang bận, thử lại sau").</li>
+    <li><strong>HALF-OPEN (Nửa mở - Thăm dò):</strong> Sau một khoảng thời gian (ví dụ 30s), cầu dao cho phép MỘT VÀI request đi qua để "thăm dò".<br>
+      - Nếu thành công: Cầu dao đóng lại (Trở về CLOSED).<br>
+      - Nếu vẫn lỗi: Cầu dao tiếp tục mở (Trở về OPEN).</li>
+  </ol>
+
+  <p class="lesson-text">Công cụ phổ biến: Resilience4j, Netflix Hystrix (đã cũ), Istio (Service Mesh).</p>
+
+  <h4 class="lesson-section">4. BULKHEAD: "KHOANG TÀU TITANIC"</h4>
+
+  <p class="lesson-text">Bạn có biết tại sao tàu thủy lại chia thành nhiều khoang kín không? Nếu một khoang bị thủng và nước tràn vào, các khoang khác vẫn khô ráo và tàu vẫn nổi.</p>
+
+  <p class="lesson-text">Trong System Design, Bulkhead có nghĩa là cách ly tài nguyên. Nếu Service "Tìm kiếm" đang bị nghẽn và ngốn hết 100 threads của hệ thống, bạn không được để nó làm ảnh hưởng đến Service "Thanh toán".</p>
+
+  <p class="lesson-text"><strong>Cách triển khai Bulkhead:</strong></p>
+  <ul class="lesson-list">
+    <li><strong>Thread Pool Isolation:</strong> Mỗi Service hoặc mỗi nhóm API quan trọng được cấp một Thread Pool riêng. Nếu Pool của "Tìm kiếm" đầy, nó chỉ chết ở đó thôi, Pool của "Thanh toán" vẫn còn trống.</li>
+    <li><strong>Infrastructure Isolation:</strong> Chạy các Service quan trọng trên các cụm Server (Nodes) riêng biệt. Đừng để một con Bot cào dữ liệu làm sập luôn cái API xử lý tiền tệ đang chạy chung trên một máy chủ.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Góc hài hước:</strong> Bulkhead giống như việc bạn đi nhậu với hội bạn. Mỗi người tự trả tiền phần mình (cách ly tài chính). Nếu một thằng quên mang ví, nó sẽ bị giữ lại rửa bát, cả lũ còn lại vẫn được về nhà ngủ ngon lành.</p>
+
+  <h4 class="lesson-section">5. VÍ DỤ TỔNG HỢP: HỆ THỐNG ĐẶT VÉ PHIM TRONG NGÀY CÔNG CHIẾU "AVENGERS"</h4>
+
+  <p class="lesson-text">Hãy xem các Pattern này phối hợp như thế nào khi lượng truy cập tăng gấp 1.000 lần:</p>
+
+  <ol class="lesson-list">
+    <li><strong>Bulkhead:</strong> Bạn tách riêng luồng "Xem lịch chiếu" và luồng "Thanh toán vé". Lượng người xem lịch chiếu cực đông làm nghẽn luồng đó, nhưng những người đã chọn được vé vẫn thanh toán bình thường.</li>
+    <li><strong>Circuit Breaker:</strong> Service "Gửi Email xác nhận" bị quá tải và phản hồi rất chậm. Cầu dao lập tức ngắt. Thay vì bắt khách hàng đợi 30s để thấy màn hình thành công, hệ thống báo ngay: "Vé đã đặt xong, email sẽ gửi đến sau vài phút".</li>
+    <li><strong>Timeout:</strong> API gọi sang cổng thanh toán ngân hàng được đặt Timeout 10s. Nếu ngân hàng không phản hồi, chúng ta hủy kết nối để dành tài nguyên cho khách hàng khác.</li>
+    <li><strong>Retry with Backoff:</strong> Nếu gọi sang Gateway của rạp phim bị lỗi mạng tạm thời, hệ thống sẽ thử lại sau 1s, 2s, 4s kèm Jitter để đảm bảo không làm sập gateway của họ.</li>
+  </ol>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 25</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Một hệ thống "Master" không phải là hệ thống không có lỗi, mà là hệ thống biết lỗi một cách duyên dáng (Degrade Gracefully).</p>
+    <ul class="lesson-list">
+      <li>Timeout: Đừng đợi mãi.</li>
+      <li>Retry: Thử lại nhưng phải biết điều.</li>
+      <li>Circuit Breaker: Biết lúc nào nên bỏ cuộc để bảo vệ nhau.</li>
+      <li>Bulkhead: Cháy nhà nào, cách ly nhà đó.</li>
+    </ul>
+    <p class="lesson-text"><strong>Nguồn tham khảo chuyên sâu:</strong></p>
+    <ul class="lesson-list">
+      <li>Release It! Design and Deploy Production-Ready Software (Michael Nygard) – Cuốn sách "gối đầu giường" về Resilience.</li>
+      <li>Google SRE Book - Chapter 21: Handling Overload.</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Hệ thống đã chịu lỗi tốt rồi, nhưng làm sao để nó "không bao giờ chết" ngay cả khi cả một Data Center bị sập? Làm sao để đạt được con số 99.99% thần thánh?<br>
+    Chào mừng bạn đến với Bài 26: High Availability (HA) - Redundancy & Failover. Chúng ta sẽ học cách nhân bản hệ thống và cơ chế tự động chuyển vùng khi thảm họa xảy ra.<br>
+    Câu hỏi cho bạn: Trong 4 Pattern trên, cái nào tốn tài nguyên nhất và cái nào khó triển khai nhất trong môi trường thực tế? Tại sao?<br>
+    Bạn thấy bài viết về "Những tấm khiên bất tử" này thế nào? Đã đủ chi tiết để bạn tự tin thiết kế một hệ thống "trâu bò" chưa? Hãy cho mình biết cảm nhận của bạn nhé!
+  </p>
+</div>
+
+</body>
+</html>

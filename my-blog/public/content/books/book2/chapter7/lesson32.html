@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 32: Deep-dive – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đã quay trở lại! Bạn đã vẽ xong bức tranh tổng thể (High-level Design), người phỏng vấn gật gù, nhưng đừng vội mừng.<br> Đây chính là lúc họ nheo mắt, chỉ tay vào một cái hộp nhỏ xíu trên sơ đồ và hỏi: "Cái này mà có 1 triệu người cùng vào một lúc thì nó nổ hay nó chạy?".<br>
+    Chào mừng bạn đến với giai đoạn "vã mồ hôi hột" nhất: Bài 32: Deep-dive – Khoan sâu vào nút thắt cổ chai.<br>
+    Nếu bài trước là "vẽ rồng", thì bài này là "điểm nhãn". Chúng ta sẽ không nói chuyện phiếm nữa, mà sẽ dùng "kính hiển vi" để soi từng milimet cấu trúc bên trong.
+  </p>
+
+  <h2 class="lesson-chapter">CHƯƠNG 7: FRAMEWORK GIẢI BÀI TOÁN SYSTEM DESIGN</h2>
+  <h3 class="lesson-title">BÀI 32: DEEP-DIVE</h3>
+<h3 class="lesson-title">NGHỆ THUẬT "MỔ XẺ" VÀ KHAI THÔNG HUYỆT ĐẠO HỆ THỐNG</h3>
+  <h4 class="lesson-section">1. Database: Khi cái túi không còn chỗ chứa</h4>
+
+  <p class="lesson-text">Database thường là nơi đầu tiên sụp đổ khi Traffic tăng vọt. Bạn không thể chỉ "mua thêm RAM" mãi được.</p>
+
+  <p class="lesson-text"><strong>A. Chiến lược Sharding (Phân mảnh dữ liệu)</strong></p>
+  <p class="lesson-text">Đừng chỉ nói "em Sharding". Hãy đi sâu vào Sharding Key.</p>
+
+  <ul class="lesson-list">
+    <li><strong>Hash-based Sharding:</strong> Dùng Hash(Key) (modN).<br>
+      - Ưu điểm: Dữ liệu rải đều.<br>
+      - Nhược điểm: Khi cần thêm Server mới ($N+1$), việc di chuyển dữ liệu (Resharding) là một thảm họa.</li>
+    <li><strong>Consistent Hashing:</strong> (Nhớ lại Bài 4). Đây là giải pháp Master để khi thêm/bớt Server, chúng ta chỉ phải di chuyển một phần nhỏ dữ liệu.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>B. Index Optimization</strong></p>
+  <p class="lesson-text">Đừng đánh Index vô tội vạ. Mỗi Index là một lần làm chậm thao tác Write.</p>
+
+  <ul class="lesson-list">
+    <li><strong>Deep-dive:</strong> Giải thích sự khác biệt giữa B-Tree (phù hợp cho Read nhiều) và LSM-Tree (như trong Cassandra, cực nhanh cho Write). Nếu hệ thống là Write-heavy (như ghi Log), hãy chọn LSM-Tree.</li>
+    <li><strong>Composite Index:</strong> Nếu query thường xuyên là WHERE a = ? AND b = ?, hãy tạo index (a, b). Nhưng nhớ quy tắc Left-most Prefix: index (a,b) dùng được cho WHERE a = ?, nhưng không dùng được cho WHERE b = ?.</li>
+    <li><strong>Covering Index:</strong> Index chứa luôn cả dữ liệu bạn cần SELECT → Database không cần đọc bảng chính → Tăng tốc cực mạnh.</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Bài toán "Hot Key" trong Caching</h4>
+
+  <p class="lesson-text">Bạn tự tin có Redis bảo vệ? Hãy cẩn thận với Hot Key.</p>
+
+  <p class="lesson-text">Hãy tưởng tượng Sơn Tùng MTP đăng một status. 10 triệu fans cùng lúc truy cập vào một cái Key duy nhất post:123 trên Redis.</p>
+
+  <ul class="lesson-list">
+    <li>Hậu quả: Một con Redis Node gánh toàn bộ 10 triệu request đó trong khi các Node khác ngồi chơi. Card mạng của Node đó sẽ "bốc cháy".</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Giải pháp Deep-dive:</strong></p>
+  <ol class="lesson-list">
+    <li><strong>Local Cache:</strong> Lưu tạm cái status đó ngay trên RAM của App Server trong vài giây.</li>
+    <li><strong>Key Splitting:</strong> Lưu cái Key đó thành post:123_1, post:123_2... và rải ra các Redis Node khác nhau. Client sẽ chọn ngẫu nhiên một cái để đọc.</li>
+    <li><strong>Hot Key Pre-warming:</strong> Khi phát hiện một Key đang hot (qua Metrics), chủ động đẩy dữ liệu sang nhiều Node trước khi nó bị quá tải.</li>
+  </ol>
+
+  <h4 class="lesson-section">3. Concurrency & Race Conditions (Tranh chấp tài nguyên)</h4>
+
+  <p class="lesson-text">Đây là "nút thắt" trong các hệ thống như Flash Sale hoặc Đặt vé máy bay. 10 cái vé nhưng có 10.000 người cùng bấm "Mua".</p>
+
+  <p class="lesson-text"><strong>Vấn đề:</strong> Hai request cùng đọc số lượng vé là 1, cùng trừ đi 1, và kết quả là bán được... 2 vé cho 1 ghế.</p>
+
+  <p class="lesson-text"><strong>Deep-dive vào giải pháp:</strong></p>
+  <ul class="lesson-list">
+    <li><strong>Pessimistic Locking (Khóa bi quan):</strong> SELECT FOR UPDATE. An toàn nhưng cực chậm, dễ gây Deadlock.</li>
+    <li><strong>Optimistic Locking (Khóa lạc quan):</strong> Dùng version hoặc timestamp. "Anh nào nhanh tay update version trước thì được, anh sau thấy version khác rồi thì báo lỗi". Phù hợp khi ít tranh chấp.</li>
+    <li><strong>Distributed Lock (Redis/Zookeeper):</strong> Dùng lệnh SETNX để đảm bảo tại một thời điểm chỉ một request được xử lý.</li>
+    <li><strong>Decrement Counter with Lua Script:</strong> Trong Redis, dùng script Lua để đọc và trừ atomic. Không cần lock, cực nhanh và an toàn.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Góc hài hước:</strong> Race condition giống như việc bạn và người yêu cùng quẹt thẻ ATM của một tài khoản chung tại hai cây xăng khác nhau vào cùng một giây. Nếu ngân hàng không có Deep-dive, hai bạn sẽ rút được gấp đôi số tiền đang có. Nhưng đời không như là mơ đâu!</p>
+
+  <h4 class="lesson-section">4. Message Queue: Khi "Hàng đợi" trở thành "Hàng dài"</h4>
+
+  <p class="lesson-text">Bạn dùng Kafka để xử lý bất đồng bộ? Tuyệt. Nhưng chuyện gì xảy ra nếu Consumer xử lý quá chậm khiến hàng triệu tin nhắn bị tồn đọng (Lag)?</p>
+
+  <p class="lesson-text"><strong>Deep-dive:</strong></p>
+  <ul class="lesson-list">
+    <li><strong>Consumer Scaling:</strong> Tăng số lượng Partition và tăng số lượng Consumer Group để xử lý song song.</li>
+    <li><strong>Batching:</strong> Thay vì đọc 1 tin xử lý 1 lần, hãy đọc một lúc 100 tin rồi Insert vào DB một lần (Bulk Insert).</li>
+    <li><strong>Backpressure:</strong> Nếu Consumer quá tải, nó phải gửi tín hiệu bắt Producer gửi chậm lại, thay vì cứ cố nuốt rồi... "sặc".</li>
+  </ul>
+
+  <h4 class="lesson-section">5. Ví dụ cụ thể: Khoan sâu vào hệ thống "Đếm View Youtube"</h4>
+
+  <p class="lesson-text">Khi bạn xem một video, Youtube không chạy một lệnh UPDATE views = views + 1 vào DB ngay lập tức. Làm vậy thì DB sẽ nổ tung.</p>
+
+  <ol class="lesson-list">
+    <li>Tầng 1 (In-memory buffer): Request xem video được đẩy vào một bộ nhớ đệm tại chính con App Server.</li>
+    <li>Tầng 2 (Aggregator): Cứ sau mỗi 10 giây hoặc 1000 lượt xem, App Server mới gửi một con số tổng hợp (Bulk) vào Message Queue.</li>
+    <li>Tầng 3 (Worker): Worker đọc từ Queue và cập nhật vào Database (sử dụng Write-back pattern).</li>
+    <li>Xử lý gian lận: Ở bước Deep-dive này, bạn phải giải thích cách loại bỏ view ảo (Duplicate IP, Bot) bằng Bloom Filter để tiết kiệm bộ nhớ.</li>
+  </ol>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 32</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Deep-dive không phải là nói về mọi thứ, mà là chọn ra 1 hoặc 2 linh kiện quan trọng nhất và thể hiện kiến thức chuyên sâu về nó.</p>
+    <ul class="lesson-list">
+      <li>Biết mình đang ở đâu: Đừng Deep-dive vào tầng Frontend nếu bạn đang ứng tuyển Backend Architect.</li>
+      <li>Dựa vào con số: Nếu Capacity Estimation bảo dữ liệu là 100TB, hãy Deep-dive vào Storage. Nếu QPS là 1 triệu, hãy Deep-dive vào Concurrency và Caching.</li>
+      <li>Luôn có phương án dự phòng: "Nếu giải pháp A này chậm, em sẽ chuyển sang giải pháp B".</li>
+    </ul>
+    <p class="lesson-text"><strong>Nguồn tham khảo:</strong></p>
+    <ul class="lesson-list">
+      <li>Designing Data-Intensive Applications (Martin Kleppmann) - Chương 5 & 6.</li>
+      <li>High Scalability Blog.</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Sau khi bạn đã trình bày một giải pháp "vô tiền khoáng hậu" và Deep-dive cực sâu, người phỏng vấn sẽ tung ra "cú đấm cuối cùng": "Tại sao em không dùng NoSQL thay vì SQL? Tại sao dùng Kafka mà không phải RabbitMQ?".<br>
+    Chào mừng bạn đến với Bài 33: Trade-offs & Alternatives – Tại sao không dùng cái khác?. Đây là nơi chúng ta học cách bảo vệ quan điểm nhưng vẫn giữ cái đầu mở.<br>
+    Câu hỏi cho bạn: Trong một hệ thống cần tính tiền (Money), bạn sẽ Deep-dive vào Performance (Tốc độ) hay Consistency (Sự nhất quán)? Tại sao?<br>
+    Bài viết này đã đủ độ "nặng" để bạn khoan thủng mọi nút thắt chưa? Hãy để lại một nút thắt mà bạn đang gặp phải trong dự án thực tế, chúng ta cùng Deep-dive nhé!
+  </p>
+</div>
+
+</body>
+</html>

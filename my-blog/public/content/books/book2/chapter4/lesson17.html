@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 17: Caching Strategy – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn đã trở lại! Bạn đã kiên nhẫn đi qua hết phần Storage, nơi chúng ta học cách lưu trữ dữ liệu sao cho an toàn. Nhưng hãy tưởng tượng: Bạn có một kho dữ liệu xịn sò, một trái tim khỏe mạnh, nhưng mạch máu (hạ tầng mạng) lại tắc nghẽn thì cơ thể vẫn "đột quỵ" như thường.<br>
+    Đã đến lúc chúng ta trang bị cho hệ thống một "bảo bối" giúp tăng tốc độ lên gấp 10, thậm chí 100 lần. Đó chính là Caching.<br>
+    Nhưng đừng vội mừng, Phil Karlton – một kỹ sư huyền thoại tại Netscape – từng nói một câu khiến mọi Senior Developer đều phải rùng mình:<br>
+    "There are only two hard things in Computer Science: cache invalidation and naming things."<br>
+    (Chỉ có hai điều khó nhất trong Khoa học máy tính: Làm mới bộ nhớ đệm và Đặt tên cho biến).<br>
+    Hôm nay, chúng ta sẽ đi sâu vào hang hùm để giải quyết bài toán "khó nhất" đó. Bài viết này sẽ cực kỳ chi tiết, phân tích từng chiến lược Đọc/Ghi để bạn không bao giờ vô tình biến hệ thống của mình thành một mớ dữ liệu "ôi thiu".
+  </p>
+
+  <h1 class="lesson-part">PHẦN 4: INFRASTRUCTURE & CLOUD-NATIVE</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 4: HẠ TẦNG & CLOUD</h2>
+  <h3 class="lesson-title">BÀI 17: CACHING STRATEGY"</h3>
+  <h3 class="lesson-title">LIỀU THUỐC TĂNG LỰC VÀ CƠN ÁC MỘNG "DỮ LIỆU CŨ"</h3>
+
+  <h4 class="lesson-section">1. Các Chiến lược Caching (Caching Patterns): Chọn mặt gửi vàng</h4>
+
+  <p class="lesson-text">Khi nào thì ghi vào Cache? Khi nào thì ghi vào DB? Chọn sai chiến lược, bạn sẽ nhận lấy một trong hai hậu quả: Hệ thống chậm như rùa hoặc Dữ liệu sai bét nhè.</p>
+
+  <p class="lesson-text"><strong>1.1. Cache-Aside (Lazy Loading) – "Kẻ lười biếng thông minh"</strong></p>
+  <p class="lesson-text">Đây là chiến lược phổ biến nhất, được dùng mặc định trong 90% các hệ thống (như Redis + MySQL).</p>
+
+  <p class="lesson-text"><strong>Cách hoạt động:</strong></p>
+
+  <p class="lesson-text"><strong>Khi Đọc (Read):</strong></p>
+  <ol class="lesson-list">
+    <li>Application hỏi Cache: "Có dữ liệu User 123 không?"</li>
+    <li>Nếu Có (Hit): Trả về ngay lập tức.</li>
+    <li>Nếu Không (Miss): Application lủi thủi quay sang hỏi Database → Lấy dữ liệu → Ghi ngược vào Cache → Trả về cho người dùng.</li>
+  </ol>
+
+  <p class="lesson-text"><strong>Khi Ghi (Write):</strong></p>
+  <ol class="lesson-list">
+    <li>Application ghi thẳng vào Database.</li>
+    <li>Xóa (Delete) hoặc cập nhật key tương ứng trong Cache.</li>
+  </ol>
+
+  <p class="lesson-text"><strong>Ưu điểm:</strong></p>
+  <ul class="lesson-list">
+    <li>Tiết kiệm RAM: Chỉ những dữ liệu nào được hỏi đến mới được đưa vào Cache. Dữ liệu "lạnh" không bao giờ chiếm chỗ.</li>
+    <li>Resilient (Bền bỉ): Nếu Cache (Redis) bị sập, hệ thống vẫn chạy được (chỉ là chậm hơn vì phải gọi DB trực tiếp).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Nhược điểm:</strong></p>
+  <ul class="lesson-list">
+    <li>Latency Spike: Với mỗi dữ liệu mới, 3 người đầu tiên truy cập sẽ bị chậm (vì phải chờ Miss → Load DB → Set Cache).</li>
+    <li>Stale Data (Dữ liệu ôi): Nếu bạn cập nhật DB nhưng quên hoặc lỗi khi xóa Cache, người dùng sẽ mãi mãi nhìn thấy dữ liệu cũ.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Ví dụ thực tế:</strong> Facebook dùng Cache-Aside cho User Profile. Khi bạn xem profile ai đó, nếu Cache Miss → load từ DB → cache lại. Khi bạn update avatar, họ xóa key cache cũ để lần sau phải load lại từ DB.</p>
+
+  <p class="lesson-text"><strong>1.2. Write-Through – "Người thư ký cẩn thận"</strong></p>
+  <p class="lesson-text">Ở chiến lược này, Cache được coi là kho lưu trữ chính song song với DB. Application không bao giờ ghi trực tiếp vào DB một mình.</p>
+
+  <p class="lesson-text"><strong>Cách hoạt động:</strong></p>
+  <ul class="lesson-list">
+    <li>Khi Ghi (Write): Application ghi vào Cache VÀ ghi vào Database cùng một lúc (thường là qua một process trung gian hoặc do thư viện Cache tự lo). Chỉ khi cả hai nơi ghi thành công thì mới báo OK.</li>
+    <li>Khi Đọc (Read): Luôn đọc từ Cache (vì Cache luôn có dữ liệu mới nhất).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Ưu điểm:</strong></p>
+  <ul class="lesson-list">
+    <li>Consistency cực cao: Dữ liệu trong Cache và DB luôn đồng bộ. Không bao giờ sợ dữ liệu cũ.</li>
+    <li>Read Performance: Không bao giờ bị Cache Miss (đối với dữ liệu vừa ghi).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Nhược điểm:</strong></p>
+  <ul class="lesson-list">
+    <li>Ghi chậm (Write Latency): Vì phải chờ ghi xong cả 2 nơi.</li>
+    <li>Lãng phí RAM: Mọi dữ liệu ghi vào đều nằm trong Cache, kể cả những dữ liệu "một đi không trở lại" (ví dụ: Log, comment spam).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Ví dụ thực tế:</strong> Hệ thống thanh toán ngân hàng. Khi bạn chuyển tiền, hệ thống phải ghi vào Cache (để đọc số dư nhanh) và ghi vào DB (để an toàn). Nếu chỉ ghi Cache mà DB lỗi → tiền mất thật.</p>
+
+  <p class="lesson-text"><strong>1.3. Write-Around – "Kẻ đi đường vòng"</strong></p>
+  <p class="lesson-text">Đây là biến thể của Write-Through nhưng khôn ngoan hơn cho một số trường hợp.</p>
+
+  <p class="lesson-text"><strong>Cách hoạt động:</strong></p>
+  <ul class="lesson-list">
+    <li>Khi Ghi: Ghi thẳng vào Database, bỏ qua Cache.</li>
+    <li>Khi Đọc: Nếu Cache Miss, mới load từ DB vào Cache (giống Cache-Aside).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Tại sao dùng cái này?</strong></p>
+  <p class="lesson-text">Dành cho dữ liệu dạng "Write-once, Read-rarely" (Ghi một lần, ít khi đọc).</p>
+
+  <ul class="lesson-list">
+    <li>Ví dụ: Khi upload một file Log lớn hoặc Archive bài viết cũ. Nếu dùng Write-Through, đám dữ liệu rác này sẽ đẩy hết dữ liệu "Hot" ra khỏi Cache (Cache Eviction). Write-Around giúp bảo vệ bộ Cache chỉ chứa những gì thực sự cần thiết.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>1.4. Write-Back (Write-Behind) – "Tay đua liều lĩnh"</strong></p>
+  <p class="lesson-text">Đây là chiến lược cho hiệu năng Ghi kinh hoàng nhất, nhưng cũng nguy hiểm nhất.</p>
+
+  <p class="lesson-text"><strong>Cách hoạt động:</strong></p>
+  <ul class="lesson-list">
+    <li>Khi Ghi: Application ghi vào Cache và nhận phản hồi "OK" ngay lập tức.</li>
+    <li>Sau đó: Cache sẽ âm thầm (asynchronously) đồng bộ dữ liệu xuống Database sau một khoảng thời gian (ví dụ: mỗi 5 giây hoặc khi Cache đầy).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Ưu điểm:</strong></p>
+  <ul class="lesson-list">
+    <li>Tốc độ bàn thờ: Việc ghi diễn ra ở tốc độ RAM. Database chậm chạp không làm nghẽn cổ chai hệ thống.</li>
+    <li>Giảm tải DB: Nếu bạn update một biến đếm (Counter) 100 lần trong 1 giây. Write-Back chỉ cần ghi xuống DB đúng 1 lần giá trị cuối cùng. (Giảm 99 IOPS cho DB).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Nhược điểm "Chí mạng":</strong></p>
+  <ul class="lesson-list">
+    <li>Mất dữ liệu: Nếu Server Cache bị rút điện hoặc sập trước khi kịp đồng bộ xuống DB → Dữ liệu đó mất vĩnh viễn.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Use-case:</strong> Bộ đếm lượt xem (View Count) trên Youtube, Lượt Like trên Facebook. (Mất vài like cũng không sao, nhưng tốc độ phải nhanh).</p>
+
+  <h4 class="lesson-section">2. Cache Invalidation: Tại sao nó là bài toán khó nhất?</h4>
+
+  <p class="lesson-text">"Invalidation" nghĩa là làm cho dữ liệu trong Cache bị vô hiệu hóa (xóa đi hoặc cập nhật lại) khi dữ liệu gốc thay đổi. Nghe thì dễ: "Sửa DB thì xóa Cache đi là xong". Nhưng đời không như mơ.</p>
+
+  <p class="lesson-text"><strong>Vấn đề 1: Race Condition (Điều kiện đua)</strong></p>
+  <p class="lesson-text">Giả sử bạn dùng Cache-Aside.</p>
+  <ol class="lesson-list">
+    <li>Request A đọc DB (giá trị = 10), chuẩn bị ghi vào Cache.</li>
+    <li>Request B cập nhật DB (giá trị = 20), và xóa Cache.</li>
+    <li>Request A (giờ mới chạy tiếp) ghi giá trị cũ (10) vào Cache.</li>
+  </ol>
+
+  <p class="lesson-text">→ Kết quả: DB là 20, Cache là 10. Cache lưu dữ liệu sai vĩnh viễn cho đến khi hết hạn.</p>
+
+  <p class="lesson-text"><strong>Vấn đề 2: The Thundering Herd Problem (Đàn bò nổi điên)</strong></p>
+  <p class="lesson-text">Đây là cơn ác mộng của mọi hệ thống High Traffic.</p>
+
+  <p class="lesson-text">Giả sử bạn có một Key cực Hot (ví dụ: Thông tin homepage của vnexpress.net) được lưu trong Cache với TTL (Time-to-live) là 5 phút.</p>
+
+  <ul class="lesson-list">
+    <li>Tại thời điểm T = 5:00, Key hết hạn và biến mất.</li>
+    <li>Tại T = 5:01, có 10.000 users cùng truy cập Homepage.</li>
+    <li>Cả 10.000 request đều thấy Cache Miss.</li>
+    <li>Cả 10.000 request cùng lúc ập vào Database để lấy dữ liệu.</li>
+  </ul>
+
+  <p class="lesson-text">→ Kết quả: Database bị DDoS bởi chính hệ thống của mình và sập ngay lập tức.</p>
+
+  <p class="lesson-text"><strong>Giải pháp cho Thundering Herd:</strong></p>
+  <ol class="lesson-list">
+    <li>Mutex Lock: Chỉ cho phép 1 request đi vào DB lấy dữ liệu, 9.999 request còn lại phải chờ request đầu tiên cập nhật Cache xong rồi lấy từ Cache.</li>
+    <li>Probabilistic Early Expiration (Hết hạn sớm ngẫu nhiên): Nếu TTL là 60s, hãy để mỗi server tự random thời điểm hết hạn từ 50s-60s. Điều này giúp các request không reload Cache cùng một lúc.</li>
+    <li>Stale-While-Revalidate: Trả dữ liệu cũ cho user ngay lập tức, đồng thời background refresh dữ liệu mới → User không chờ lâu, hệ thống vẫn cập nhật.</li>
+  </ol>
+
+  <h4 class="lesson-section">3. Cache Eviction Policy: Khi nhà chật thì vứt đồ nào?</h4>
+
+  <p class="lesson-text">RAM là hữu hạn. Khi Cache đầy, bạn phải đuổi bớt dữ liệu cũ để lấy chỗ cho dữ liệu mới. Quyết định đuổi ai gọi là Eviction Policy.</p>
+
+  <ul class="lesson-list">
+    <li><strong>LRU (Least Recently Used):</strong> Đuổi thằng nào lâu nhất chưa được dùng. (Phổ biến nhất).<br>
+      - Tư duy: Nếu vừa mới dùng gần đây, khả năng cao tí nữa sẽ dùng lại. Nếu 1 tiếng rồi không ai sờ đến → Vứt.</li>
+    <li><strong>LFU (Least Frequently Used):</strong> Đuổi thằng nào ít được dùng nhất.<br>
+      - Tư duy: Thằng nào được gọi 100 lần thì quan trọng hơn thằng được gọi 1 lần.<br>
+      - Nhược điểm: Một dữ liệu vừa mới vào (mới được gọi 1 lần) dễ bị đuổi oan so với dữ liệu cũ rích nhưng từng được gọi nhiều.</li>
+    <li><strong>FIFO (First In First Out):</strong> Vào trước ra trước. (Ít dùng vì kém hiệu quả).</li>
+  </ul>
+
+  <h4 class="lesson-section">4. Tổng kết chiến thuật: Dùng gì cho trường hợp nào?</h4>
+
+  <p class="lesson-text">Để trở thành Master, đừng bao giờ nói "Tôi luôn dùng Redis". Hãy nói:</p>
+
+  <ul class="lesson-list">
+    <li>Dữ liệu User Profile: Dùng Cache-Aside + LRU. (Vì user thường chỉ active một lúc rồi thôi).</li>
+    <li>Dữ liệu Product Details (Giá, Tên): Dùng Cache-Aside nhưng TTL dài (vì ít thay đổi). Nếu Admin đổi giá, phải chủ động xóa Cache (Explicit Invalidation).</li>
+    <li>Dữ liệu View/Like/Cảm xúc: Dùng Write-Back. Chấp nhận rủi ro để đổi lấy tốc độ.</li>
+    <li>Dữ liệu Search Result: Dùng TTL ngắn (vài giây). Không cần invalidation phức tạp, cứ để nó tự hết hạn.</li>
+  </ul>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 17</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Caching là con dao hai lưỡi.</p>
+    <ol class="lesson-list">
+      <li>Dùng đúng: Hệ thống bay như tên lửa.</li>
+      <li>Dùng sai (quên Invalidation, chọn sai Eviction): Người dùng chửi bới vì "Tại sao tôi đổi password rồi mà vẫn không login được (do cache pass cũ)?", hoặc Database sập vì Thundering Herd.</li>
+    </ol>
+    <p class="lesson-text"><strong>Nguồn tham khảo "gối đầu giường":</strong></p>
+    <ul class="lesson-list">
+      <li>Facebook's TAO: The distributed data store for the social graph (Họ dùng Write-Through/Look-aside cực đỉnh).</li>
+      <li>Redis Documentation: Client-side caching & Eviction.</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Cache giúp dữ liệu nhanh hơn, nhưng Cache vẫn nằm ở Server của bạn (ví dụ ở Mỹ). Làm sao để người dùng ở Việt Nam tải ảnh, video nhanh như người Mỹ? Chúng ta cần mang Cache đi khắp thế giới.<br>
+    Chào mừng bạn đến với Bài 18: CDN & Edge Computing. Chúng ta sẽ tìm hiểu về mạng lưới phân phối nội dung và cách xử lý logic ngay tại "biên giới" mạng.<br>
+    Câu hỏi thử thách: Trong chiến lược Cache-Aside, nên xóa Cache trước khi update DB hay sau khi update DB? Thứ tự nào an toàn hơn? Hãy suy nghĩ kỹ về các trường hợp lỗi xảy ra ở giữa nhé!<br>
+    Bạn thấy bài viết về Caching này đã đủ "thông não" chưa? Những khái niệm như Race Condition hay Thundering Herd có làm bạn thấy thú vị không? Hãy phản hồi để mình chuẩn bị cho bài CDN nhé!
+  </p>
+</div>
+
+</body>
+</html>

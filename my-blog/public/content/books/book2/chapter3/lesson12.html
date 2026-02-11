@@ -9,13 +9,14 @@
 
 <div class="lesson-container">
   <p class="lesson-intro">
-    Chào bạn! Chúng ta đã biết chọn "loại tim" (Database) nào cho hệ thống ở bài trước. Nhưng có một thực tế phũ phàng: Trái tim ấy không thể cứ phình to mãi mãi. Dữ liệu giống như đồ đạc trong nhà, nếu bạn không có kế hoạch dọn dẹp, phân loại hoặc bỏ bớt, sớm muộn gì bạn cũng sẽ không còn chỗ để thở (và ví tiền của bạn cũng sẽ "cạn kiệt" vì chi phí lưu trữ).<br><br>
+    Chào bạn! Chúng ta đã biết chọn "loại tim" (Database) nào cho hệ thống ở bài trước. Nhưng có một thực tế phũ phàng: Trái tim ấy không thể cứ phình to mãi mãi. Dữ liệu giống như đồ đạc trong nhà, nếu bạn không có kế hoạch dọn dẹp, phân loại hoặc bỏ bớt, sớm muộn gì bạn cũng sẽ không còn chỗ để thở (và ví tiền của bạn cũng sẽ "cạn kiệt" vì chi phí lưu trữ).<br>
     Hôm nay, chúng ta sẽ bàn về Hậu cần (Logistics) của dữ liệu: Làm sao để lưu trữ thông minh và làm sao để xóa dữ liệu mà không bị... cảnh sát hỏi thăm (Compliance). Hãy thắt dây an toàn, bài này sẽ rất "đắt giá" theo cả nghĩa đen lẫn nghĩa bóng!
   </p>
 
   <h1 class="lesson-part">PHẦN 3: STORAGE & DATA MODELING</h1>
   <h2 class="lesson-chapter">CHƯƠNG 3: THẾ GIỚI DATABASE</h2>
-  <h3 class="lesson-title">BÀI 12: SCALING DATABASE – NGHỆ THUẬT "PHÂN THÂN" VÀ "CHIA ĐỂ TRỊ"</h3>
+  <h3 class="lesson-title">BÀI 12: SCALING DATABASE</h3>
+  <h3 class="lesson-title">KHI "ÔNG LÃO" SQL HỌC CÁCH PHÂN THÂN</h3>
 
   <h4 class="lesson-section">PHẦN 1: REPLICATION (SAO CHÉP DỮ LIỆU) – ĐỂ KHÔNG BAO GIỜ CÔ ĐƠN</h4>
 
@@ -168,7 +169,7 @@
 
   <p class="lesson-ending">
     Bài tiếp theo: Chúng ta sẽ nói về Indexing & Optimization – Linh hồn của hiệu năng.<br>
-    Câu hỏi bài tập về nhà: Giả sử bạn dùng Consistent Hashing với 3 node A, B, C. Nếu Node B bị cháy ổ cứng và mất toàn bộ dữ liệu, chuyện gì sẽ xảy ra với các request đọc dữ liệu thuộc về Node B? Hệ thống sẽ trả về lỗi hay trả về cái gì? (Gợi ý: Liên quan đến khái niệm Replication Factor trong vòng tròn băm). Hãy suy nghĩ nhé!<br><br>
+    Câu hỏi bài tập về nhà: Giả sử bạn dùng Consistent Hashing với 3 node A, B, C. Nếu Node B bị cháy ổ cứng và mất toàn bộ dữ liệu, chuyện gì sẽ xảy ra với các request đọc dữ liệu thuộc về Node B? Hệ thống sẽ trả về lỗi hay trả về cái gì? (Gợi ý: Liên quan đến khái niệm Replication Factor trong vòng tròn băm). Hãy suy nghĩ nhé!<br>
     Bạn thấy bài viết về Scaling Database này đã đủ sâu, dài và thực chiến chưa? Nếu bạn thấy ổn, hãy cho mình biết để chúng ta tiếp tục nhé!
   </p>
 </div>

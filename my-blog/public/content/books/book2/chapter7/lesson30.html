@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 30: Capacity Estimation – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng các "kiến trúc sư" đã quay trở lại! Ở bài trước, chúng ta đã học cách "vặn vẹo" người phỏng vấn để hiểu rõ mình đang xây cái gì. Nhưng biết xây "cái gì" thôi là chưa đủ. Bạn cần phải biết cái đó to cỡ nào.<br>
+    Trong giới System Design, có một câu nói đùa kinh điển: "Một lập trình viên Junior sẽ hỏi 'Dùng DB gì?', nhưng một System Design Master sẽ hỏi 'Dữ liệu mỗi ngày là bao nhiêu Terabyte?'".<br>
+    Hôm nay, chúng ta sẽ bước vào giai đoạn "cân đo đong đếm" – Bài 30: Capacity Estimation. Đừng lo, bạn không cần phải là một thần đồng toán học để làm điều này.<br> Chúng ta chỉ cần vài phép tính "sau phong bì" (Back-of-the-envelope calculation) để biến những yêu cầu mơ hồ thành những con số biết nói.
+  </p>
+
+  <h2 class="lesson-chapter">CHƯƠNG 7: FRAMEWORK GIẢI BÀI TOÁN SYSTEM DESIGN</h2>
+  <h3 class="lesson-title">BÀI 30: CAPACITY ESTIMATION</h3>
+  <h3 class="lesson-title">KHI CON SỐ BIẾT "VẠCH TRẦN" HỆ THỐNG</h3>
+
+  <h4 class="lesson-section">1. Những con số "vàng" mà mọi Master phải thuộc lòng</h4>
+
+  <p class="lesson-text">Trước khi cầm máy tính lên, bạn phải có những con số "vật lý" cơ bản trong đầu. Đây là danh sách nổi tiếng của Jeff Dean (Google) mà bất kỳ ai muốn làm hệ thống lớn đều phải biết (đã được cập nhật cho thời đại SSD/Cloud):</p>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Thao tác</th><th>Thời gian thực hiện (ước tính)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Đọc từ L1 Cache</td><td>0.5 ns</td></tr>
+        <tr><td>Đọc từ Main Memory (RAM)</td><td>100 ns</td></tr>
+        <tr><td>Đọc 1 MB dữ liệu từ RAM</td><td>250,000 ns (0.25 ms)</td></tr>
+        <tr><td>Đọc 1 MB từ ổ SSD</td><td>1,000,000 ns (1 ms)</td></tr>
+        <tr><td>Round trip (Vòng đi-về) trong cùng Data Center</td><td>500,000 ns (0.5 ms)</td></tr>
+        <tr><td>Gửi gói tin từ New York sang Amsterdam</td><td>150,000,000 ns (150 ms)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="lesson-text"><strong>Ghi chú Master:</strong> Tốc độ RAM nhanh hơn SSD khoảng 10-100 lần, và nhanh hơn đọc từ Disk thông thường hàng vạn lần. Đó là lý do tại sao chúng ta luôn cần Redis/Memcached cho các dữ liệu hot.</p>
+
+  <h4 class="lesson-section">2. Công thức "Sức mạnh của số 2" (Power of 2)</h4>
+
+  <p class="lesson-text">Trong phỏng vấn, đôi khi bạn sẽ bị rối giữa triệu, tỷ, Terabyte, Petabyte. Hãy nhớ bảng quy đổi thần thánh này:</p>
+
+  <ul class="lesson-list">
+    <li>10³ (Ngàn) ≈ 2¹⁰ = 1 KB</li>
+    <li>10⁶ (Triệu) ≈ 2²⁰ = 1 MB</li>
+    <li>10⁹ (Tỷ) ≈ 2³⁰ = 1 GB</li>
+    <li>10¹² (Ngàn tỷ) ≈ 2⁴⁰ = 1 TB</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Mẹo nhỏ:</strong> Nếu hệ thống có 1 tỷ người dùng, mỗi người dùng chiếm 1 KB dữ liệu, thì tổng dung lượng là: 10⁹ × 10³ = 10¹² = 1 Terabyte. Nhẩm cực nhanh!</p>
+
+  <h4 class="lesson-section">3. Bốn trụ cột của Capacity Estimation</h4>
+
+  <p class="lesson-text">Khi giải bài toán System Design, bạn cần ước tính 4 thành phần sau:</p>
+
+  <p class="lesson-text"><strong>3.1. Traffic Estimation (Ước tính lưu lượng)</strong></p>
+  <p class="lesson-text">Chúng ta cần tính QPS (Queries Per Second).</p>
+
+  <p class="lesson-text"><strong>Công thức:</strong></p>
+  <div class="lesson-code">
+QPS = Số lượng Request mỗi ngày / (24 giờ × 3600 giây)
+  </div>
+
+  <p class="lesson-text"><strong>Mẹo nhẩm nhanh:</strong> Một ngày có khoảng 100,000 giây (thực tế là 86,400).</p>
+
+  <ul class="lesson-list">
+    <li>Nếu có 10 triệu request/ngày → 10⁷ / 10⁵ = 100 QPS.</li>
+    <li>Nếu có 1 tỷ request/ngày → 10⁹ / 10⁵ = 10,000 QPS.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Cảnh báo:</strong> Hãy luôn tính Peak QPS (Lưu lượng lúc cao điểm). Thường Peak QPS = 2 × Average QPS. Nếu không tính cái này, hệ thống của bạn sẽ sập vào lúc 12h đêm săn sale.</p>
+
+  <p class="lesson-text"><strong>3.2. Storage Estimation (Ước tính lưu trữ)</strong></p>
+  <p class="lesson-text">Chúng ta cần biết hệ thống sẽ phình to bao nhiêu trong vòng 3-5 năm.</p>
+
+  <ul class="lesson-list">
+    <li>Câu hỏi: Mỗi bản ghi (record) nặng bao nhiêu? (Ví dụ: ID: 8 bytes, Name: 50 bytes, Content: 500 bytes...).</li>
+    <li>Công thức: Dung lượng 1 ngày = Số lượng Record mới × Kích thước 1 Record.</li>
+    <li>Đừng quên: Phải tính thêm dung lượng cho Metadata, Index, và bản sao (Replication).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>3.3. Bandwidth Estimation (Ước tính băng thông)</strong></p>
+  <p class="lesson-text">Dành cho các hệ thống truyền tải file, video (như YouTube, Netflix).</p>
+
+  <p class="lesson-text"><strong>Công thức:</strong></p>
+  <div class="lesson-code">
+Bandwidth = Số lượng Request/giây × Kích thước dữ liệu mỗi Request
+  </div>
+
+  <p class="lesson-text">Ví dụ: 1000 người xem video cùng lúc, mỗi video bitrate là 2 Mbps → Cần 2 Gbps băng thông đầu ra.</p>
+
+  <p class="lesson-text"><strong>3.4. Memory/Cache Estimation (Ước tính bộ nhớ đệm)</strong></p>
+  <p class="lesson-text">Dùng Quy tắc 80/20: 20% dữ liệu (Hot data) tạo ra 80% lưu lượng truy cập. Chúng ta nên cache 20% dữ liệu hot này vào RAM.</p>
+
+  <h4 class="lesson-section">4. Ví dụ thực chiến: Thiết kế hệ thống "Twitter thu nhỏ"</h4>
+
+  <p class="lesson-text">Hãy áp dụng vào một ví dụ thực tế để thấy sức mạnh của các con số.</p>
+
+  <p class="lesson-text"><strong>Yêu cầu:</strong></p>
+  <ul class="lesson-list">
+    <li>300 triệu người dùng hoạt động hàng ngày (DAU).</li>
+    <li>50% người dùng viết 1 tweet mỗi ngày.</li>
+    <li>Một tweet trung bình có: Tweet ID (8 bytes), User ID (8 bytes), Content (140 chars ≈ 280 bytes), Media/Image (trung bình 200 KB).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Bước 1: Tính QPS</strong></p>
+  <ul class="lesson-list">
+    <li>Tổng số Tweet/ngày: 300 triệu × 50% = 150 triệu Tweet/ngày.</li>
+    <li>Average Write QPS: 150,000,000 / 100,000 = 1,500 Tweet/giây.</li>
+    <li>Peak Write QPS: 1,500 × 2 = 3,000 QPS.</li>
+    <li>Read QPS (Giả sử 1 người đọc 10 tweet/ngày): 300 triệu × 10 / 100,000 = 30,000 QPS.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Bước 2: Tính Storage (Lưu trữ)</strong></p>
+  <ul class="lesson-list">
+    <li>Mỗi Tweet (không tính ảnh): 8 + 8 + 280 ≈ 300 bytes.</li>
+    <li>Dung lượng text mỗi ngày: 150 triệu × 300 bytes = 45 GB/ngày.</li>
+    <li>Dung lượng ảnh mỗi ngày (Giả sử 1/5 số tweet có ảnh): 150 triệu / 5 × 200 KB = 6 TB/ngày.</li>
+    <li>Tổng kết 5 năm: (45 GB + 6 TB) × 365 × 5 ≈ 11 Petabytes.</li>
+    <li>Kết luận Master: Tuyệt đối không dùng 1 con DB duy nhất. Cần dùng Object Storage (như S3) cho ảnh và NoSQL/Sharded SQL cho metadata.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Bước 3: Tính Cache (RAM)</strong></p>
+  <ul class="lesson-list">
+    <li>Chúng ta muốn cache 20% Tweet text của một ngày: 45 GB × 20% = 9 GB RAM.</li>
+    <li>Con số 9 GB này quá nhỏ so với một Server hiện đại (thường 64-128 GB RAM), vậy chúng ta có thể cache nhiều hơn thế (ví dụ cache của 2-3 ngày) để hệ thống chạy cực mượt.</li>
+  </ul>
+
+  <h4 class="lesson-section">5. Những sai lầm "chết người" khi làm Estimation</h4>
+
+  <ol class="lesson-list">
+    <li>Quên tính Replication: Nếu bạn có 10 TB dữ liệu và replication factor là 3, bạn cần 30 TB ổ cứng.</li>
+    <li>Quên tính Overhead: Database không chỉ lưu dữ liệu của bạn, nó còn lưu Index, Log (WAL), và Metadata. Hãy cộng thêm khoảng 20-30% dung lượng dự phòng.</li>
+    <li>Quên tính Peak Traffic: Hệ thống chạy ổn ở 1,000 QPS nhưng sẽ "ngỏm" ngay lập tức nếu vào giờ cao điểm nó vọt lên 5,000 QPS.</li>
+    <li>Quá chi tiết vào những con số lẻ: Mục tiêu của bước này là ước tính bậc độ lớn (Order of magnitude). Đừng ngồi cãi nhau xem 1 ngày có 86,400 hay 90,000 giây. Hãy dùng 100,000 cho nhanh!</li>
+  </ol>
+
+  <p class="lesson-text"><strong>Góc hài hước:</strong> Tính toán Capacity giống như việc bạn đi chợ mua đồ về nấu lẩu. Bạn không cần biết chính xác có bao nhiêu hạt tiêu trong gói, nhưng bạn phải biết là mình cần mua 2kg thịt bò hay 20kg. Mua 20kg cho 4 người ăn là "đốt tiền", mà mua 2kg cho 100 người ăn là "ăn đấm".</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 30</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Capacity Estimation là công cụ để bạn hợp thức hóa các quyết định kiến trúc của mình.</p>
+    <ul class="lesson-list">
+      <li>QPS cao? → Cần Load Balancer, Caching, Message Queue.</li>
+      <li>Storage khổng lồ? → Cần NoSQL, Sharding, Data Retention Policy.</li>
+      <li>Băng thông lớn? → Cần CDN.</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Sau khi đã biết "đối thủ" của mình to lớn đến mức nào (qua các con số), đây là lúc chúng ta cầm bút lên và vẽ. Chúng ta sẽ không vẽ chi tiết từng hàm, mà sẽ vẽ những "khối hộp" và những "mũi tên".<br>
+    Chào mừng bạn đến với Bài 31: High-level Design (Vẽ bức tranh lớn). Đây là lúc chúng ta lắp ghép tất cả các kiến thức từ Bài 1 đến giờ vào một sơ đồ tổng thể.<br>
+    Câu hỏi cho bạn: Nếu một hệ thống có 100 triệu người dùng, mỗi người upload 1 tấm ảnh 2MB mỗi ngày. Bạn sẽ chọn phương án lưu trữ nào để tối ưu chi phí và hiệu năng? (Gợi ý: Hãy tính tổng dung lượng 1 tháng trước khi trả lời).<br>
+    Bài viết này đã giúp bạn tự tin hơn với các con số chưa?
+  </p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 21: Communication Protocols – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn bước sang CHƯƠNG 5: COMMUNICATION & SECURITY.<br>
+    Nếu Chương 4 là việc chúng ta xây dựng những ngôi nhà (Container) và đường xá (Infrastructure), thì Chương 5 chính là việc quy định ngôn ngữ mà cư dân trong thành phố đó dùng để nói chuyện với nhau.<br>
+    Hãy tưởng tượng: Service A nói tiếng Anh (JSON), Service B nói tiếng Nga (Binary), còn Service C thì bị... câm điếc bẩm sinh. Hậu quả là một tháp Babel hỗn loạn. Để trở thành Master, bạn không chỉ cần biết code, bạn cần phải là một "nhà ngoại giao" đại tài, biết khi nào nên dùng văn bản hành chính, khi nào nên gọi điện thoại, và khi nào nên gửi mật mã.<br>
+    Bài viết này sẽ rất dài và sâu, vì đây là kiến thức nền tảng bắt buộc phải có trong mọi buổi phỏng vấn System Design. Pha một ấm trà đi, chúng ta bắt đầu!
+  </p>
+
+  <h1 class="lesson-part">PHẦN 5: COMMUNICATION & SECURITY</h1>
+  <h2 class="lesson-chapter">CHƯƠNG 5: GIAO TIẾP & BẢO MẬT</h2>
+  <h3 class="lesson-title">BÀI 21: COMMUNICATION PROTOCOLS</h3>
+  <h3 class="lesson-title">CUỘC ĐẠI CHIẾN GIỮA CÁC VỊ THẦN</h3>
+
+  <h4 class="lesson-section">PHẦN 1: REST (Representational State Transfer) – "Ông già gân" của Web</h4>
+
+  <p class="lesson-text">REST (hay RESTful API) giống như chiếc xe Toyota Vios: Không quá nhanh, không quá hào nhoáng, nhưng bền bỉ, dễ lái và đi đâu cũng gặp thợ sửa được. Nó là tiêu chuẩn mặc định của Internet suốt 20 năm qua.</p>
+
+  <p class="lesson-text"><strong>1. Bản chất kỹ thuật</strong></p>
+  <p class="lesson-text">REST coi mọi thứ là Resource (Tài nguyên). Mỗi tài nguyên được định danh bằng một URL (Ví dụ: /users/123). Chúng ta thao tác với nó qua các động từ HTTP (Verbs):</p>
+  <ul class="lesson-list">
+    <li>GET: Đọc.</li>
+    <li>POST: Tạo mới.</li>
+    <li>PUT/PATCH: Cập nhật.</li>
+    <li>DELETE: Xóa.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>2. Vấn đề của REST: "Căn bệnh béo phì" (Over-fetching & Under-fetching)</strong></p>
+  <p class="lesson-text">Đây là lý do khiến Facebook ghét REST và đẻ ra GraphQL.</p>
+
+  <ul class="lesson-list">
+    <li><strong>Over-fetching (Lấy thừa):</strong> Bạn muốn hiển thị tên của User trên màn hình Home. Bạn gọi GET /users/123. Server trả về một cục JSON khổng lồ gồm: Tên, Tuổi, Địa chỉ, Số thẻ tín dụng, Lịch sử tình trường...<br>
+      → Hậu quả: Tốn băng thông mạng 4G của người dùng vô ích.</li>
+    <li><strong>Under-fetching (Lấy thiếu - N+1 Problem):</strong> Bạn muốn lấy danh sách 10 bài viết mới nhất và tên tác giả của từng bài.<br>
+      1. Gọi GET /posts → Lấy được 10 post_id và author_id.<br>
+      2. Với mỗi bài viết, bạn lại phải gọi GET /users/{author_id} để lấy tên tác giả.<br>
+      → Hậu quả: Bạn tốn 1 + 10 = 11 request chỉ để hiển thị một cái list. Đây là thảm họa về độ trễ (Latency).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>3. Khi nào dùng REST?</strong></p>
+  <ul class="lesson-list">
+    <li>Public API: Khi bạn viết API cho thiên hạ dùng (như Stripe, PayPal). Vì ai cũng biết HTTP và JSON. Dễ tích hợp.</li>
+    <li>Resource-driven apps: Các ứng dụng quản lý đơn giản (CRUD).</li>
+    <li>Caching: REST tận dụng HTTP Cache cực tốt (ETag, Last-Modified).</li>
+  </ul>
+
+  <h4 class="lesson-section">PHẦN 2: gRPC (Google Remote Procedure Call) – "Tia chớp" Binary</h4>
+
+  <p class="lesson-text">Nếu REST là gửi thư tay bằng giấy (Text/JSON), thì gRPC là gửi một chiếc hộp sắt đã được nén chặt (Binary). Được Google phát triển để các Microservices nói chuyện với nhau với tốc độ ánh sáng.</p>
+
+  <p class="lesson-text"><strong>1. Bí mật tốc độ: Protocol Buffers (Protobuf)</strong></p>
+  <p class="lesson-text">Thay vì dùng JSON (Text) rất tốn dung lượng (vì phải lặp lại các key như "name": "Tuan", "name": "Nam"...), gRPC dùng Protobuf. Nó biến dữ liệu thành dạng nhị phân (010101) cực nhỏ gọn.</p>
+
+  <ul class="lesson-list">
+    <li>JSON: Dễ đọc với người, nhưng máy tính mất công parse (giải mã).</li>
+    <li>Protobuf: Người không đọc được, nhưng máy tính đọc cực nhanh. Nó định nghĩa cấu trúc dữ liệu chặt chẽ trong file .proto.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>2. HTTP/2: Đôi cánh của gRPC</strong></p>
+  <p class="lesson-text">REST thường chạy trên HTTP/1.1 (mỗi request mở một kết nối TCP). gRPC chạy mặc định trên HTTP/2.</p>
+
+  <ul class="lesson-list">
+    <li>Multiplexing (Đa luồng): Gửi hàng trăm request song song trên cùng một kết nối TCP. Không còn cảnh xếp hàng chờ đợi (Head-of-line blocking).</li>
+    <li>Header Compression: Nén cả phần Header, tiết kiệm từng byte băng thông.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>3. Khi nào dùng gRPC?</strong></p>
+  <ul class="lesson-list">
+    <li>Internal Microservices: Service A gọi Service B trong cùng một Data Center. Tốc độ là sống còn.</li>
+    <li>Polyglot environments: Service A viết bằng Java, Service B viết bằng Go. gRPC tự sinh code (Auto-gen code) cho cả 2 ngôn ngữ, giúp chúng hiểu nhau tuyệt đối.</li>
+    <li>Nhược điểm: Trình duyệt (Browser) hỗ trợ gRPC rất kém (cần thư viện gRPC-Web để chuyển đổi). Đừng dùng gRPC cho Frontend Web.</li>
+  </ul>
+
+  <h4 class="lesson-section">PHẦN 3: GraphQL – "Kẻ khó tính" nhưng thông minh</h4>
+
+  <p class="lesson-text">GraphQL không phải là Graph DB, nó là một ngôn ngữ truy vấn (Query Language) cho API. Tư duy của nó là: "Hãy hỏi đúng cái mày cần, tao sẽ trả đúng cái đó. Không hơn, không kém".</p>
+
+  <p class="lesson-text"><strong>1. Một Endpoint duy nhất</strong></p>
+  <p class="lesson-text">Quên đi hàng trăm URL như REST (/users, /posts, /comments...). GraphQL chỉ có đúng 1 URL: POST /graphql.</p>
+
+  <p class="lesson-text">Bạn gửi vào đó một câu "thần chú" (Query) mô tả dữ liệu bạn muốn.</p>
+
+  <div class="lesson-code">
+query {
+  user(id: "123") {
+    name
+    posts(limit: 5) {
+      title
+      comments {
+        text
+      }
+    }
+  }
+}
+  </div>
+
+  <p class="lesson-text">Chỉ với 1 Request duy nhất, bạn lấy được: User, 5 bài Post của họ, và Comment trong từng bài Post. Giải quyết triệt để bài toán N+1 của REST.</p>
+
+  <p class="lesson-text"><strong>2. Cái giá của sự tiện lợi</strong></p>
+  <ul class="lesson-list">
+    <li>Complexity: Backend Developer sẽ "khóc thét" khi phải viết Resolvers để xử lý các câu query lồng nhau phức tạp.</li>
+    <li>Security: Hacker có thể gửi một câu query lồng nhau 100 cấp (user → friends → friends → friends...) để làm sập Server (DoS). Bạn phải có cơ chế chặn độ sâu (Depth limiting).</li>
+    <li>Caching: Vì chỉ có 1 URL POST, bạn không thể dùng HTTP Caching mặc định của trình duyệt hay CDN. Bạn phải tự xây dựng cơ chế Cache riêng (Apollo Client, Relay...).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>3. Khi nào dùng GraphQL?</strong></p>
+  <ul class="lesson-list">
+    <li>Mobile Apps: Nơi mạng chập chờn, cần tiết kiệm băng thông và giảm số lượng request tối đa.</li>
+    <li>Dashboard phức tạp: Nơi cần gom dữ liệu từ 10 nguồn khác nhau để hiển thị một lần.</li>
+  </ul>
+
+  <h4 class="lesson-section">PHẦN 4: REAL-TIME – KHI "F5" LÀ QUÁ CHẬM</h4>
+
+  <p class="lesson-text">HTTP là giao thức "Hỏi - Đáp" (Request - Response). Client không hỏi, Server không được nói. Nhưng trong ứng dụng Chat hay Chứng khoán, Server cần chủ động báo tin.</p>
+
+  <p class="lesson-text"><strong>1. WebSockets – "Đường dây nóng" 2 chiều</strong></p>
+  <ul class="lesson-list">
+    <li>Cơ chế: Thiết lập một kết nối TCP bền vững (Persistent Connection) giữa Client và Server. Cả hai bên có thể "bắn" tin nhắn cho nhau bất cứ lúc nào (Full-duplex).</li>
+    <li>Ưu điểm: Độ trễ cực thấp. Giao tiếp 2 chiều.</li>
+    <li>Nhược điểm: Tốn tài nguyên Server (mỗi user chiếm 1 connection). Cần Load Balancer hỗ trợ Sticky Session hoặc cơ chế Pub/Sub phức tạp khi Scale.</li>
+    <li>Use-case: Chat app, Game Online, Sàn giao dịch Crypto, Google Docs (cộng tác thời gian thực).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>2. Server-Sent Events (SSE) – "Cái loa phường" 1 chiều</strong></p>
+  <ul class="lesson-list">
+    <li>Cơ chế: Dùng chuẩn HTTP thông thường. Server giữ kết nối mở và liên tục đẩy (Push) text về Client.</li>
+    <li>Ưu điểm: Dễ cài đặt hơn WebSockets nhiều. Có sẵn cơ chế tự động kết nối lại (Auto-reconnect) khi rớt mạng. Không bị Firewalls chặn nhiều như WebSockets.</li>
+    <li>Nhược điểm: Chỉ 1 chiều (Server → Client). Nếu Client muốn gửi dữ liệu, phải dùng AJAX riêng. Chỉ truyền được Text (không truyền được Binary).</li>
+    <li>Use-case: Notification, Bảng tỉ số bóng đá, Log streaming, cập nhật trạng thái đơn hàng.</li>
+  </ul>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Đặc điểm</th><th>WebSockets</th><th>Server-Sent Events (SSE)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Hướng</td><td>2 chiều (Bidirectional)</td><td>1 chiều (Server → Client)</td></tr>
+        <tr><td>Giao thức</td><td>TCP (Upgrade từ HTTP)</td><td>HTTP chuẩn</td></tr>
+        <tr><td>Dữ liệu</td><td>Binary & Text</td><td>Chỉ Text (UTF-8)</td></tr>
+        <tr><td>Độ khó</td><td>Cao (Cần quản lý connection)</td><td>Thấp</td></tr>
+        <tr><td>Điển hình</td><td>Game, Chat</td><td>Newsfeed, Stock Ticker, Log</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4 class="lesson-section">PHẦN 5: TỔNG KẾT & CHIẾN LƯỢC LỰA CHỌN</h4>
+
+  <p class="lesson-text">Là một System Architect, bạn không chọn cái "xịn nhất", bạn chọn cái "phù hợp nhất". Đây là bảng "Cheat Sheet" cho bạn:</p>
+
+  <ol class="lesson-list">
+    <li><strong>Giao tiếp giữa Frontend (Web/Mobile) và Backend:</strong>
+      <ul class="lesson-list">
+        <li>Mặc định: REST (An toàn, dễ dùng).</li>
+        <li>Cần tối ưu Mobile/Data phức tạp: GraphQL.</li>
+        <li>Cần Chat/Game: WebSockets.</li>
+        <li>Cần Notification/Update giá: SSE.</li>
+      </ul>
+    </li>
+    <li><strong>Giao tiếp giữa Backend và Backend (Microservices):</strong>
+      <ul class="lesson-list">
+        <li>Mặc định: gRPC (Nhanh, type-safe, nhẹ).</li>
+        <li>Nếu team lười học Protobuf: REST (nhưng sẽ chậm hơn).</li>
+      </ul>
+    </li>
+  </ol>
+
+  <p class="lesson-text"><strong>Góc hài hước:</strong></p>
+  <ul class="lesson-list">
+    <li>REST giống như đi ăn gọi món (A la carte): Muốn ăn gì gọi nấy, gọi nhiều lần thì mỏi mồm.</li>
+    <li>GraphQL giống như đi ăn Buffet: Cầm cái đĩa đi một vòng, lấy đúng tôm hùm và bò Kobe, không lấy cơm chiên. Hiệu quả nhưng coi chừng "bội thực" (Complexity).</li>
+    <li>gRPC giống như tin nhắn của người ngoài hành tinh: Chỉ có họ hiểu nhau, truyền tin cực nhanh, nhưng người thường nhìn vào thì bó tay.</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Nguồn tham khảo:</strong></p>
+  <ul class="lesson-list">
+    <li>Fielding Dissertation (Chapter 5) - Luận văn khai sinh ra REST.</li>
+    <li>gRPC Official Docs & Protobuf guide.</li>
+    <li>GraphQL: The Documentary (Youtube) - Lịch sử ra đời tại Facebook.</li>
+  </ul>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 21</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Không có giao thức nào là "tốt nhất". Tất cả đều là sự đánh đổi:</p>
+    <ul class="lesson-list">
+      <li>REST: Dễ dùng, dễ cache, phù hợp public API và web truyền thống.</li>
+      <li>gRPC: Nhanh nhất cho internal microservices, tiết kiệm băng thông, type-safe.</li>
+      <li>GraphQL: Giải quyết over/under-fetching, lý tưởng cho mobile và dashboard phức tạp.</li>
+      <li>WebSockets/SSE: Khi cần real-time (chat, notification, live update).</li>
+    </ul>
+    <p class="lesson-text">Hãy thiết kế hệ thống hybrid: gRPC nội bộ + GraphQL/REST cho frontend + WebSockets cho real-time. Đó mới là cách của Master.</p>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Vậy là các dịch vụ đã biết nói chuyện với nhau. Nhưng chuyện gì xảy ra nếu Service A đã trừ tiền khách hàng, nhưng Service B lại lỗi không giao hàng được? Làm sao để đòi lại tiền (Rollback) khi dữ liệu nằm ở 2 Database khác nhau?<br>
+    Chào mừng bạn đến với Bài 22: Distributed Transactions. Chúng ta sẽ khám phá mô hình Saga Pattern và Two-Phase Commit (2PC) - những kỹ thuật khó nhằn nhất của Backend.<br>
+    Câu hỏi cho bạn: Tại sao Shopee/Lazada lại dùng WebSockets cho khung chat, nhưng lại dùng cơ chế khác (có thể là polling hoặc SSE) cho việc cập nhật trạng thái đơn hàng? Sự khác biệt về yêu cầu nghiệp vụ ở đây là gì?<br>
+    Bạn thấy bài viết "đại chiến giao thức" này thế nào? Đã đủ sâu và chi tiết để bạn tự tin "chém gió" với Tech Lead chưa? Hãy để lại comment nhé!
+  </p>
+</div>
+
+</body>
+</html>

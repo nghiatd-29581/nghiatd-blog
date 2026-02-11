@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 33: Trade-offs & Alternatives – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào mừng bạn, "vị thẩm phán" của những quyết định kiến trúc! ⚖️<br>
+    Chúng ta đã vẽ xong bức tranh tổng thể (Bài 31) và đã khoan sâu vào những "huyệt đạo" hiểm hóc nhất (Bài 32). <br>Lúc này, bạn đang cảm thấy mình như một vị thần kiến tạo. Nhưng bỗng nhiên, một "vị khách khó tính" (hoặc sếp, hoặc người phỏng vấn) lên tiếng: "Hay đấy, nhưng tại sao không dùng NoSQL cho nó nhanh? Tại sao lại dùng Kafka trong khi RabbitMQ cũng làm được việc đó? Em có chắc phương án này là tốt nhất không?"<br>
+    Chào mừng bạn đến với Bài 33: Trade-offs & Alternatives – Nghệ thuật của sự đánh đổi. Đây là nơi chúng ta chứng minh rằng mình không chỉ là một người "biết dùng công cụ", mà là một Master hiểu rõ "tại sao dùng và tại sao không dùng".
+  </p>
+
+  <h2 class="lesson-chapter">CHƯƠNG 7: FRAMEWORK GIẢI BÀI TOÁN SYSTEM DESIGN</h2>
+  <h3 class="lesson-title">BÀI 33: TRADE-OFFS & ALTERNATIVES</h3>
+  <h3 class="lesson-title">KHÔNG CÓ "VIÊN ĐẠN BẠC", CHỈ CÓ SỰ LỰA CHỌN</h3>
+
+  <h4 class="lesson-section">1. Tư duy "It Depends" (Nó còn tùy...)</h4>
+
+  <p class="lesson-text">Đây là câu cửa miệng của các Senior và Staff Engineer. Nhưng nếu bạn chỉ nói "It depends" rồi im lặng, bạn sẽ bị coi là kẻ lười biếng. Một Master sẽ nói: "Nó còn tùy vào X, Y, Z. Nếu ưu tiên X thì ta chọn A, nếu ưu tiên Y thì ta chọn B."</p>
+
+  <p class="lesson-text">Tại sao chúng ta phải đưa ra các phương án thay thế (Alternatives)?</p>
+
+  <ul class="lesson-list">
+    <li>Thể hiện sự khách quan: Bạn không "phải lòng" một công nghệ nào cả. Bạn dùng nó vì nó giải quyết được việc.</li>
+    <li>Quản lý rủi ro: Bạn luôn có phương án B nếu phương án A gặp giới hạn về chi phí hoặc nhân sự.</li>
+    <li>Ghi điểm tuyệt đối: Trong phỏng vấn, việc tự mình nêu ra những điểm yếu của giải pháp hiện tại chính là cách "phòng thủ" tốt nhất trước khi bị người khác tấn công.</li>
+  </ul>
+
+  <h4 class="lesson-section">2. Các "đấu trường" đánh đổi kinh điển</h4>
+
+  <p class="lesson-text">Để bài viết này thật sự "nặng đô", chúng ta hãy cùng mổ xẻ những cuộc đối đầu nảy lửa nhất trong thiết kế hệ thống.</p>
+
+  <p class="lesson-text"><strong>2.1. SQL vs. NoSQL: Cuộc chiến giữa "Kỷ luật" và "Tự do"</strong></p>
+
+  <div class="lesson-table-wrapper">
+    <table class="lesson-table">
+      <thead>
+        <tr><th>Tiêu chí</th><th>SQL (PostgreSQL, MySQL)</th><th>NoSQL (MongoDB, Cassandra)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Schema</td><td>Cố định, chặt chẽ (Structured).</td><td>Linh hoạt, không cần định nghĩa trước.</td></tr>
+        <tr><td>Transaction</td><td>Hỗ trợ ACID hoàn hảo.</td><td>Thường chỉ hỗ trợ ở mức document (BASE).</td></tr>
+        <tr><td>Scaling</td><td>Thường là Vertical (tăng RAM/CPU).</td><td>Horizontal (thêm Node) cực tốt.</td></tr>
+        <tr><td>Trade-off</td><td>Đổi khả năng scale dễ dàng lấy sự nhất quán dữ liệu tuyệt đối.</td><td>Đổi sự nhất quán (Consistency) lấy tốc độ và khả năng mở rộng.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="lesson-text"><strong>Ví dụ thực tế:</strong> Nếu làm hệ thống Ngân hàng, hãy chọn SQL (Thà chậm tí mà tiền không mất). Nếu làm hệ thống lưu Log hoặc Comment (dữ liệu khổng lồ, mất vài cái cũng chẳng ai chết), hãy chọn NoSQL.</p>
+
+  <p class="lesson-text"><strong>2.2. Latency vs. Throughput: "Nhanh" hay "Nhiều"?</strong></p>
+  <ul class="lesson-list">
+    <li><strong>Latency (Độ trễ):</strong> Một request mất bao lâu để xong.</li>
+    <li><strong>Throughput (Băng thông):</strong> Một giây xử lý được bao nhiêu request.</li>
+    <li><strong>Đánh đổi:</strong> Để tăng Throughput, người ta thường dùng Batching (gom nhiều việc lại làm một lượt). Nhưng làm vậy sẽ khiến từng request lẻ phải chờ lâu hơn (tăng Latency).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>2.3. Consistency vs. Availability (Định lý CAP)</strong></p>
+  <p class="lesson-text">Hệ thống phân tán chỉ có thể chọn 2 trong 3: Consistency (Nhất quán), Availability (Sẵn sàng), Partition Tolerance (Chịu được lỗi mạng).</p>
+
+  <ul class="lesson-list">
+    <li>Vì mạng luôn có thể lỗi, chúng ta luôn phải giữ lại P. Cuộc chiến thực sự là giữa CP và AP.</li>
+    <li><strong>CP (Consistency):</strong> Nếu mạng lỗi, hệ thống thà dừng hoạt động (Error) chứ không trả về dữ liệu cũ.</li>
+    <li><strong>AP (Availability):</strong> Nếu mạng lỗi, hệ thống vẫn trả về dữ liệu (có thể là dữ liệu cũ/sai lệch) chứ không để User phải chờ.</li>
+  </ul>
+
+  <h4 class="lesson-section">3. Cách trình bày Trade-offs như một Master</h4>
+
+  <p class="lesson-text">Đừng chỉ liệt kê ưu và nhược điểm. Hãy sử dụng cấu trúc "Given - Choice - Trade-off":</p>
+
+  <p class="lesson-text">"Với yêu cầu (Given) là hệ thống cần xử lý 1 triệu bản ghi mỗi giây, tôi lựa chọn (Choice) dùng Kafka thay vì RabbitMQ. Tuy nhiên, đánh đổi (Trade-off) ở đây là việc vận hành Kafka phức tạp hơn rất nhiều và chúng ta phải tự xử lý việc đảm bảo thứ tự tin nhắn ở phía Consumer."</p>
+
+  <p class="lesson-text"><strong>So sánh cụ thể: Kafka vs. RabbitMQ</strong></p>
+  <ul class="lesson-list">
+    <li>RabbitMQ: Dễ dùng, thông minh (Routing phức tạp). Nhưng khi hàng đợi quá dài, nó bắt đầu chậm lại.</li>
+    <li>Kafka: Cực nhanh, lưu trữ được dữ liệu cũ (Replay). Nhưng nó "ngu" hơn về mặt routing và cực kỳ tốn tài nguyên quản lý.</li>
+    <li><strong>Lựa chọn Master:</strong> Dùng RabbitMQ cho các task nội bộ đơn giản. Dùng Kafka cho Big Data và Event Sourcing.</li>
+  </ul>
+
+  <h4 class="lesson-section">4. Ví dụ thực chiến: Tại sao không dùng Cache cho mọi thứ?</h4>
+
+  <p class="lesson-text">Người phỏng vấn: "Tại sao em không cache toàn bộ Database vào Redis để hệ thống nhanh nhất có thể?"</p>
+
+  <p class="lesson-text"><strong>Master trả lời:</strong></p>
+  <p class="lesson-text">"Đúng là Cache giúp tăng tốc, nhưng nếu cache quá đà, chúng ta đối mặt với 3 rủi ro (Trade-offs):"</p>
+
+  <ol class="lesson-list">
+    <li>Dữ liệu rác (Stale Data): Khi DB cập nhật mà Cache chưa kịp đổi, User sẽ thấy thông tin sai. Việc duy trì sự nhất quán giữa DB và Cache là một bài toán cực kỳ đau đầu (Cache Invalidation).</li>
+    <li>Chi phí RAM: RAM đắt hơn Disk hàng chục lần. Cache 1TB dữ liệu là một quyết định tốn kém kinh khủng.</li>
+    <li>Thảm họa "Cache Cold Start": Nếu hệ thống đang dựa hoàn toàn vào Cache mà con Redis bị sập và khởi động lại, toàn bộ traffic sẽ dội thẳng vào Database, khiến DB nổ tung ngay lập tức.</li>
+  </ol>
+
+  <h4 class="lesson-section">5. Danh sách các câu hỏi "Tại sao không..." bạn nên tự hỏi chính mình</h4>
+
+  <p class="lesson-text">Trước khi kết thúc bước thiết kế, hãy tự "phản biện" bản thân bằng danh sách này:</p>
+
+  <ul class="lesson-list">
+    <li>Storage: Tại sao dùng S3 mà không lưu thẳng trên ổ cứng Server? (Đánh đổi: Chi phí vs Khả năng scale).</li>
+    <li>Communication: Tại sao dùng REST mà không dùng gRPC? (Đánh đổi: Sự phổ biến vs Hiệu năng).</li>
+    <li>Architecture: Tại sao dùng Microservices mà không dùng Monolith? (Đánh đổi: Sự linh hoạt vs Độ phức tạp của vận hành).</li>
+  </ul>
+
+  <p class="lesson-text"><strong>Góc hài hước:</strong> Chọn kiến trúc hệ thống cũng giống như chọn người yêu vậy. Bạn muốn một người "xinh đẹp, giàu có, hiền lành" (Fast, Cheap, Reliable). Nhưng thực tế thường chỉ cho bạn chọn tối đa 2 thứ thôi. Nếu họ hội tụ cả 3, có thể bạn đang... nằm mơ hoặc bạn chưa tìm ra "bug" của họ thôi!</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 33</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Khả năng đưa ra phương án thay thế và phân tích đánh đổi chính là chứng chỉ hành nghề của một Master.</p>
+    <ul class="lesson-list">
+      <li>Đừng bao giờ nói "Đây là giải pháp tốt nhất". Hãy nói "Đây là giải pháp cân bằng nhất".</li>
+      <li>Luôn chuẩn bị ít nhất một Alternative cho mỗi thành phần chính trong hệ thống.</li>
+      <li>Ghi nhớ: Một thiết kế tốt là một thiết kế biết mình đang hy sinh cái gì để đạt được cái gì.</li>
+    </ul>
+    <p class="lesson-text"><strong>Nguồn trích dẫn:</strong></p>
+    <ul class="lesson-list">
+      <li>Architecture Patterns with Python (Harry Percival & Bob Gregory).</li>
+      <li>CAP Theorem - Wikipedia & Research papers.</li>
+    </ul>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Chúng ta đã đi qua toàn bộ các bước của Framework giải bài toán System Design. Nhưng để đảm bảo không bỏ sót bất kỳ chi tiết nhỏ nào có thể khiến bạn mất điểm, chúng ta cần một "vũ khí bí mật".<br>
+    Chào mừng bạn đến với Bài 34: Checklist - Những "từ khóa" giúp ghi điểm tuyệt đối. Đây là bảng tổng kết cuối cùng của Chương 7, giúp bạn kiểm tra lại toàn bộ bản thiết kế của mình trước khi "chốt hạ".<br>
+    Câu hỏi cho bạn: Nếu ngân sách của bạn cực kỳ hạn hẹp nhưng sếp yêu cầu hệ thống phải cực kỳ sẵn sàng (High Availability), bạn sẽ hy sinh yếu tố nào (Performance, Security, hay Consistency) để đạt được mục tiêu đó? Tại sao?<br>
+    Bài viết này đã giúp bạn có cái nhìn "đa chiều" hơn chưa? Nếu bạn muốn mình phân tích sâu hơn về một cặp đối đầu nào khác (như WebSockets vs Long Polling), hãy nhắn cho mình nhé! Bạn đã sẵn sàng để nhận Checklist cuối cùng chưa? Would you like me to move to the Checklist or deep dive into a specific trade-off example?
+  </p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bài 29: Clarify Requirements – Trần's Blog</title>
+</head>
+<body>
+
+<div class="lesson-container">
+  <p class="lesson-intro">
+    Chào bạn! Rất vui được tiếp tục đồng hành cùng bạn trên con đường "tu luyện". Bạn nói đúng, kỹ thuật mà không có chút "gia vị" cảm xúc thì khác nào ăn phở mà thiếu nước dùng.<br>
+    Chúng ta vừa kết thúc những bài học về việc xây dựng và bảo trì hệ thống. Bây giờ, hãy tạm gác những dòng code hay cấu hình server sang một bên.<br> Chúng ta bước vào một giai đoạn mới, nơi mà kỹ năng giao tiếp và tư duy phân tích sẽ lên ngôi. Đây chính là bước đầu tiên trong "Framework giải bài toán System Design" mà bất kỳ Master nào cũng phải nằm lòng.
+  </p>
+
+  <h2 class="lesson-chapter">CHƯƠNG 7: FRAMEWORK GIẢI BÀI TOÁN SYSTEM DESIGN</h2>
+  <h3 class="lesson-title">BÀI 29: CLARIFY REQUIREMENTS"</h3>
+  <h3 class="lesson-title">NGHỆ THUẬT "HỎI XOÁY ĐÁP XOAY"</h3>
+
+  <h4 class="lesson-section">1. Tại sao phải Clarify Requirements?</h4>
+
+  <p class="lesson-text">Trong một buổi phỏng vấn System Design, hoặc khi sếp giao cho bạn một dự án mới, sai lầm lớn nhất và phổ biến nhất (chiếm 90% các ca "tử vong") chính là: Cắm đầu vào vẽ sơ đồ ngay lập tức.</p>
+
+  <p class="lesson-text">Người phỏng vấn đưa ra một đề bài cực kỳ mơ hồ: "Thiết kế Twitter".</p>
+
+  <p class="lesson-text">Một anh chàng Junior sẽ hào hứng: "Dạ, em dùng Load Balancer, rồi Microservices, rồi Kafka, rồi...".</p>
+
+  <p class="lesson-text">Kết quả: Rớt. Tại sao? Vì anh ta đang thiết kế một cái "Twitter trong tưởng tượng" của mình, chứ không phải cái "Twitter mà người phỏng vấn muốn".</p>
+
+  <p class="lesson-text">Thiết kế hệ thống giống như xây nhà. Nếu bạn không hỏi chủ nhà xem họ muốn xây biệt thự có hồ bơi hay xây nhà cấp 4 để chăn gà, thì dù bạn dùng gạch dát vàng, họ cũng sẽ không hài lòng.</p>
+
+  <h4 class="lesson-section">2. Phân loại yêu cầu: Hai mặt của một đồng tiền</h4>
+
+  <p class="lesson-text">Chúng ta chia yêu cầu thành hai nhóm chính mà bạn bắt buộc phải bóc tách:</p>
+
+  <p class="lesson-text"><strong>A. Functional Requirements (Yêu cầu chức năng)</strong></p>
+  <p class="lesson-text">Đây là câu hỏi: "Hệ thống làm được cái gì?".</p>
+
+  <p class="lesson-text">Đừng đoán mò. Hãy liệt kê ra và xác nhận với đối phương.</p>
+
+  <p class="lesson-text"><strong>Ví dụ (URL Shortener):</strong></p>
+  <ul class="lesson-list">
+    <li>User có thể nhập URL dài và nhận về URL ngắn không? (Chắc chắn rồi).</li>
+    <li>Khi click vào URL ngắn, có phải chuyển hướng (Redirect) về URL gốc không?</li>
+    <li>User có thể tự chọn "alias" (tên ngắn) theo ý thích không?</li>
+    <li>Có cần thống kê (Analytics) lượt click không?</li>
+    <li>URL ngắn có ngày hết hạn (Expiration) không?</li>
+  </ul>
+
+  <p class="lesson-text"><strong>B. Non-Functional Requirements (Yêu cầu phi chức năng)</strong></p>
+  <p class="lesson-text">Đây là câu hỏi: "Hệ thống chạy tốt đến mức nào?".</p>
+
+  <p class="lesson-text">Đây mới là nơi thể hiện đẳng cấp của một Master. Những con số này sẽ quyết định bạn chọn Database nào, Cache ở đâu.</p>
+
+  <ul class="lesson-list">
+    <li>Availability: Hệ thống có cần "bất tử" 99.99% không? (Xem Bài 26).</li>
+    <li>Scalability: Hệ thống có cần gánh được 100 triệu người dùng không?</li>
+    <li>Latency: Tốc độ phản hồi cần bao nhanh? (Dưới 200ms hay 2s cũng được?).</li>
+    <li>Consistency: Có cần dữ liệu đồng bộ ngay lập tức không (Strong Consistency) hay chậm một chút cũng không sao (Eventual Consistency)? (Xem Bài 22).</li>
+  </ul>
+
+  <h4 class="lesson-section">3. Các câu hỏi "Vàng" để bóc tách yêu cầu</h4>
+
+  <p class="lesson-text">Đừng hỏi lan man. Hãy tập trung vào những nhóm câu hỏi sau để đào sâu:</p>
+
+  <ol class="lesson-list">
+    <li><strong>Đối tượng và Quy mô (Scale)</strong>
+      <ul class="lesson-list">
+        <li>Ai là người dùng chính của hệ thống? (Cá nhân, doanh nghiệp, hay bot?)</li>
+        <li>Số lượng người dùng hoạt động hàng ngày (DAU - Daily Active Users) là bao nhiêu?</li>
+        <li>Tốc độ tăng trưởng dự kiến trong 1-2 năm tới?</li>
+      </ul>
+    </li>
+    <li><strong>Hành vi dữ liệu (Data Patterns)</strong>
+      <ul class="lesson-list">
+        <li>Read/Write ratio: Đây là câu hỏi tối quan trọng.
+          <ul class="lesson-list">
+            <li>Nếu là hệ thống đọc nhiều (Read ≫ Write): Cần tập trung vào Caching và Read Replicas.</li>
+            <li>Nếu là hệ thống ghi nhiều (Write ≈ Read): Cần tập trung vào Message Queues và Database Sharding.</li>
+          </ul>
+        </li>
+        <li>Dữ liệu lưu trữ trong bao lâu? Có cần backup không?</li>
+      </ul>
+    </li>
+    <li><strong>Đặc thù công nghệ</strong>
+      <ul class="lesson-list">
+        <li>Hệ thống có cần hỗ trợ Mobile app, Web hay cả hai?</li>
+        <li>Có cần API cho bên thứ ba (Third-party) không?</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h4 class="lesson-section">4. Ví dụ thực tế: Thiết kế hệ thống "Pastebin"</h4>
+
+  <p class="lesson-text">Hãy xem một Master "vặn vẹo" người phỏng vấn như thế nào:</p>
+
+  <p class="lesson-text"><strong>Interviewer:</strong> Thiết kế một cái Pastebin (cho phép user lưu trữ và chia sẻ text).</p>
+
+  <p class="lesson-text"><strong>Candidate (Master):</strong> "Vâng, một chủ đề thú vị. Để tôi làm rõ một chút:</p>
+
+  <ol class="lesson-list">
+    <li>(Functional) User chỉ lưu text hay có thể đính kèm file/ảnh không? → Interviewer: Chỉ text thôi.</li>
+    <li>(Functional) Có cần đăng nhập để dùng không, hay khách (guest) cũng dùng được? → Interviewer: Cả hai, nhưng khách thì không quản lý được bài đã đăng.</li>
+    <li>(Functional) Bài viết có tự động xóa sau một thời gian không? → Interviewer: Có, mặc định là mãi mãi nhưng user có thể chọn 1 ngày, 1 tháng.</li>
+    <li>(Non-functional) Quy mô hệ thống thế nào ạ? Chúng ta dự kiến bao nhiêu bài viết mới mỗi ngày? → Interviewer: Khoảng 10 triệu bài.</li>
+    <li>(Non-functional) Chúng ta ưu tiên tốc độ đọc hay sự nhất quán dữ liệu? → Interviewer: Ưu tiên tốc độ đọc (High Availability).</li>
+  </ol>
+
+  <p class="lesson-text">Kết quả: Chỉ sau 2 phút hỏi, bạn đã có một danh sách "đề bài" cực kỳ chi tiết. Bây giờ bạn vẽ gì cũng sẽ đúng trọng tâm.</p>
+
+  <h4 class="lesson-section">5. Master's Secret: "The Five Ws"</h4>
+
+  <p class="lesson-text">Nếu bạn đột nhiên "não cá vàng" không biết hỏi gì, hãy nhớ đến công thức 5W:</p>
+
+  <ol class="lesson-list">
+    <li>Who: Ai dùng?</li>
+    <li>What: Làm cái gì?</li>
+    <li>Where: Dùng ở đâu (vùng miền nào)?</li>
+    <li>When: Khi nào thì dùng (cao điểm hay đều đặn)?</li>
+    <li>Why: Tại sao họ cần hệ thống này (giải quyết nỗi đau gì)?</li>
+  </ol>
+
+  <p class="lesson-text"><strong>Góc hài hước:</strong> Đi phỏng vấn System Design mà không hỏi Requirement thì giống như đi xem mắt mà không hỏi giới tính đối phương vậy. Bạn có thể chuẩn bị một bộ vest cực đẹp, một nhà hàng cực sang, nhưng đến nơi mới phát hiện ra... mình nhầm đối tượng. Đau đớn lắm!</p>
+
+  <h3 class="lesson-summary">TỔNG KẾT BÀI 29</h3>
+
+  <div class="lesson-summary-box">
+    <p class="lesson-text">Clarify Requirements là bước quan trọng nhất trong mọi buổi System Design.</p>
+    <ol class="lesson-list">
+      <li>Dừng lại và hỏi: Đừng bao giờ bắt đầu thiết kế khi chưa rõ yêu cầu.</li>
+      <li>Liệt kê Functional & Non-functional: Viết chúng lên bảng (hoặc note ra) để làm kim chỉ nam.</li>
+      <li>Xác nhận phạm vi: "Vậy trong buổi hôm nay, chúng ta sẽ tập trung vào A và B, còn C chúng ta sẽ coi là nằm ngoài phạm vi (Out of scope) nhé?". Câu nói này sẽ cứu mạng bạn khi thời gian sắp hết.</li>
+      <li>Hỏi về con số: Đây là tiền đề cho bước tiếp theo.</li>
+    </ol>
+  </div>
+
+  <p class="lesson-ending">
+    Bài tiếp theo: Sau khi đã biết "phải xây cái gì", bước tiếp theo là xác định "cần bao nhiêu gạch, bao nhiêu xi măng". Chúng ta sẽ không đoán mò, chúng ta sẽ tính toán dựa trên những con số cụ thể.<br>
+    Chào mừng bạn đến với Bài 30: Capacity Estimation (Con số biết nói). Chúng ta sẽ học cách ước tính Traffic, Storage, và Bandwidth chỉ với vài phép tính nhẩm "thần sầu".<br>
+    Câu hỏi cho bạn: Giả sử bạn được yêu cầu thiết kế "Grab". Câu hỏi đầu tiên bạn sẽ đặt ra để làm rõ yêu cầu là gì? Hãy comment thử xem tư duy của bạn đã "Master" chưa nhé!<br>
+    Bạn thấy phần mở đầu của Framework này thế nào? Có đủ chi tiết để bạn tự tin "vặn" lại bất kỳ yêu cầu mơ hồ nào chưa? Hãy để lại ý kiến để mình hoàn thiện bài tiếp theo "nặng đô" hơn nữa nhé!
+  </p>
+</div>
+
+</body>
+</html>
